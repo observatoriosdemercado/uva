@@ -1,0 +1,532 @@
+---
+title: "OBSERVATÓRIO DO MERCADO DE UVA DA EMBRAPA SEMIÁRIDO"
+author: "João Ricardo F. de Lima"
+date: "`r format(Sys.Date(), '%d de %B de %Y.')`"
+output:
+  html_document:
+    theme: flatly
+    number_sections: no
+    highlight: textmate
+    toc: true #cria um sumário das sessões do documento
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+    df_print: paged  #ajusta o formato da tabela
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo       = FALSE,
+  warning    = FALSE,
+  message    = FALSE,
+  comment    = NA,
+  fig.width  = 9, 
+  fig.height = 6,
+  fig.align  = "center",
+  comment    = "#",
+  size       = "normalsize"
+  )
+
+library(lubridate)
+today <- as.Date("2022-02-01")
+date <- seq(as.Date('2021-01-01'),to=as.Date('2021-12-01'),by='1 month')
+atual <-  as.Date("2022-02-01")
+mes <- 2
+
+#Linhas precisam de ajuste semanal: 30, 104, 201, 204
+```
+
+```{r tratamento_base}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+
+#Inicio do Script
+#Pacotes a serem utilizados
+library(mFilter)
+library(forecast)
+library(tsutils)
+library(seasonal)
+library(ggplot2)
+library(uroot)
+library(tseries)
+library(ggthemes)
+library(dplyr)
+library(tidyverse)
+library(quantmod)
+library(scales)
+library(kableExtra)# complex tables
+library(lmtest)
+library(FinTS)
+library(magrittr)# pipe operations
+library(readxl)
+library(reshape2)
+library(plotly)
+library(DT)
+
+checkX13()
+
+options(digits=4)
+
+#Dados de uva por estados
+
+dados3 <- read_excel("ceasas_mi_total22fev.xlsx", col_names = FALSE)
+dados3 <- dados3[,-1]
+
+#Transpor a base de dados
+dados3 <- as.data.frame(t(dados3))
+colnames(dados3) <-c ('ano','mes','produto','origem','unidade','quilos')
+dados3 <- dados3 %>%
+  mutate(quilos=as.numeric(quilos))
+
+dados3a <- dados3 %>% filter(ano<2022)
+dados3b <- dados3 %>% filter(ano==2022 & mes<=2)
+dados3c <- rbind(dados3a, dados3b)
+
+dados3 <- dados3c
+
+#Total de uvas em todos os CEASAS todas as UF
+
+uva_anual_all <- dados3 %>% group_by(ano) %>% summarise(quilos=sum(quilos))
+uva_anual_all$todas_UF <- (uva_anual_all$quilos)/1000 #transformando em Toneladas
+uva_anual_all <- uva_anual_all[,-2]
+
+#Total de uvas em todos os CEASAS PE + BA
+
+uva_anual_pe <- dados3 %>% filter(origem=='PE') %>% group_by(ano) %>% summarise(quilos=sum(quilos))
+uva_anual_ba <- dados3 %>% filter(origem=='BA') %>% group_by(ano) %>% summarise(quilos=sum(quilos))
+
+uva_total_peba <- tibble(uva_anual_pe$quilos + uva_anual_ba$quilos)
+uva_total_peba <- uva_total_peba/1000 #passando o volume para toneladas
+colnames(uva_total_peba)[1]<-'pe+ba'
+
+#Juntando as bases de dados Total e PEBA
+uva_anual_all <- tibble(uva_anual_all, uva_total_peba)
+uva_anual_all$ano <- seq(as.Date('2017-01-01'),to=atual,by='1 year')
+uva_anual_allm <- melt(uva_anual_all, id.var='ano')
+
+#dados4 <- read_excel("ceasas_mi_peba22.xlsx", col_names = FALSE)
+#dados4 <- dados4[,-1]
+#dados4 <- as.data.frame(t(dados4))
+#colnames(dados4) <-c ('ano','produto','origem','unidade','quilos')
+
+#dados4 <- dados4 %>%
+#  mutate(quilos=as.numeric(quilos))
+
+#uva_anual_pe <- dados4 %>% filter(origem=='PE')
+#uva_anual_ba <- dados4 %>% filter(origem=='BA')
+
+#uva_total_peba <- tibble(uva_anual_pe$quilos + uva_anual_ba$quilos)
+#uva_total_peba <- uva_total_peba/1000 #passando o volume para toneladas
+#colnames(uva_total_peba)[1]<-'pe+ba'
+
+# Variação da oferta
+
+#dados5 <- read_excel("ceasas_mi_peba_mensal22.xlsx", col_names = FALSE)
+#dados5 <- dados5[,-1]
+
+#Transpor a base de dados
+#dados5 <- as.data.frame(t(dados5))
+#colnames(dados5) <-c ('ano','produto','mes','origem','unidade','quilos')
+#dados5 <- dados5 %>%
+#  mutate(quilos=as.numeric(quilos))
+
+# Geração da variável
+uva_mespe <-  dados3 %>%
+  filter(origem == "PE")
+
+uva_mesba <-  dados3 %>%
+  filter(origem == "BA")
+
+uva_mespeba <- tibble((uva_mespe$quilos + uva_mesba$quilos)/1000)
+uva_mespeba$mes <- seq(as.Date('2017-01-01'),to=atual,by='1 month')
+uva_mespeba$ano <- uva_mespe$ano
+colnames(uva_mespeba)[1] <-'toneladas'
+
+totalpeba_20 <- uva_mespeba %>% filter(ano=='2020')
+totalpeba_21 <- uva_mespeba %>% filter(ano=='2021')
+totalpeba_22 <- uva_mespeba %>% filter(ano=='2022')
+
+totalpeba_var20 <- as.matrix(totalpeba_20$toneladas)
+totalpeba_var21 <- as.matrix(totalpeba_21$toneladas)
+totalpeba_var22 <- matrix(NA, nrow=12, ncol=1)
+totalpeba_var222 <-  as.matrix(totalpeba_22$toneladas)
+
+#Calculo das variações
+variacaopeba_2120 <- ((totalpeba_var21/totalpeba_var20)-1)*100
+
+# Para 2022 comparando com 2021
+for(i in 1:mes){
+  totalpeba_var22[i,1] = totalpeba_var222[i,1]
+}
+
+variacaopeba_2221 <- ((totalpeba_var22/totalpeba_var21)-1)*100
+
+#meses <- seq(1:12)
+variacao_totalpeba <- data.frame(date, variacaopeba_2120, variacaopeba_2221)
+colnames(variacao_totalpeba) = c('Meses', 'Ano 2021', 'Ano 2022')
+
+variacao_totalpebat <- melt(variacao_totalpeba, id.var='Meses')
+
+#Tendencia PEBA
+uva_mespeba2 <- ts(uva_mespeba$toneladas, start = c(2017,1), freq=12)
+trend_peba <- cmav(uva_mespeba2, outplot=F)
+
+#Sazonalidade PEBA
+decompa_peba<-decompose(uva_mespeba2, type = 'multiplicative')
+sazonal_peba <- decompa_peba$figure
+meses <- seq(as.Date("2021/1/1"), by = "month", length.out = 12)
+sazonalpeba_graph <- tibble(meses, sazonal_peba)
+
+
+#Comparações com os anos e entre as médias/max/min
+
+peba_2019 <- window(uva_mespeba2, end=c(2019,12))
+seaspeba_19<-seasplot(peba_2019, trend=F, outplot = F)
+mediaspeba_19 <- colMeans(seaspeba_19$season)
+
+peba_2020 <- window(uva_mespeba2, end=c(2020,12))
+
+peba_2021 <- window(uva_mespeba2, end=c(2021,12))
+#seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
+#medias21 <- colMeans(seas21$season)
+
+peba_22 <- as.matrix(tail(uva_mespeba2,mes)) #ajustar mensalmente
+peba_2022 <- matrix(NA, nrow=12, ncol=1)
+
+for(i in 1:mes){
+  peba_2022[i,1] = peba_22[i,1]
+}
+
+#Como só se tem até a semana 12
+mediaspeba_19 <- mediaspeba_19[1:12]
+
+matrixpeba = matrix(NA, nrow=12, ncol=2)
+
+for(i in 1:12){
+  matrixpeba[i,1] = min(seaspeba_19$season[,i])
+  matrixpeba[i,2] = max(seaspeba_19$season[,i])
+}
+
+#time <- c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", #"Dezembro")
+#time <-seq(1:12)
+table_peba <- data.frame(meses, matrixpeba[,1], round(mediaspeba_19,1), matrixpeba[,2],
+                         round(tail(peba_2020,12),1),
+                    round(tail(peba_2021,12),1), peba_2022[,1])
+colnames(table_peba) = c('Meses', 'Mínimo', 'Média', 'Máximo', '2020', '2021',
+                    '2022')
+
+tablepeba_a <- table_peba[,-c(5:7)]
+tablepeba_b <- table_peba[,-c(2,3,4)]
+
+tablepeba_a2 <- melt(tablepeba_a, id.var='Meses')
+tablepeba_b2 <- melt(tablepeba_b, id.var='Meses')
+mycolors <- c("lightblue3", "gray44", "gold")
+mycolor1 <- "gold"
+mycolors2 <- c("orange", "lightblue3")
+```
+
+<br>
+
+# ANÁLISE DA OFERTA DE UVA NOS CEASAS ATÉ O MÊS DE `r toupper(strftime(atual, format = "%B"))`
+
+<br>
+
+Os dados utilizados nesta análise são mensais e disponibilizados pela *CONAB/PROHORT*. São para a oferta de uva comercializados nos CEASAS do Brasil com origem em todos os estados e comparados com o volume de origem Pernambuco e Bahia. O período disponibilizado é de **janeiro de 2017 à fevereiro de 2022**;
+
+Em relação aos *volumes (total e com origem Pernambuco e Bahia)*, em 2017, 45,21\% do volume total teve origem PE e BA. Em 2021, este volume passou para 63,91\%. Nos dois primeiros meses 2022 este percentual está em 51,39\%. Em janeiro e fevereiro os volumes normalmente são menores do que em outros meses do ano. Contudo, principalmente pelo baixo volume na região devido os problemas de chuvas, os volumes em 2022 estão menores do que em 2021, mas acima da média histórica;  
+
+A informação da variação do volume, comparando 2022 com 2021, mostra uma queda de -1,96\% em janeiro e de -10,89\% em fevereiro, cenário bem diferente do que ocorreu em 2021 com relação à 2020, quando o volume foi 11,28\% mais elevado em janeiro e 18,40\% em fevereiro;
+
+A **Tendência** ente 2017 e 2022 mostra crescimento significativo do volume. A **Sazonalidade** mostra que depois de uma redução em fevereiro, o esperado é crescimento da oferta até dezembro, principalmente depois de julho;
+
+A comparação da média, mínimo valor e máximo valor (até 2019) com os valores de 2020, 2021 e 2022 mostra que nos últimos anos os volumes foram maiores do que o que se teve de máximo até 2019. Mostra também que, em 2021, na maior parte dos meses, os volumes superaram muito os valores de 2020 e foram acima da média histórica.
+
+<br>
+
+# 1. Volume total comercializado de uva: 2017 a 2022
+## Evolução do total e dos volumes apenas de Pernambuco e Bahia {.tabset .tabset-fade}
+
+<br>
+
+### GRÁFICO
+
+```{r mi1}
+## Gráfico Total de uvas e uvas PE+BA
+
+g1 <- ggplot()+
+  geom_col(data=uva_anual_allm, aes(x=ano, y=value, fill=variable), lwd=1, position = "dodge")+
+  scale_fill_manual(values=mycolors2)+
+  scale_y_continuous(limits = c(0, 150000), n.breaks = 10)+
+  scale_x_date(date_breaks = "1 year", labels = date_format("%Y"))+
+  labs(y= "Toneladas", x= "Anos", title='',
+       caption = "Fonte: PROHORT/CONAB reprocessado pelo Observatório de Mercado de uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=14, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
+        axis.title.y = element_text(size=16, face = "bold"),
+        axis.title.x = element_text(size=16, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g1) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.30, 
+                      y=-0.25,
+                      title=''))
+```
+\footnotesize Obs: Dados de 2022 apenas para o mês de janeiro.
+
+<br>
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (TONELADAS)**
+
+```{r mit}
+#tableP <-table[,-1]
+#rmarkdown::paged_table(round(tableD,2))
+uva_anual_alltab <- uva_anual_all
+uva_anual_alltab[,1] <- seq(2017, 2022, by = 1)
+colnames(uva_anual_alltab) <- c('Ano', 'Total', 'Pernambuco + Bahia')
+datatable(round(uva_anual_alltab), option = list(
+  autoWidth = TRUE,
+  pageLength = 10,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+```
+Fonte:PROHORT/CONAB reprocessado pelo Observatório de Mercado de uva da Embrapa
+
+Obs: Dados de 2022 apenas para o mês de janeiro.
+
+<br>
+<br>
+
+# 2. Variação do Volume comercializado de uva: 2017 a 2022 
+## Origem em Pernambuco e na Bahia {.tabset .tabset-fade}
+
+<br>
+
+### GRÁFICO
+
+<br>
+
+```{r mi2}
+#Variação Volume PE+BA
+
+g2 <- ggplot()+
+  geom_col(data=variacao_totalpebat, aes(x=Meses, y=value, fill=variable), lwd=1, position = "dodge")+
+  scale_fill_manual(values=mycolors2)+
+  scale_y_continuous(limits = c(-20, 100), n.breaks = 10)+
+  scale_x_date(date_breaks = "1 month",
+               labels = date_format("%B"))+
+  labs(y= "Variação Percentual (%)", x= "Meses do Ano", title='',
+       caption = "Fonte: Observatório de Mercado de uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=14, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
+        axis.title.y = element_text(size=16, face = "bold"),
+        axis.title.x = element_text(size=16, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g2) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.35, 
+                      y=-0.25,
+                      title=''))
+```
+
+<br>
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (VARIAÇÃO PERCENTUAL %)**
+
+```{r mi2t}
+variacao_totalpeba_tab <- variacao_totalpeba
+variacao_totalpeba_tab$`Ano 2021` <- round(variacao_totalpeba_tab$`Ano 2021`,2)
+variacao_totalpeba_tab$`Ano 2022` <- round(variacao_totalpeba_tab$`Ano 2022`,2)
+variacao_totalpeba_tab$Meses <- c('Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio',
+  'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro') 
+datatable(variacao_totalpeba_tab, option = list(
+  autoWidth = TRUE,
+  pageLength = 12,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+```
+Fonte:PROHORT/CONAB reprocessado pelo Observatório de Mercado de uva da Embrapa
+
+Obs: Dados de 2022 apenas para o mês de janeiro.
+
+# 3. Tendência do Volume comercializado de uva: 2017 a 2022 
+## Origem em Pernambuco e na Bahia
+
+<br>
+
+```{r mi3}
+#Gráfico com Ggplot2 - Tendencia
+
+g3 <- ggplot(data=uva_mespeba, aes(x=mes)) +  #estetica vai valer para todos os geom's
+  geom_line(aes(y=toneladas, colour="TONELADAS"), lwd=1)+
+  geom_line(aes(y=trend_peba, colour="TENDÊNCIA"), lwd=1)+
+  scale_colour_manual("",
+                      breaks = c("TONELADAS", "TENDÊNCIA"),
+                      values = c("blue", "red")) +
+  labs(y= "Quantidade (T)", x= "Meses do Ano", title='',
+       caption = "Fonte: CONAB reprocessado pelo Observatório de Mercado de uva da Embrapa")+
+  scale_y_continuous(limits=c(0,12000), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_x_date(date_breaks = "1 year",
+               labels = date_format("%Y"))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=14, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=1, size=14, margin = margin(l=20)),
+        axis.title.x = element_text(size=16, face = "bold", margin = margin(b=0)),
+        axis.title.y = element_text(size=16, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=16, face="italic"),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g3) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.30, 
+                      y=-0.25,
+                      title=''))
+```
+
+<br>
+
+# 4. Sazonalidade do Volume comercializado de uva: 2017 a 2022 
+## Origem em Pernambuco e na Bahia
+
+<br>
+
+```{r mi4}
+# Gráfico da Sazonalidade
+
+g4 <- ggplot(data=sazonalpeba_graph)+
+  geom_line(aes(x=meses, y=sazonal_peba), color="blue", size=1.5)+
+  scale_y_continuous(limits=c(0,1.5), n.breaks = 5, expand = expansion(add=c(0,0.5)),
+                     labels=number_format(accuracy = 0.1)) +
+  scale_x_date(date_breaks = "1 month",
+               labels = date_format("%b"))+
+  labs(y= "", x= "Meses de cada Ano", title='',
+       caption = "Observatório de Mercado de uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=14, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
+        axis.title.y = element_text(size=14, face = "bold"),
+        axis.title.x = element_text(size=14, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g4) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.30, 
+                      y=-0.25,
+                      title=''))
+```
+
+<br>
+
+# 5. Estatísticas sobre a Evolução da Oferta de uva
+## Origem em Pernambuco e na Bahia{.tabset .tabset-fade}
+
+<br>
+
+### GRÁFICO
+
+<br>
+
+```{r mi5}
+#Evolução da Oferta Mensal de uva PEBA nos CEASAS do Brasil
+
+g5 <- ggplot()+
+  geom_col(data=tablepeba_b2, aes(x=Meses, y=value, fill=variable), lwd=1,
+           position = "dodge")+
+  scale_fill_manual(values=mycolors)+
+  geom_line(data=tablepeba_a2, aes(x=Meses, y=value, colour=variable), linetype = "solid",
+            size = 1)+
+  scale_colour_manual(values = c("red", "chocolate", "darkgreen")) +
+  scale_y_continuous(limits = c(0, 12000), n.breaks = 10)+
+  scale_x_date(date_breaks = "1 month",
+               labels = date_format("%B"))+
+  labs(y= "Toneladas", x= "Meses do Ano", title='',
+       caption = "")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=12, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
+        axis.title.y = element_text(size=14, face = "bold"),
+        axis.title.x = element_text(size=14, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=11)) # Definindo posição da legenda
+
+ggplotly(g5) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.05, 
+                      y=-0.25,
+                      title=''))
+```
+Obs: Mínimo, Média e Máximo considera apenas o período de 2017 a 2019.
+
+<br>
+
+### TABELA
+**VISUALIZAÇÃO DOS DADOS EM TABELA (TONELADAS)**
+
+<br>
+
+```{r mi5t}
+table_pebat <- table_peba
+table_pebat$Meses <- c('Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio',
+  'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro') 
+datatable(table_pebat, option = list(
+  autoWidth = TRUE,
+  pageLength = 12,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+```
+
+# INFORMAÇÕES
+
+<br>
+<br>
+
+<center>![](logo_uva.jpg){width=16cm}</center>
+
+<br>
+<br>
+
+<center> João Ricardo F. de Lima </center>
+<center> Email: joao.ricardo@embrapa.br </center>
+
+<br>
+
+<center> [https://www.embrapa.br/observatorio-da-uva](https://www.embrapa.br/observatorio-da-uva) </center>
+
+<br>
+
+<center> Telefones: </center>
+<center> 87-3866-3667 </center> 
+<center> 87-99961-5799 </center>
+
+<br>
+
+<center>![](logo_embrapa.jpg){width=6cm}</center>
+
+<br>
+<br>
