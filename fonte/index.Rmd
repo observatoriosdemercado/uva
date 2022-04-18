@@ -1,0 +1,91 @@
+---
+title: "OBSERVATÓRIOS DOS MERCADOS DE MANGA E UVA DA EMBRAPA SEMIÁRIDO"
+author: "João Ricardo F. de Lima"
+date: "`r format(Sys.Date(), '%d de %B de %Y.')`"
+output:
+  html_document:
+    theme: flatly
+    number_sections: no
+    highlight: textmate
+    toc: true #cria um sumário das sessões do documento
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+    df_print: paged  #ajusta o formato da tabela
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo       = FALSE,
+  warning    = FALSE,
+  message    = FALSE,
+  comment    = NA,
+  fig.width  = 8, 
+  fig.height = 5,
+  fig.align  = "center",
+  comment    = "#",
+  size       = "normalsize"
+  )
+
+library(lubridate)
+last <- as.Date("2022-04-01")
+today <- as.Date("2022-04-08")
+sem_ano <- 14 #ajustar semanalmente
+```
+
+<br>
+
+# REFERÊNCIAS
+
+<br>
+
+## DADOS GERAIS
+IBGE (INSTITUTO BRASILEIRO DE GEOGRAFIA E ESTATÍSTICA). Pesquisa Produção Agrícola Municipal. In: Sidra: sistema IBGE de Recuperação Automática. Rio de Janeiro, 2021. Disponível em: <https://sidra.ibge.gov.br/pesquisa/pam/tabelas>. 
+
+## PREÇOS AO PRODUTOR
+HFBRASIL (HORTIFRUTI BRASIL).  **Manga Preços/Notícias**. Disponível em: <https://www.hfbrasil.org.br/br/estatistica/manga.aspx>
+
+## EXPORTAÇÕES
+COMEXSTAT. Sistema de Estatísticas do Comércio Exterior. Disponível em: <http://comexstat.mdic.gov.br/pt/geral>.
+
+## MERCADO INTERNO
+CONAB (COMPANHIA NACIONAL DE ABASTECIMENTO). **Prohort**. Disponível em: < https://www.conab.gov.br/info-agro/hortigranjeiros-prohort>. 
+
+## EMPREGO
+CAGED (CADASTRO GERAL DE EMPREGOS E DESEMPREGADOS). Microdados. Disponível em: < http://pdet.mte.gov.br/microdados-rais-e-caged>.
+
+
+<br>
+
+# METODOLOGIA
+
+Os dados utilizados nesta dashboard são de diversas fontes, como demonstrado acima. 
+
+No caso dos dados de **Preços ao Produtor**, são semanais e disponibilizados pelo **CEPEA (Esalq-USP)** englobando o período de 2012 a 2022, para as variedades de manga *Palmer* e *Tommy Atkins*, no caso da manga e *Branca Embalada*, *Negra Embalada* e *Uva Negra* no caso da uva, sempre ao produtor do Vale do São Francisco.  Os preços até em cada semana são deflacionados pelo IGP-DI e depois comparados com a média de cada semana entre 2012 e 2019 (pré pandemia), mínimo para cada semana e máximo. Os preços deflacionados de 2020 e de 2021 também são apresentados para comparação de 2022 com os dois anos anteriores. 
+
+Para as exportações, os dados utilizados são mensais e disponibilizados pelo **Comexstat (MDIC)** para o período de *2012 a 2022*, relacionados ao volume exportado e as receitas de exportação.
+
+Para **Emprego**, os dados utilizados nesta análise são mensais e disponibilizados pelo CAGED (Cadastro Geral de Empregados e Desempregados). As variáveis são saldo de empregos, empregos por gênero, contratados por idade e por escolaridade para a cultura da manga e da uva. Considera-se o conjunto de municípios da Bahia (Casa Nova, Curaçá, Juazeiro, Sento Sé, Sobradinho, etc. ) e Pernambuco (Belém do S. Francisco, Lagoa Grande, Orocó, Petrolina, etc. ) que formam o Vale do Submédio São Francisco.
+
+# OUTRAS INFORMAÇÕES
+<br>
+<br>
+
+<center> João Ricardo F. de Lima </center>
+<center> Email: joao.ricardo@embrapa.br </center>
+
+<br>
+
+<center> Telefones: </center>
+<center> 87-3866-3667 </center> 
+<center> 87-99961-5799 </center>
+
+<br>
+
+<center>![](logo_embrapa.jpg){width=6cm}</center>
+
+<br>
+<br>
+
+
+
