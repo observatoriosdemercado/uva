@@ -93,7 +93,7 @@ mycolor3 <- "blue"
 mycolor4 <- "red"
 ```
 
-Row {data-height=150}
+Row {data-height=125}
 -----------------------------------------------------------------------
 
 ### Área Plantada com Uva no Brasil em 2020 
@@ -249,7 +249,7 @@ ggplotly(g4) %>%
 VALE DO S. FRANCISCO {data-navmenu="DADOS GERAIS"}
 ======================================================================
 
-Row {data-height=150}
+Row {data-height=125}
 -----------------------------------------------------------------------
 
 ### Área Plantada com Uva no Vale S. Francisco em 2020 
