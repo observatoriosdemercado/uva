@@ -1841,9 +1841,9 @@ Row {data-height=125}
 
 ### Volume Comercializado (CEASAS) em `r strftime(atual, format = "%B")` de 2022 
 ``` {r v1}
-num <- 4137.5
+num <- tail(uva_mespeba2,1)
 valueBox(
-  value = paste0(num, " Toneladas"),
+  value = paste0(round(num,1), " Toneladas"),
   color = "tomato",
   icon= "fa-arrow-down")
 ```
