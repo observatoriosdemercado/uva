@@ -1877,7 +1877,7 @@ g1 <- ggplot()+
   scale_fill_manual(values=mycolors2)+
   scale_y_continuous(limits = c(0, 150000), n.breaks = 10)+
   scale_x_date(date_breaks = "1 year", labels = date_format("%Y"))+
-  labs(y= "Toneladas", x= "Anos", title='',
+  labs(y= "Toneladas", x= "Anos", title='Volume Total comercializado de uva (CEASAS):2017 a 2022',
        caption = "Fonte: PROHORT/CONAB reprocessado pelo Observatório de Mercado de uva da Embrapa")+
   theme_minimal()+
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=20)),
@@ -1910,7 +1910,7 @@ g3 <- ggplot(data=uva_mespeba, aes(x=mes)) +  #estetica vai valer para todos os 
   scale_colour_manual("",
                       breaks = c("TONELADAS", "TENDÊNCIA"),
                       values = c("blue", "red")) +
-  labs(y= "Quantidade (T)", x= "Meses do Ano", title='',
+  labs(y= "Quantidade (T)", x= "Meses do Ano", title='Tendência do Volume comercializado de manga (CEASAS)',
        caption = "Fonte: CONAB reprocessado pelo Observatório de Mercado de uva da Embrapa")+
   scale_y_continuous(limits=c(0,12000), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   scale_x_date(date_breaks = "1 year",
@@ -1944,7 +1944,7 @@ g4 <- ggplot(data=sazonalpeba_graph)+
                      labels=number_format(accuracy = 0.1)) +
   scale_x_date(date_breaks = "1 month",
                labels = date_format("%b"))+
-  labs(y= "", x= "Meses de cada Ano", title='',
+  labs(y= "", x= "Meses de cada Ano", title='Sazonalidade do Volume comercializado de manga (CEASAS)',
        caption = "Observatório de Mercado de uva da Embrapa")+
   theme_minimal()+
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=20)),
@@ -1984,7 +1984,7 @@ g5 <- ggplot()+
   scale_y_continuous(limits = c(0, 12000), n.breaks = 10)+
   scale_x_date(date_breaks = "1 month",
                labels = date_format("%B"))+
-  labs(y= "Toneladas", x= "Meses do Ano", title='',
+  labs(y= "Toneladas", x= "Meses do Ano", title='Estatísticas sobre a Evolução da Oferta de uva (CEASAS)',
        caption = "")+
   theme_minimal()+
   theme(axis.text.x=element_text(angle=35, hjust=0.5, size=8, margin = margin(b=20)),
@@ -2017,7 +2017,7 @@ g2 <- ggplot()+
   scale_y_continuous(limits = c(-20, 100), n.breaks = 10)+
   scale_x_date(date_breaks = "1 month",
                labels = date_format("%B"))+
-  labs(y= "Variação Percentual (%)", x= "Meses do Ano", title='',
+  labs(y= "Variação Percentual (%)", x= "Meses do Ano", title='Variação do Volume comercializado de uva (CEASAS)',
        caption = "Fonte: Observatório de Mercado de uva da Embrapa")+
   theme_minimal()+
   theme(axis.text.x=element_text(angle=35, hjust=0.5, size=8, margin = margin(b=20)),
