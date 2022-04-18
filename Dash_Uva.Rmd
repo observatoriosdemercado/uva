@@ -1880,15 +1880,16 @@ g1 <- ggplot()+
   labs(y= "Toneladas", x= "Anos", title='',
        caption = "Fonte: PROHORT/CONAB reprocessado pelo Observatório de Mercado de uva da Embrapa")+
   theme_minimal()+
-  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=14, margin = margin(b=20)),
-        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
-        axis.title.y = element_text(size=16, face = "bold"),
-        axis.title.x = element_text(size=16, face = "bold"),
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=20)),
+        axis.title.y = element_text(size=8, face = "bold"),
+        axis.title.x = element_text(size=8, face = "bold"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        plot.caption = element_text(hjust = 0, size=14),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
         legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=12)) # Definindo posição da legenda
+        legend.text=element_text(size=8)) # Definindo posição da legenda
 
 ggplotly(g1) %>%
   layout(legend = list(
@@ -1915,14 +1916,14 @@ g3 <- ggplot(data=uva_mespeba, aes(x=mes)) +  #estetica vai valer para todos os 
   scale_x_date(date_breaks = "1 year",
                labels = date_format("%Y"))+
   theme_classic()+ #Definindo tema
-  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=14, margin = margin(b=10)),
-        axis.text.y=element_text(hjust=1, size=14, margin = margin(l=20)),
-        axis.title.x = element_text(size=16, face = "bold", margin = margin(b=0)),
-        axis.title.y = element_text(size=16, face = "bold", margin = margin(l=20)),
-        plot.title = element_text(hjust = 0.5, size=16, face="italic"),
-        plot.caption = element_text(hjust = 0, size=12),
+  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
+        axis.title.x = element_text(size=8, face = "bold", margin = margin(b=0)),
+        axis.title.y = element_text(size=8, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
         legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=12)) # Definindo posição da legenda
+        legend.text=element_text(size=8)) # Definindo posição da legenda
 
 ggplotly(g3) %>%
   layout(legend = list(
@@ -1946,15 +1947,16 @@ g4 <- ggplot(data=sazonalpeba_graph)+
   labs(y= "", x= "Meses de cada Ano", title='',
        caption = "Observatório de Mercado de uva da Embrapa")+
   theme_minimal()+
-  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=14, margin = margin(b=20)),
-        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
-        axis.title.y = element_text(size=14, face = "bold"),
-        axis.title.x = element_text(size=14, face = "bold"),
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=20)),
+        axis.title.y = element_text(size=8, face = "bold"),
+        axis.title.x = element_text(size=8, face = "bold"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        plot.caption = element_text(hjust = 0, size=14),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
         legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=12)) # Definindo posição da legenda
+        legend.text=element_text(size=8)) # Definindo posição da legenda
 
 ggplotly(g4) %>%
   layout(legend = list(
@@ -1985,15 +1987,16 @@ g5 <- ggplot()+
   labs(y= "Toneladas", x= "Meses do Ano", title='',
        caption = "")+
   theme_minimal()+
-  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=12, margin = margin(b=20)),
-        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
-        axis.title.y = element_text(size=14, face = "bold"),
-        axis.title.x = element_text(size=14, face = "bold"),
+  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=8, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=20)),
+        axis.title.y = element_text(size=8, face = "bold"),
+        axis.title.x = element_text(size=8, face = "bold"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        plot.caption = element_text(hjust = 0, size=14),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
         legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=11)) # Definindo posição da legenda
+        legend.text=element_text(size=8)) # Definindo posição da legenda
 
 ggplotly(g5) %>%
   layout(legend = list(
@@ -2017,13 +2020,14 @@ g2 <- ggplot()+
   labs(y= "Variação Percentual (%)", x= "Meses do Ano", title='',
        caption = "Fonte: Observatório de Mercado de uva da Embrapa")+
   theme_minimal()+
-  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=14, margin = margin(b=20)),
-        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
-        axis.title.y = element_text(size=16, face = "bold"),
-        axis.title.x = element_text(size=16, face = "bold"),
+  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=8, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=20)),
+        axis.title.y = element_text(size=8, face = "bold"),
+        axis.title.x = element_text(size=8, face = "bold"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        plot.caption = element_text(hjust = 0, size=14),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
         legend.position = "bottom", legend.title = element_blank(),
         legend.text=element_text(size=12)) # Definindo posição da legenda
 
