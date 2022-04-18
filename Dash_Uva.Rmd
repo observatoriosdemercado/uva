@@ -1674,67 +1674,78 @@ checkX13()
 
 options(digits=4)
 
-today <- as.Date("2022-02-11")
+today <- as.Date("2022-02-01")
 atual <-  as.Date("2022-02-01")
 mes <- 2
 
 #Dados de uva por estados
 
-dados3 <- read_excel("ceasas_mi_total22.xlsx", col_names = FALSE)
+dados3 <- read_excel("ceasas_mi_total22fev.xlsx", col_names = FALSE)
 dados3 <- dados3[,-1]
 
 #Transpor a base de dados
 dados3 <- as.data.frame(t(dados3))
-colnames(dados3) <-c ('ano','produto','unidade','quilos')
+colnames(dados3) <-c ('ano','mes','produto','origem','unidade','quilos')
 dados3 <- dados3 %>%
   mutate(quilos=as.numeric(quilos))
 
+dados3a <- dados3 %>% filter(ano<2022)
+dados3b <- dados3 %>% filter(ano==2022 & mes<=2)
+dados3c <- rbind(dados3a, dados3b)
+
+dados3 <- dados3c
+
 #Total de uvas em todos os CEASAS todas as UF
 
-uva_anual_all <- dados3 
+uva_anual_all <- dados3 %>% group_by(ano) %>% summarise(quilos=sum(quilos))
 uva_anual_all$todas_UF <- (uva_anual_all$quilos)/1000 #transformando em Toneladas
 uva_anual_all <- uva_anual_all[,-2]
 
 #Total de uvas em todos os CEASAS PE + BA
 
-dados4 <- read_excel("ceasas_mi_peba22.xlsx", col_names = FALSE)
-dados4 <- dados4[,-1]
-dados4 <- as.data.frame(t(dados4))
-colnames(dados4) <-c ('ano','produto','origem','unidade','quilos')
-
-dados4 <- dados4 %>%
-  mutate(quilos=as.numeric(quilos))
-
-uva_anual_pe <- dados4 %>% filter(origem=='PE')
-uva_anual_ba <- dados4 %>% filter(origem=='BA')
+uva_anual_pe <- dados3 %>% filter(origem=='PE') %>% group_by(ano) %>% summarise(quilos=sum(quilos))
+uva_anual_ba <- dados3 %>% filter(origem=='BA') %>% group_by(ano) %>% summarise(quilos=sum(quilos))
 
 uva_total_peba <- tibble(uva_anual_pe$quilos + uva_anual_ba$quilos)
 uva_total_peba <- uva_total_peba/1000 #passando o volume para toneladas
 colnames(uva_total_peba)[1]<-'pe+ba'
 
 #Juntando as bases de dados Total e PEBA
-
 uva_anual_all <- tibble(uva_anual_all, uva_total_peba)
-uva_anual_all$ano <- seq(as.Date('2017-01-01'),to=today,by='1 year')
-uva_anual_all <- uva_anual_all[,-c(2:3)]
+uva_anual_all$ano <- seq(as.Date('2017-01-01'),to=atual,by='1 year')
 uva_anual_allm <- melt(uva_anual_all, id.var='ano')
+
+#dados4 <- read_excel("ceasas_mi_peba22.xlsx", col_names = FALSE)
+#dados4 <- dados4[,-1]
+#dados4 <- as.data.frame(t(dados4))
+#colnames(dados4) <-c ('ano','produto','origem','unidade','quilos')
+
+#dados4 <- dados4 %>%
+#  mutate(quilos=as.numeric(quilos))
+
+#uva_anual_pe <- dados4 %>% filter(origem=='PE')
+#uva_anual_ba <- dados4 %>% filter(origem=='BA')
+
+#uva_total_peba <- tibble(uva_anual_pe$quilos + uva_anual_ba$quilos)
+#uva_total_peba <- uva_total_peba/1000 #passando o volume para toneladas
+#colnames(uva_total_peba)[1]<-'pe+ba'
 
 # Variação da oferta
 
-dados5 <- read_excel("ceasas_mi_peba_mensal22.xlsx", col_names = FALSE)
-dados5 <- dados5[,-1]
+#dados5 <- read_excel("ceasas_mi_peba_mensal22.xlsx", col_names = FALSE)
+#dados5 <- dados5[,-1]
 
 #Transpor a base de dados
-dados5 <- as.data.frame(t(dados5))
-colnames(dados5) <-c ('ano','produto','mes','origem','unidade','quilos')
-dados5 <- dados5 %>%
-  mutate(quilos=as.numeric(quilos))
+#dados5 <- as.data.frame(t(dados5))
+#colnames(dados5) <-c ('ano','produto','mes','origem','unidade','quilos')
+#dados5 <- dados5 %>%
+#  mutate(quilos=as.numeric(quilos))
 
-# Geração da variável Tommy
-uva_mespe <-  dados5 %>%
+# Geração da variável
+uva_mespe <-  dados3 %>%
   filter(origem == "PE")
 
-uva_mesba <-  dados5 %>%
+uva_mesba <-  dados3 %>%
   filter(origem == "BA")
 
 uva_mespeba <- tibble((uva_mespe$quilos + uva_mesba$quilos)/1000)
