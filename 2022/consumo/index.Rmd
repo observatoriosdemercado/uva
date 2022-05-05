@@ -1,0 +1,351 @@
+---
+title: "OBSERVATÓRIO DO MERCADO DE UVA DA EMBRAPA SEMIÁRIDO"
+author: "João Ricardo F. de Lima"
+date: "`r format(Sys.Date(), '%d de %B de %Y.')`"
+output:
+  html_document:
+    theme: flatly
+    number_sections: no
+    highlight: textmate
+    toc: true #cria um sumário das sessões do documento
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+    df_print: paged  #ajusta o formato da tabela
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo       = FALSE,
+  warning    = FALSE,
+  message    = FALSE,
+  comment    = NA,
+  fig.width  = 8,
+  fig.height = 5,
+  fig.align  = "center",
+  comment    = "#",
+  size       = "normalsize"
+  )
+
+library(lubridate)
+anterior <- as.Date("2022-03-01")
+atual <-  as.Date("2022-03-01")
+#today <- as.Date("2022-02-11")
+today <- as.Date("2022-04-29")
+
+#Linhas precisam de ajuste semanal: 30, 104, 201, 204
+```
+
+<br>
+
+# CONSUMO DE UVA COM BASE NOS DADOS DA POF (PESQUISA DE ORÇAMENTO FAMILIAR)/IBGE 
+
+<br>
+
+Os dados utilizados são da POF (Pesquisa de Orçamentos Familiares) do IBGE e se referem as pesquisas de 2002, 2008 e 2018 relativos ao consumo domiciliar per capita anual com uva. Em 2008 a média de consumo nacional era de 761 gramas de uva per capita, passando para 668 gramas em 2018. Isto representa uma diminuição de 12,22% no consumo, em 10 anos.
+
+A região Sul é a que mais consumiu uva em 2018 (933 gramas), superando a região Nordeste (771 gramas) e a Sudeste (614 gramas) que, historicamente, era a região maior consumidora desta fruta. Estas três regiões possuem consumo superior a média nacional. O Nordeste é a unica região que o consumo de uva está em crescimento (13,38\%), comparando 2008 e 2018. Todas as outras regiões apresentaram queda, sendo a principal no Sudeste, que teve diminuição de 27,16\% no período. 
+
+Na questão dos estados, Sergipe (1,82 kg), Santa Catarina (1,73 kg), Rio Grande do Norte (958 gramas), Piauí (940 gramas) e Paraíba (819 gramas)são os que consomem mais uvas.  Tocantins (167 gramas), Amazonas (219 gramas), Pará (272 gramas), Mato Grosso (320 gramas) e Rondônia (326 gramas) são os estados que menos consomem uva no Brasil.
+
+Na questão do consumo baseado nas faixas de renda, em todas as regiões quem tem mais renda consome mais uva. No Sul, contudo, o estrato de renda mais alto e o mais baixo consomem praticamente a mesma quantidade. Chama a atenção os dados da região Nordeste, onde o consumo das pessoas do estrato mais alto consomem mais per capita do que as pessoas de mesmo estrato nas outras regiões. 
+
+<br>
+
+## 1. EVOLUÇÃO DA AQUISIÇÃO DOMICILIAR PER CAPITA ANUAL DE UVA NO BRASIL E REGIÕES {.tabset .tabset-fade}
+
+### GRÁFICO
+
+<br>
+
+```{r consumo_uva1}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+
+#Inicio do Script
+#Pacotes a serem utilizados 
+library(ggplot2)
+library(scales)
+library(plotly)
+library(dplyr)
+library(readxl)
+library(reshape2)
+library(kableExtra)# complex tables
+library(lmtest)
+library(DT)
+library(magrittr)
+
+mycolors2 <- c("darkgreen", "lightblue3", "orange")
+
+#Entrando dados no R
+dados1 <- read_excel('consumo_brasil.xlsx', col_names = TRUE)
+dados1m <- melt(dados1, id.var='Região')
+
+g1 <- ggplot()+
+  geom_col(data=dados1m, aes(x=Região, y=value, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors2)+
+  labs(y= "Consumo (kg) per capita anual", x= "Brasil e Regiões", title='',
+  caption = "Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=12, face = "bold"),
+        axis.title.x = element_text(size=12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g1) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.3, 
+                      y=-0.2,
+                      title=''))
+```
+Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+<br>
+<br>
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA**
+
+```{r consumo_uva1a}
+datatable(dados1, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+<br>
+<br>
+
+## 2. VARIAÇÃO NA AQUISIÇÃO DOMICILIAR PER CAPITA ANUAL DE UVA NO BRASIL E REGIÕES ENTRE 2008 E 2018 {.tabset .tabset-fade}
+
+### GRÁFICO
+
+``````{r consumo_uva2}
+consumo_var <- dados1[,-2]
+variacao <- ((consumo_var[,3]-consumo_var[,2])/consumo_var[,2])*100
+consumo_vara<-cbind(consumo_var, round(variacao,2))
+consumo_var <- consumo_vara[,-c(2:3)]
+colnames(consumo_var) = c('regiao', 'variacao')
+
+mycolor1 <- "orange"
+
+g2<- ggplot(data=consumo_var) +  #estetica vai valer para todos os geom's
+  geom_col(aes(x = regiao, y=round(variacao,2), fill="Variação no Consumo de Uva (%) per capita anual"), lwd=1)+
+  scale_fill_manual(values=mycolor1)+labs(y= "Variação no Consumo de Uva (%)", x= "Estados", title='',
+       caption = "")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=12, face = "bold"),
+        axis.title.x = element_text(size=12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g2) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.3, 
+                      y=-0.4,
+                      title=''))
+```
+Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA**
+
+```{r consumo_uva2a}
+datatable(consumo_vara,2, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+<br>
+
+## 3. AQUISIÇÃO DOMICILIAR PER CAPITA ANUAL DE UVA POR ESTADOS - 2018 {.tabset .tabset-fade}
+
+<br>
+
+### GRÁFICO
+
+<br>
+
+```{r consumo_uva3}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+
+#Inicio do Script
+#Pacotes a serem utilizados 
+library(ggplot2)
+library(scales)
+library(plotly)
+library(dplyr)
+library(readxl)
+
+mycolor1 <- "gold"
+
+#mycolors2 <- c("orange", "lightblue3", "gray44", "gold", "red", "darkgreen")
+
+#Entrando dados no R
+dados2 <- read_excel('consumo_estados.xlsx', col_names = TRUE)
+
+g2 <- ggplot(data=dados2) +  #estetica vai valer para todos os geom's
+  geom_col(aes(x = reorder(regiao, -consumo), y= consumo, fill="Consumo (kg) per capita anual"), lwd=1)+scale_fill_manual(values=mycolor1)+labs(y= "Consumo (kg) per capita anual", x= "Estados", title='',
+       caption = "")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=12, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=12, face = "bold"),
+        axis.title.x = element_text(size=12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g2) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.3, 
+                      y=-0.4,
+                      title=''))
+```
+Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+<br>
+<br>
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA**
+
+```{r consumo_uva3a}
+datatable(dados2, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+<br>
+<br>
+
+## 4.AQUISIÇÃO DOMICILIAR PER CAPITA ANUAL DE UVA POR FAIXAS DE RENDA - 2018{.tabset .tabset-fade}
+
+<br>
+
+### GRÁFICO
+
+<br>
+
+```{r consumo_uva4}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+
+#Inicio do Script
+#Pacotes a serem utilizados 
+library(ggplot2)
+library(scales)
+library(plotly)
+library(dplyr)
+library(readxl)
+
+mycolors2 <- c("orange", "lightblue3", "darkblue", "gold", "red", "darkgreen")
+
+#Entrando dados no R
+dados3 <- read_excel('consrenda_brasil.xlsx', col_names = TRUE)
+dados3m <- melt(dados3, id.var='classes')
+
+g3 <- ggplot()+
+  geom_col(data=dados3m, aes(x=variable, y=value, fill=classes), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors2)+
+  labs(y= "Consumo (kg) per capita anual", x= "Brasil e Regiões", title='',
+  caption = "Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=12, face = "bold"),
+        axis.title.x = element_text(size=12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g3) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.07, 
+                      y=-0.2,
+                      title=''))
+```
+Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+<br>
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA**
+
+
+```{r consumo_uva4a}
+datatable(dados3, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+<br>
+
+# INFORMAÇÕES
+<br>
+<br>
+
+<center>![](logo_uva.jpg){width=16cm}</center>
+
+<br>
+<br>
+
+<center> João Ricardo F. de Lima </center>
+<center> Email: joao.ricardo@embrapa.br </center>
+
+<br>
+
+<center> [https://www.embrapa.br/observatorio-da-uva](https://www.embrapa.br/observatorio-da-uva) </center>
+
+<br>
+
+<center> Telefones: </center>
+<center> 87-3866-3667 </center> 
+<center> 87-99961-5799 </center>
+
+<br>
+
+<center>![](logo_embrapa.jpg){width=6cm}</center>
+
+<br>
+<br>
