@@ -1640,7 +1640,7 @@ ggplotly(g13) %>%
                       title=''))
 ```
 
-MERCADO INTERNO
+VOLUME CEASAS {data-navmenu="MERCADO INTERNO"}
 ======================================================================
 
 ```{r database4}
@@ -2036,6 +2036,219 @@ ggplotly(g2) %>%
                       orientation = "h", 
                       x=0.35, 
                       y=-0.30,
+                      title=''))
+```
+
+
+CONSUMO UVA {data-navmenu="MERCADO INTERNO"}
+======================================================================
+
+Row {data-height=125}
+-----------------------------------------------------------------------
+
+### per capita com uva em 2018 no Brasil  
+``` {r cons1}
+num <- 0.668
+valueBox(
+  value = paste0(format(num, decimal.mark =  ","), " Kg de Consumo"),
+  color = "green",
+  icon= "fa-arrow-up")
+```
+
+### na região Sul, a maior consumidora em 2018  
+``` {r cons2}
+num <- 0.933
+valueBox(
+  value = paste0(format(num, decimal.mark =  ","), " Kg de Consumo"),
+  color = "green",
+  icon= "fa-arrow-up")
+```
+
+### de consumo de uva no Nordeste em 2018 
+``` {r cons3}
+
+num <- 13.38
+valueBox(
+  value = paste0(format(num, decimal.mark =  ","), " % de Crescimento"),
+  color = "green",
+  icon= "fa-pen")
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Evolução do consumo de uva {.no-title}
+
+```{r consumo_uva1}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+
+#Inicio do Script
+#Pacotes a serem utilizados 
+library(ggplot2)
+library(scales)
+library(plotly)
+library(dplyr)
+library(readxl)
+library(reshape2)
+library(kableExtra)# complex tables
+library(lmtest)
+library(DT)
+library(magrittr)
+
+mycolors2 <- c("darkgreen", "lightblue3", "orange")
+
+#Entrando dados no R
+dados1 <- read_excel('consumo_brasil.xlsx', col_names = TRUE)
+dados1m <- melt(dados1, id.var='Região')
+
+g1 <- ggplot()+
+  geom_col(data=dados1m, aes(x=Região, y=value, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors2)+
+  labs(y= "Consumo (kg) per capita anual", x= "Brasil e Regiões", title='Evolução da  aquisição domiciliar per capita anual de uva no Brasil e regiões',
+  caption = "Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=10)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=10),
+        plot.caption = element_text(hjust = 0, size=10),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g1) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.3, 
+                      y=-0.2,
+                      title=''))
+```
+
+### Evolução da variação do consumo de uva {.no-title}
+
+``````{r consumo_uva2}
+consumo_var <- dados1[,-2]
+variacao <- ((consumo_var[,3]-consumo_var[,2])/consumo_var[,2])*100
+consumo_vara<-cbind(consumo_var, round(variacao,2))
+consumo_var <- consumo_vara[,-c(2:3)]
+colnames(consumo_var) = c('regiao', 'variacao')
+
+mycolor1 <- "orange"
+
+g2<- ggplot(data=consumo_var) +  #estetica vai valer para todos os geom's
+  geom_col(aes(x = regiao, y=round(variacao,2), fill="Variação no Consumo de Uva (%) per capita anual"), lwd=1)+
+  scale_fill_manual(values=mycolor1)+labs(y= "Variação no Consumo de Uva (%)", x= "Estados", title='Variação na aquisição domiciliar per capita anual de uva no Brasil e regiões entre 2008 e 2018',
+       caption = "")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=10)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g2) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.3, 
+                      y=-0.4,
+                      title=''))
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Evolução da variação do consumo de uva {.no-title}
+
+```{r consumo_uva3}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+
+#Inicio do Script
+#Pacotes a serem utilizados 
+library(ggplot2)
+library(scales)
+library(plotly)
+library(dplyr)
+library(readxl)
+
+mycolor1 <- "gold"
+
+#mycolors2 <- c("orange", "lightblue3", "gray44", "gold", "red", "darkgreen")
+
+#Entrando dados no R
+dados2 <- read_excel('consumo_estados.xlsx', col_names = TRUE)
+
+g3 <- ggplot(data=dados2) +  #estetica vai valer para todos os geom's
+  geom_col(aes(x = reorder(regiao, -consumo), y= consumo, fill="Consumo (kg) per capita anual"), lwd=1)+scale_fill_manual(values=mycolor1)+labs(y= "Consumo (kg) per capita anual", x= "Estados", title='Aquisição domiciliar per capita anual de uva por estados - 2018',
+       caption = "")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=8.5, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=10)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=10),
+        plot.caption = element_text(hjust = 0, size=10),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g3) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.3, 
+                      y=-0.50,
+                      title=''))
+```
+
+### Evolução da variação do consumo de uva {.no-title}
+
+```{r consumo_uva4}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+
+#Inicio do Script
+#Pacotes a serem utilizados 
+library(ggplot2)
+library(scales)
+library(plotly)
+library(dplyr)
+library(readxl)
+
+mycolors2 <- c("orange", "lightblue3", "darkblue", "gold", "red", "darkgreen")
+
+#Entrando dados no R
+dados3 <- read_excel('consrenda_brasil.xlsx', col_names = TRUE)
+dados3m <- melt(dados3, id.var='classes')
+
+g4 <- ggplot()+
+  geom_col(data=dados3m, aes(x=variable, y=value, fill=classes), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors2)+
+  labs(y= "Consumo (kg) per capita anual", x= "Brasil e Regiões", title='Aquisição domiciliar per capita anual de uva por faixas de renda - 2018',
+  caption = "Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=10)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=10),
+        plot.caption = element_text(hjust = 0, size=10),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g4) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.0, 
+                      y=-0.45,
                       title=''))
 ```
 
