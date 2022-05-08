@@ -63,8 +63,8 @@ knitr::opts_chunk$set(
 library(lubridate)
 anterior <- as.Date("2022-02-01")
 atual <-  as.Date("2022-03-01")
-data <- as.Date("2022-04-29")
-sem_ano <- 17 #ajustar semanalmente
+data <- as.Date("2022-05-06")
+sem_ano <- 18 #ajustar semanalmente
 mes <- 3
 # Linhas que precisam de ajuste: 71, 104, 107
 ```
@@ -565,15 +565,15 @@ Row {data-height=125}
 num <- tail(preco_arra,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
-  color = "tomato",
-  icon= "fa-arrow-down")
+  color = "green",
+  icon= "fa-arrow-up")
 #arrow-trend-down
 #darkmagenta
 ```
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 7.61
+num <- 7.42
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -581,7 +581,7 @@ valueBox(
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-11.08
+num <-11.12
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -752,7 +752,7 @@ valueBox(
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 6.99
+num <- 6.71
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -760,7 +760,7 @@ valueBox(
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-10.38
+num <-10.29
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -993,7 +993,7 @@ valueBox(
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 3.79
+num <- 3.50
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1001,7 +1001,7 @@ valueBox(
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-6.41
+num <-5.91
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -2259,10 +2259,10 @@ EMPREGO
 #Direcionado o R para o Diretorio a ser trabalhado
 setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_caged')
 
-anterior <- as.Date("2022-02-01")
-atual <-  as.Date("2022-02-01")
+anterior <- as.Date("2022-03-01")
+atual <-  as.Date("2022-03-01")
 #today <- as.Date("2022-02-11")
-today <- as.Date("2022-03-31")
+today <- as.Date("2022-04-29")
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2271,7 +2271,7 @@ library(scales)
 library(plotly)
 
 #Entrando dados no R
-dados1 <- read.csv2('fevereiro_2022.csv', header=T, sep=";", dec = ".")
+dados1 <- read.csv2('marco_2022.csv', header=T, sep=";", dec = ".")
 colnames(dados1)[1] <- 'date'
 dados1$date <- seq(as.Date('2021-01-01'),to=anterior,by='1 month')
 dados1a <- dados1 
@@ -2295,29 +2295,31 @@ saldom$mes <- factor(saldom$mes,levels = c("jan", "fev", "mar", "abr", "mai",
 
 #Entrando com o restante dos dados
 
-load("fevereiro_22_caged.RData")
+#Entrando com o restante dos dados
 
-#dados_01_vsf$sexo <- lapply(dados_01_vsf$sexo, factor)
+load("marco_22_caged.RData")
 
-dados_01_vsf$sexo[dados_01_vsf$sexo == 1] <- 0
-dados_01_vsf$sexo[dados_01_vsf$sexo == 3] <- 1
+#dados_03_vsf$sexo <- lapply(dados_03_vsf$sexo, factor)
 
-dados_01_vsf <- mutate(dados_01_vsf,
+dados_03_vsf$sexo[dados_03_vsf$sexo == 1] <- 0
+dados_03_vsf$sexo[dados_03_vsf$sexo == 3] <- 1
+
+dados_03_vsf <- mutate(dados_03_vsf,
                 sexo = factor(sexo, levels = 0:1, labels = c("Masculino", "Feminino")))
 
 # Mantendo apenas 
 
 #Separando as admissoes e as demissoes
-dados_01_vsf_positivos <-dados_01_vsf%>% filter(saldo_movim=="1")
-dados_01_vsf_negativos <-dados_01_vsf%>% filter(saldo_movim=="-1")
+dados_03_vsf_positivos <-dados_03_vsf%>% filter(saldo_movim=="1")
+dados_03_vsf_negativos <-dados_03_vsf%>% filter(saldo_movim=="-1")
 
 #Mantendo apenas o agronegocio
-secao_positivos <-dados_01_vsf_positivos%>% filter(secao=="A")
-secao_negativos <-dados_01_vsf_negativos%>% filter(secao=="A")
+secao_positivos <-dados_03_vsf_positivos%>% filter(secao=="A")
+secao_negativos <-dados_03_vsf_negativos%>% filter(secao=="A")
 
 #Mantendo apenas a uva
-subclasse_positivos <-dados_01_vsf_positivos%>% filter(subclasse=="132600")
-subclasse_negativos <-dados_01_vsf_negativos%>% filter(subclasse=="132600")
+subclasse_positivos <-dados_03_vsf_positivos%>% filter(subclasse=="132600")
+subclasse_negativos <-dados_03_vsf_negativos%>% filter(subclasse=="132600")
 
 subclasse_positivos <- mutate(subclasse_positivos,
                 grau_instrucao = factor(grau_instrucao, levels = 1:13, 
@@ -2341,7 +2343,7 @@ Row {data-height=125}
 
 ### pela viticultura em `r strftime(atual, format = "%B")` de 2022 
 ``` {r emp1}
-num <- 1903
+num <- 1409
 valueBox(
   value = paste0(num, " Contratados"),
   color = "green",
@@ -2350,7 +2352,7 @@ valueBox(
 
 ### pela viticultura em `r strftime(atual, format = "%B")` de 2022 
 ``` {r emp2}
-num <- 1295
+num <- 1983
 valueBox(
   value = paste0(num, " Demitidos"),
   color = "tomato",
@@ -2359,7 +2361,7 @@ valueBox(
 
 ### Saldo Gerado pela viticultura em `r strftime(atual, format = "%B")` de 2022 
 ``` {r emp3}
-num <- 608
+num <- -574
 valueBox(
   value = paste0(num, " Empregos"),
   color = "green",
