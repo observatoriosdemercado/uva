@@ -63,8 +63,8 @@ knitr::opts_chunk$set(
 library(lubridate)
 anterior <- as.Date("2022-02-01")
 atual <-  as.Date("2022-03-01")
-data <- as.Date("2022-06-03")
-sem_ano <- 22 #ajustar semanalmente
+data <- as.Date("2022-06-10")
+sem_ano <- 23 #ajustar semanalmente
 mes <- 3
 # Linhas que precisam de ajuste: 71, 104, 107
 ```
@@ -565,15 +565,15 @@ Row {data-height=125}
 num <- tail(preco_arra,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
-  color = "green",
-  icon= "fa-arrow-up")
+  color = "tomato",
+  icon= "fa-arrow-down")
 #arrow-trend-down
 #darkmagenta
 ```
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 8.93
+num <- 9.18
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -581,7 +581,7 @@ valueBox(
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-14.33
+num <-13.33
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -746,13 +746,13 @@ Row {data-height=125}
 num <- tail(preco_vitoria,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
-  color = "green",
-  icon= "fa-arrow-up")
+  color = "tomato",
+  icon= "fa-arrow-down")
 ```
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 6.77
+num <- 6.42
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -760,7 +760,7 @@ valueBox(
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-11.32
+num <-12.15
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -987,13 +987,13 @@ Row {data-height=125}
 num <- tail(preco_vitoriase,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
-  color = "tomato",
-  icon= "fa-arrow-down")
+  color = "green",
+  icon= "fa-arrow-up")
 ```
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 2.96
+num <- 3.26
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1001,7 +1001,7 @@ valueBox(
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-7.50
+num <-7.43
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -2259,10 +2259,10 @@ EMPREGO
 #Direcionado o R para o Diretorio a ser trabalhado
 setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_caged')
 
-anterior <- as.Date("2022-03-01")
-atual <-  as.Date("2022-03-01")
+anterior <- as.Date("2022-04-01")
+atual <-  as.Date("2022-04-01")
 #today <- as.Date("2022-02-11")
-today <- as.Date("2022-04-29")
+#today <- as.Date("2022-05-30")
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2271,7 +2271,7 @@ library(scales)
 library(plotly)
 
 #Entrando dados no R
-dados1 <- read.csv2('marco_2022.csv', header=T, sep=";", dec = ".")
+dados1 <- read.csv2('abril_2022.csv', header=T, sep=";", dec = ".")
 colnames(dados1)[1] <- 'date'
 dados1$date <- seq(as.Date('2021-01-01'),to=anterior,by='1 month')
 dados1a <- dados1 
@@ -2297,29 +2297,29 @@ saldom$mes <- factor(saldom$mes,levels = c("jan", "fev", "mar", "abr", "mai",
 
 #Entrando com o restante dos dados
 
-load("marco_22_caged.RData")
+load("abril_22_caged.RData")
 
 #dados_03_vsf$sexo <- lapply(dados_03_vsf$sexo, factor)
 
-dados_03_vsf$sexo[dados_03_vsf$sexo == 1] <- 0
-dados_03_vsf$sexo[dados_03_vsf$sexo == 3] <- 1
+dados_04_vsf$sexo[dados_04_vsf$sexo == 1] <- 0
+dados_04_vsf$sexo[dados_04_vsf$sexo == 3] <- 1
 
-dados_03_vsf <- mutate(dados_03_vsf,
+dados_04_vsf <- mutate(dados_04_vsf,
                 sexo = factor(sexo, levels = 0:1, labels = c("Masculino", "Feminino")))
 
 # Mantendo apenas 
 
 #Separando as admissoes e as demissoes
-dados_03_vsf_positivos <-dados_03_vsf%>% filter(saldo_movim=="1")
-dados_03_vsf_negativos <-dados_03_vsf%>% filter(saldo_movim=="-1")
+dados_04_vsf_positivos <-dados_04_vsf%>% filter(saldo_movim=="1")
+dados_04_vsf_negativos <-dados_04_vsf%>% filter(saldo_movim=="-1")
 
 #Mantendo apenas o agronegocio
-secao_positivos <-dados_03_vsf_positivos%>% filter(secao=="A")
-secao_negativos <-dados_03_vsf_negativos%>% filter(secao=="A")
+secao_positivos <-dados_04_vsf_positivos%>% filter(secao=="A")
+secao_negativos <-dados_04_vsf_negativos%>% filter(secao=="A")
 
 #Mantendo apenas a uva
-subclasse_positivos <-dados_03_vsf_positivos%>% filter(subclasse=="132600")
-subclasse_negativos <-dados_03_vsf_negativos%>% filter(subclasse=="132600")
+subclasse_positivos <-dados_04_vsf_positivos%>% filter(subclasse=="132600")
+subclasse_negativos <-dados_04_vsf_negativos%>% filter(subclasse=="132600")
 
 subclasse_positivos <- mutate(subclasse_positivos,
                 grau_instrucao = factor(grau_instrucao, levels = 1:13, 
@@ -2343,7 +2343,7 @@ Row {data-height=125}
 
 ### pela viticultura em `r strftime(atual, format = "%B")` de 2022 
 ``` {r emp1}
-num <- 1409
+num <- 1451
 valueBox(
   value = paste0(num, " Contratados"),
   color = "green",
@@ -2352,7 +2352,7 @@ valueBox(
 
 ### pela viticultura em `r strftime(atual, format = "%B")` de 2022 
 ``` {r emp2}
-num <- 1983
+num <- 1977
 valueBox(
   value = paste0(num, " Demitidos"),
   color = "tomato",
@@ -2361,10 +2361,10 @@ valueBox(
 
 ### Saldo Gerado pela viticultura em `r strftime(atual, format = "%B")` de 2022 
 ``` {r emp3}
-num <- -574
+num <- -526
 valueBox(
   value = paste0(num, " Empregos"),
-  color = "green",
+  color = "tomato",
   icon= "fa-pen")
 ```
 
@@ -2400,7 +2400,7 @@ g1 <- ggplot() +  #estetica vai valer para todos os geom's
 ggplotly(g1) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.45, 
+                      x=0.35, 
                       y=-0.25,
                       title=''))
 ```
@@ -2464,7 +2464,7 @@ ggplotly(g3)
 
 g4 <- ggplot(data = subclasse_positivos, aes(x = grau_instrucao, y = ..count..)) +
   geom_bar(fill='#1e4971')+
-    scale_y_continuous(limits=c(0, 900), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    scale_y_continuous(limits=c(0, 500), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
 labs(y= "Contratados Uva - VSF", x= "Grau de Instrução", title='Grau de Instrução dos empregos gerados',
        caption = "")+
   theme_minimal() +
