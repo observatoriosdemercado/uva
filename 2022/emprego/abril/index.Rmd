@@ -43,9 +43,7 @@ O saldo de empregos na viticultura em `r strftime(atual, format = "%B de %Y")` n
 
 Dos contratados, 785 são do sexo masculino e 666 do sexo feminino. Em relação à idade, a grande maioria se concentra abaixo dos 27 anos: 240 até 21 anos, 223 até 24 anos, 205 até 27 anos. 
 
-Em relação ao nivel de escolaridade, a maioria das admissões é de pessoas com ensino médio completo (472). Do total de contratados, 32,53% possuem este nível de escolaridade. 
-
-Em relação ao nivel de escolaridade, a maioria das admissões é de pessoas com ensino médio completo (564 ou 40% do total). Este grau de estudo junto com médio incompleto (350) representa a grande parte (62,99%) dos contratados na mangicultura no Vale do São Francisco em `r strftime(atual, format = "%B de %Y")`. 
+Em relação ao nivel de escolaridade, a maioria das admissões é de pessoas com ensino médio completo (472 ou 40% do total). Este grau de estudo junto com médio incompleto (350) representa a grande parte (56,65%) dos contratados na viticultura no Vale do São Francisco em `r strftime(atual, format = "%B de %Y")`. 
 
 <br>
 
