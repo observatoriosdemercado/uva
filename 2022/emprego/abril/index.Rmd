@@ -39,11 +39,13 @@ atual <-  as.Date("2022-04-01")
 
 Os dados utilizados nesta análise são mensais e disponibilizados pelo CAGED (Cadastro Geral de Empregados e Desempregados) até o mês de `r strftime(atual, format = "%B de %Y")`. As variáveis são saldo de empregos, empregos por gênero, contratados por idade e por escolaridade para a cultura da uva. Considera-se o conjunto de municípios da Bahia (Casa Nova, Curaçá, Juazeiro, Sento Sé, Sobradinho, etc. ) e Pernambuco (Belém do S. Francisco, Lagoa Grande, Orocó, Petrolina, etc. ) que formam o Vale do Submédio São Francisco.
 
-O saldo de empregos na viticultura em `r strftime(atual, format = "%B de %Y")` no Vale do São Francisco é negativo de -574 pessoas, ou seja, o total de contratações (1.409) foi menor do que o total de demissões (1.983). Infelizmente, possivelmente como efeito negativo das chuvas que tem afetado o setor no ínicio do ano, o saldo de empregos em 2022 está menor do que em 2021. Em relação ao mesmo mês do ano passado, se tem uma queda no saldo total (375 em 2021 e -574 em 2022). No trimestre, são 1394 empregos líquidos a menos do que no mesmo período de 2021.
+O saldo de empregos na viticultura em `r strftime(atual, format = "%B de %Y")` no Vale do São Francisco é negativo de-526 pessoas, ou seja, o total de contratações (1451) foi menor do que o total de demissões (1977). Em relação ao mesmo mês do ano passado, se tem uma queda no saldo total (-324 em 2021 e -526 em 2022). No quadrimestre, são 1596 empregos líquidos a menos do que no mesmo período de 2021. 
 
-Dos contratados, 835 são do sexo masculino e 574 do sexo feminino. Em relação à idade, a grande maioria se concentra abaixo dos 30 anos: 257 até 21 anos, 189 com mais de 21 até 24 anos, 257 com mais de 24 até 30 anos. 
+Dos contratados, 785 são do sexo masculino e 666 do sexo feminino. Em relação à idade, a grande maioria se concentra abaixo dos 27 anos: 240 até 21 anos, 223 até 24 anos, 205 até 27 anos. 
 
-Em relação ao nivel de escolaridade, a maioria das admissões é de pessoas com ensino médio completo (564 ou 40% do total). Este grau de estudo junto com 6 ao 9 ano do ensino fundamental (225), fundamental completo (271) e médio incompleto (178) representam a grande parte dos contratados na viticultura no Vale do São Francisco em `r strftime(atual, format = "%B de %Y")`. 
+Em relação ao nivel de escolaridade, a maioria das admissões é de pessoas com ensino médio completo (472). Do total de contratados, 32,53% possuem este nível de escolaridade. 
+
+Em relação ao nivel de escolaridade, a maioria das admissões é de pessoas com ensino médio completo (564 ou 40% do total). Este grau de estudo junto com médio incompleto (350) representa a grande parte (62,99%) dos contratados na mangicultura no Vale do São Francisco em `r strftime(atual, format = "%B de %Y")`. 
 
 <br>
 
