@@ -63,8 +63,8 @@ knitr::opts_chunk$set(
 library(lubridate)
 anterior <- as.Date("2022-02-01")
 atual <-  as.Date("2022-03-01")
-data <- as.Date("2022-07-15")
-sem_ano <- 28 #ajustar semanalmente
+data <- as.Date("2022-07-22")
+sem_ano <- 29 #ajustar semanalmente
 mes <- 3
 # Linhas que precisam de ajuste: 71, 104, 107
 ```
@@ -74,7 +74,8 @@ BRASIL {data-navmenu="DADOS GERAIS"}
 
 ```{r database5}
 #Direcionado o R para o Diretorio a ser trabalhado
-setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 options(digits=4)
 today <- as.Date("2022-01-01")
@@ -398,7 +399,8 @@ BRANCA SEEDLESS EMBALADA {data-navmenu="PREÇOS AO PRODUTOR"}
 
 ``` {r database1}
 #Direcionado o R para o Diretorio a ser trabalhado
-setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_Uva')
+#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_Uva')
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 options(digits=4)
 
@@ -565,15 +567,15 @@ Row {data-height=125}
 num <- tail(preco_arra,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
-  color = "tomato",
-  icon= "fa-arrow-down")
+  color = "green",
+  icon= "fa-arrow-up")
 #arrow-trend-down
 #darkmagenta
 ```
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 10.99
+num <- 10.93
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -746,13 +748,13 @@ Row {data-height=125}
 num <- tail(preco_vitoria,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
-  color = "green",
-  icon= "fa-arrow-up")
+  color = "tomato",
+  icon= "fa-arrow-down")
 ```
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 6.88
+num <- 6.63
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -760,7 +762,7 @@ valueBox(
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-11.92
+num <-11.79
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -987,13 +989,13 @@ Row {data-height=125}
 num <- tail(preco_vitoriase,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
-  color = "green",
-  icon= "fa-arrow-up")
+  color = "tomato",
+  icon= "fa-arrow-down")
 ```
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 3.64
+num <- 3.95
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1001,7 +1003,7 @@ valueBox(
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-6.98
+num <-6.66
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1221,7 +1223,8 @@ EXPORTAÇÕES
 
 ```{r tratamento_base}
 #Direcionado o R para o Diretorio a ser trabalhado
-setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -1645,7 +1648,8 @@ VOLUME CEASAS {data-navmenu="MERCADO INTERNO"}
 
 ```{r database4}
 #Direcionado o R para o Diretorio a ser trabalhado
-setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados
@@ -2081,7 +2085,8 @@ Row
 
 ```{r consumo_uva1}
 #Direcionado o R para o Diretorio a ser trabalhado
-setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2168,7 +2173,8 @@ Row
 
 ```{r consumo_uva3}
 #Direcionado o R para o Diretorio a ser trabalhado
-setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2212,7 +2218,8 @@ ggplotly(g3) %>%
 
 ```{r consumo_uva4}
 #Direcionado o R para o Diretorio a ser trabalhado
-setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2257,7 +2264,8 @@ EMPREGO
 
 ```{r database6}
 #Direcionado o R para o Diretorio a ser trabalhado
-setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_caged')
+#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_caged')
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
 
 atual <-  as.Date("2022-05-01")
 
