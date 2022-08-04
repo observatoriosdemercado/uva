@@ -646,7 +646,7 @@ datatable(round(table_volume,3), option = list(
 
 Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa.
 
-Obs: Dados de 2022 apenas para o mês de `r strftime(atual, format = "%B")`.
+Obs: Dados de 2022 até o mês de `r strftime(atual, format = "%B")`.
 
 <br>
 <br>
@@ -967,9 +967,7 @@ g14 <- ggplot(data=dados6)+
 
 ggplotly(g14)
 ```
-Fonte: FOCUS/BCB reprocessado pelo Observatório de Mercado de uva da Embrapa
-
-Obs: Dados disponibilizados de projeções realizadas até o final de abril de 2022
+Fonte: FOCUS/BCB reprocessado pelo Observatório de Mercado de uva da Embrapa.
 
 <br>
 <br>
@@ -993,8 +991,6 @@ datatable(cambiot, option = list(
   columnDefs = list(list(className = 'dt-center', targets = "_all"))))
 ```
 Fonte: FOCUS/BCB reprocessado pelo Observatório de Mercado de uva da Embrapa
-
-Obs: Dados disponibilizados de projeções realizadas até o final de abril de 2022
 
 <br>
 <br>
