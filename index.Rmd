@@ -11,11 +11,11 @@ output:
     #css: styles.css
     vertical_layout: fill #sem barra de rolagem e scroll com barra
     theme: 
-      version: 4
+      version: 5
       bootswatch: bootstrap
       navbar-bg: "#183b8c"
-      bg:        "#183b8c"
-      fg:        "#ffffff"
+      bg:        "#ffffff"
+      fg:        "#183b8c"
 #runtime: shiny
 ---
 
@@ -63,8 +63,8 @@ knitr::opts_chunk$set(
 library(lubridate)
 anterior <- as.Date("2022-02-01")
 atual <-  as.Date("2022-03-01")
-data <- as.Date("2022-08-12")
-sem_ano <- 32 #ajustar semanalmente
+data <- as.Date("2022-08-19")
+sem_ano <- 33 #ajustar semanalmente
 mes <- 3
 # Linhas que precisam de ajuste: 71, 104, 107
 ```
@@ -567,7 +567,7 @@ Row {data-height=125}
 num <- tail(preco_arra,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
-  color = "tomato",
+#  color = "tomato",
   icon= "fa-arrow-down")
 #arrow-trend-down
 #darkmagenta
@@ -575,7 +575,7 @@ valueBox(
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 10.92
+num <- 10.98
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -583,7 +583,7 @@ valueBox(
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-15.07
+num <-15.72
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -748,13 +748,13 @@ Row {data-height=125}
 num <- tail(preco_vitoria,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
-  color = "green",
+#  color = "green",
   icon= "fa-arrow-up")
 ```
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 8.08
+num <- 8.16
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -762,7 +762,7 @@ valueBox(
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-8.06
+num <-7.94
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -989,13 +989,13 @@ Row {data-height=125}
 num <- tail(preco_vitoriase,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
-  color = "green",
+#  color = "green",
   icon= "fa-arrow-up")
 ```
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 4.46
+num <- 4.56
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1003,7 +1003,7 @@ valueBox(
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-5.45
+num <-5.14
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1452,7 +1452,7 @@ Row {data-height=125}
 num <- tail(exporta_uva_volume,1)
 valueBox(
   value = paste0(format(num, decimal.mark =  "."), " Toneladas"),
-  color = "green",
+#  color = "green",
   icon= "fa-arrow-up")
 ```
 
@@ -1848,7 +1848,7 @@ Row {data-height=125}
 num <- tail(uva_mespeba2,1)
 valueBox(
   value = paste0(round(num,1), " Toneladas"),
-  color = "tomato",
+#  color = "tomato",
   icon= "fa-arrow-down")
 ```
 
@@ -2055,7 +2055,7 @@ Row {data-height=125}
 num <- 0.668
 valueBox(
   value = paste0(format(num, decimal.mark =  ","), " Kg de Consumo"),
-  color = "green",
+#  color = "green",
   icon= "fa-arrow-up")
 ```
 
@@ -2064,7 +2064,7 @@ valueBox(
 num <- 0.933
 valueBox(
   value = paste0(format(num, decimal.mark =  ","), " Kg de Consumo"),
-  color = "green",
+#  color = "green",
   icon= "fa-arrow-up")
 ```
 
@@ -2074,7 +2074,7 @@ valueBox(
 num <- 13.38
 valueBox(
   value = paste0(format(num, decimal.mark =  ","), " % de Crescimento"),
-  color = "green",
+#  color = "green",
   icon= "fa-pen")
 ```
 
@@ -2351,7 +2351,7 @@ Row {data-height=125}
 num <- 1838
 valueBox(
   value = paste0(num, " Contratados"),
-  color = "green",
+#  color = "green",
   icon= "fa-arrow-up")
 ```
 
@@ -2360,7 +2360,7 @@ valueBox(
 num <- 1535
 valueBox(
   value = paste0(num, " Demitidos"),
-  color = "tomato",
+#  color = "tomato",
   icon= "fa-arrow-down")
 ```
 
@@ -2369,7 +2369,7 @@ valueBox(
 num <- 303
 valueBox(
   value = paste0(num, " Empregos"),
-  color = "green",
+#  color = "green",
   icon= "fa-pen")
 ```
 
