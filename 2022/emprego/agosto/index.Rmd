@@ -1,0 +1,330 @@
+---
+title: "OBSERVATÓRIO DO MERCADO DE UVA DA EMBRAPA SEMIÁRIDO"
+author: "João Ricardo F. de Lima"
+date: "`r format(Sys.Date(), '%d de %B de %Y.')`"
+output:
+  html_document:
+    theme: flatly
+    number_sections: no
+    highlight: textmate
+    toc: true #cria um sumário das sessões do documento
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+    df_print: paged  #ajusta o formato da tabela
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo       = FALSE,
+  warning    = FALSE,
+  message    = FALSE,
+  comment    = NA,
+  fig.width  = 10,
+  fig.height = 6,
+  fig.align  = "center",
+  comment    = "#",
+  size       = "normalsize"
+  )
+
+library(lubridate)
+atual <-  as.Date("2022-08-01")
+```
+
+<br>
+
+# ANÁLISE DOS EMPREGOS GERADOS NA VITICULTURA EM `r toupper(strftime(atual, format = "%B DE %Y"))`
+
+<br>
+
+Os dados utilizados nesta análise são mensais e disponibilizados pelo CAGED (Cadastro Geral de Empregados e Desempregados) até o mês de `r strftime(atual, format = "%B de %Y")`. As variáveis são saldo de empregos, empregos por gênero, contratados por idade e por escolaridade para a cultura da uva. Considera-se o conjunto de municípios da Bahia (Casa Nova, Curaçá, Juazeiro, Sento Sé, Sobradinho, etc. ) e Pernambuco (Belém do S. Francisco, Lagoa Grande, Orocó, Petrolina, etc.) que formam o Vale do Submédio São Francisco.
+
+O saldo de empregos na viticultura em `r strftime(atual, format = "%B de %Y")` no Vale do São Francisco é de 1.057 pessoas, ou seja, o total de contratações (2.636) foi maior do que o total de demissões (1.579). Em relação ao mesmo mês do ano passado, se tem uma queda no saldo total (1.955 em 2021 e 1.057 em 2022). Nos primeiros oito meses, são 2.649 empregos líquidos a menos do que no mesmo período de 2021. 
+
+Dos contratados, 1.066 são do sexo masculino e 1.570 do sexo feminino. Em relação à idade, a maioria se concentra abaixo dos 33 anos: 455 até 21 anos, 380 até 24 anos, 281 até 27 anos, 219 até 30 anos e 207 até 33 anos. 
+
+Sobre o nivel de escolaridade, a maioria das admissões é de pessoas com ensino médio completo (1.059 ou 40,17% do total). Este grau de estudo junto com médio incompleto (465), fundamental completo (352) e 6 a 9 ano do fundamental (415), representam a grande parte (86,48%) dos contratados na viticultura no Vale do São Francisco em `r strftime(atual, format = "%B de %Y")`. 
+
+<br>
+
+# 1. EVOLUÇÃO DO SALDO DE EMPREGOS GERADOS NA VITICULTURA {.tabset .tabset-fade}
+
+<br>
+
+```{r tratamento_base}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
+
+#Inicio do Script
+#Pacotes a serem utilizados 
+library(ggplot2)
+library(scales)
+library(plotly)
+library(magrittr)# pipe operations
+library(DT)
+library(tidyverse)
+
+#Entrando dados no R
+dados1 <- read.csv2('agosto_2022.csv', header=T, sep=";", dec = ".")
+colnames(dados1)[1] <- 'date'
+dados1$date <- seq(as.Date('2021-01-01'),to=atual,by='1 month')
+dados1a <- dados1 
+dados1a$ano <- strftime(dados1a$date, format="%Y") 
+dados1a$mes <- strftime(dados1a$date, format="%B") 
+
+saldo_21 <- dados1a %>% filter(ano=='2021')
+
+saldo_21 <- saldo_21 %>%
+  select(c(ano, mes, Saldo_uva))
+
+saldo_22 <- dados1a %>% filter(ano=='2022')
+
+saldo_22 <- saldo_22 %>%
+  select(c(ano, mes, Saldo_uva))
+
+saldom <- rbind(saldo_21, saldo_22)
+saldom$mes <- factor(saldom$mes,levels = c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", 
+                                           "Junho", "Julho", "Agosto", "Setembro", "Outubro",
+                                           "Novembro", "Dezembro"))
+
+total_21 <- dados1a %>%
+  select(c(ano, mes, Contratados_Uva, Demitidos_Uva, Saldo_uva)) %>% 
+  filter(ano=='2021')
+
+total_21$mes <- factor(total_21$mes,levels = c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", 
+                                           "Junho", "Julho", "Agosto", "Setembro", "Outubro",
+                                           "Novembro", "Dezembro"))
+
+total_22 <- dados1a %>%
+  select(c(ano, mes, Contratados_Uva, Demitidos_Uva, Saldo_uva))%>% 
+  filter(ano=='2022')
+
+total_22$mes <- factor(total_22$mes,levels = c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", 
+                                           "Junho", "Julho", "Agosto", "Setembro", "Outubro",
+                                           "Novembro", "Dezembro"))
+
+totalm <- merge(total_21, total_22, by="mes", all = T)
+
+totalm <- totalm %>%
+  select(c(mes, Contratados_Uva.x, Demitidos_Uva.x, Contratados_Uva.y, Demitidos_Uva.y, Saldo_uva.x, Saldo_uva.y))
+
+totalm <- totalm %>%
+  rename("Contratados 2021" = Contratados_Uva.x,
+         "Demitidos 2021" = Demitidos_Uva.x,
+         "Contratados 2022" = Contratados_Uva.y,
+         "Demitidos 2022" = Demitidos_Uva.y,
+         "Saldo 2021" = Saldo_uva.x,
+         "Saldo 2022" = Saldo_uva.y)
+
+#Entrando com o restante dos dados
+
+load("agosto_22_caged.RData")
+
+#dados_03_vsf$sexo <- lapply(dados_03_vsf$sexo, factor)
+
+dados_08_vsf$sexo[dados_08_vsf$sexo == 1] <- 0
+dados_08_vsf$sexo[dados_08_vsf$sexo == 3] <- 1
+
+dados_08_vsf <- mutate(dados_08_vsf,
+                sexo = factor(sexo, levels = 0:1, labels = c("Masculino", "Feminino")))
+
+# Mantendo apenas 
+
+#Separando as admissoes e as demissoes
+dados_08_vsf_positivos <-dados_08_vsf%>% filter(saldo_movim=="1")
+dados_08_vsf_negativos <-dados_08_vsf%>% filter(saldo_movim=="-1")
+
+#Mantendo apenas o agronegocio
+secao_positivos <-dados_08_vsf_positivos%>% filter(secao=="A")
+secao_negativos <-dados_08_vsf_negativos%>% filter(secao=="A")
+
+#Mantendo apenas a uva
+subclasse_positivos <-dados_08_vsf_positivos%>% filter(subclasse=="132600")
+subclasse_negativos <-dados_08_vsf_negativos%>% filter(subclasse=="132600")
+
+subclasse_positivos <- mutate(subclasse_positivos,
+                grau_instrucao = factor(grau_instrucao, levels = 1:13, 
+                                        labels = c("Analfabeto",
+                                                   "Até 5ª Incompleto",
+                                                   "5ª Completo Fundamental",
+                                                   "6ª a 9ª Fundamental",
+                                                   "Fundamental Completo",
+                                                   "Médio Incompleto",
+                                                   "Médio Completo",
+                                                   "Superior Incompleto",
+                                                   "Superior Completo",
+                                                   "Mestrado",
+                                                   "Doutorado",
+                                                   "Pós-Graduação completa",
+                                                   "Não Identificado")))
+
+```
+
+## GRÁFICO
+
+```{r emp1}
+#Gráfico com Ggplot2
+
+mycolor1 <- "gold"
+mycolors2 <- c("orange", "lightblue3")
+
+g1 <- ggplot() +  #estetica vai valer para todos os geom's
+  geom_col(data=saldom, aes(x=mes, y=Saldo_uva, fill=ano), size=2, width = 0.9, position = "dodge")+
+    scale_fill_manual(values=mycolors2)+
+    labs(y= "Saldo de Emprego (unidade)", x= "Meses do Ano", title='',
+       caption = "")+
+    scale_y_continuous(limits=c(-2600, 2200), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  theme_minimal()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=30, hjust=0.5, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=1, size=10, margin = margin(l=20)),
+        axis.title.x = element_text(size=10, face = "bold", margin = margin(b=20)),
+        axis.title.y = element_text(size=10, face = "bold", margin = margin(l=20)),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g1) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.45, 
+                      y=-0.25,
+                      title=''))
+```
+
+## TABELA
+**VISUALIZAÇÃO DOS DADOS EM TABELA**
+
+```{r emp1a}
+#tableP <-table[,-1]
+#rmarkdown::paged_table(round(tableD,2))
+datatable(totalm, option = list(
+  autoWidth = TRUE,
+  pageLength = 12))
+```
+Fonte: CAGED reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+<br>
+
+<br>
+
+# 2. DISTRIBUIÇÃO DOS EMPREGOS GERADOS POR GÊNERO
+
+<br>
+
+
+``` {r emp2}
+### Histograma (Orçamentos de produção)
+
+### Histograma
+
+g2 <- ggplot(data = subclasse_positivos, aes(x = sexo, y = ..count..)) +
+  geom_bar(fill='steelblue')+
+    labs(y= "Contratados Uva - VSF", x= "Gênero", title='',
+       caption = "")+
+  theme_minimal()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=1, size=10, margin = margin(l=20)),
+        axis.title.x = element_text(size=10, face = "bold", margin = margin(b=20)),
+        axis.title.y = element_text(size=10, face = "bold", margin = margin(l=20)),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g2)
+```
+
+<br>
+
+# 3. DISTRIBUIÇÃO DOS EMPREGOS GERADOS POR IDADE
+
+<br>
+
+``` {r emp3}
+### Histograma (Orçamentos de produção)
+g3 <- ggplot(data=subclasse_positivos, aes(x=idade))+
+  geom_histogram(binwidth=3, fill="#69b3a2", color="#e9ecef", alpha=0.9)+
+    scale_x_continuous(limits=c(18, 65), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    labs(y= "Contratados Uva - VSF", x= "Idades", title='',
+       caption = "")+
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=1, size=10, margin = margin(l=20)),
+        axis.title.x = element_text(size=10, face = "bold", margin = margin(b=20)),
+        axis.title.y = element_text(size=10, face = "bold", margin = margin(l=20)),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+  
+ggplotly(g3)
+```
+
+<br>
+
+# 4. GRAU DE INSTRUÇÃO DOS EMPREGOS GERADOS
+
+<br>
+
+
+``` {r emp4}
+### Histograma (Orçamentos de produção)
+
+g4 <- ggplot(data = subclasse_positivos, aes(x = grau_instrucao, y = ..count..)) +
+  geom_bar(fill='steelblue')+
+    scale_y_continuous(limits=c(0, 1200), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+labs(y= "Contratados", x= "Grau de Instrução", title='',
+       caption = "")+
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=30, hjust=1, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=1, size=14, margin = margin(l=20)),
+        axis.title.x = element_text(size=14, face = "bold", margin = margin(b=20)),
+        axis.title.y = element_text(size=14, face = "bold", margin = margin(l=20)),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=16, face="italic"),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+  
+ggplotly(g4)  
+```
+
+# INFORMAÇÕES
+<br>
+<br>
+
+<center>![](logo_uva.jpg){width=16cm}</center>
+
+<br>
+<br>
+
+<center> João Ricardo F. de Lima </center>
+<center> Email: joao.ricardo@embrapa.br </center>
+
+<br>
+
+<center> [https://www.embrapa.br/observatorio-da-uva](https://www.embrapa.br/observatorio-da-uva) </center>
+
+<center> [Dashboard Mercado de Uva](https://bit.ly/3OgmyKp) </center>
+
+
+<br>
+
+<center> Telefones: </center>
+<center> 87-3866-3667 </center> 
+<center> 87-99961-5799 </center>
+
+<br>
+
+<center>![](logo_embrapa.jpg){width=6cm}</center>
+
+<br>
+<br>
