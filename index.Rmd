@@ -63,8 +63,8 @@ knitr::opts_chunk$set(
 library(lubridate)
 anterior <- as.Date("2022-02-01")
 atual <-  as.Date("2022-03-01")
-data <- as.Date("2022-09-30")
-sem_ano <- 39 #ajustar semanalmente
+data <- as.Date("2022-10-07")
+sem_ano <- 40 #ajustar semanalmente
 mes <- 3
 # Linhas que precisam de ajuste: 71, 104, 107
 ```
@@ -583,7 +583,7 @@ valueBox(
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 7.54
+num <- 7.83
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -591,7 +591,7 @@ valueBox(
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-14.09
+num <-12.63
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -762,7 +762,7 @@ valueBox(
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 7.38
+num <- 8.12
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -770,7 +770,7 @@ valueBox(
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-10.95
+num <-10.41
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1003,7 +1003,7 @@ valueBox(
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 3.78
+num <- 3.74
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1011,7 +1011,7 @@ valueBox(
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-7.08
+num <-6.21
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1264,10 +1264,10 @@ checkX13()
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2022-07-01")
-atual <-  as.Date("2022-08-01")
+anterior <- as.Date("2022-08-01")
+atual <-  as.Date("2022-09-01")
 #today <- as.Date("2022-02-11")
-mes <- 8
+mes <- 9
 
 #Entrando dados no R
 dados1 <- read.csv2('exportacoes_2016_2022.csv', header=T, sep=";", dec = ".")
@@ -1466,7 +1466,7 @@ valueBox(
 
 ### Volume Exportação em `r strftime(atual, format = "%B")` de 2021 
 ``` {r d2}
-num <- 879
+num <- 1993
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
@@ -1474,7 +1474,7 @@ valueBox(
 
 ### Volume Exportação em `r strftime(atual, format = "%B")` de 2020 
 ``` {r d3}
-num <- 505
+num <- 3382
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
