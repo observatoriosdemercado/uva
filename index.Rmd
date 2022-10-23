@@ -62,9 +62,9 @@ knitr::opts_chunk$set(
 
 library(lubridate)
 anterior <- as.Date("2022-02-01")
-atual <-  as.Date("2022-10-07")
-data <- as.Date("2022-10-14")
-sem_ano <- 41 #ajustar semanalmente
+atual <-  as.Date("2022-10-14")
+data <- as.Date("2022-10-21")
+sem_ano <- 42 #ajustar semanalmente
 mes <- 3
 # Linhas que precisam de ajuste: 71, 104, 107
 ```
@@ -583,7 +583,7 @@ valueBox(
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 7.51
+num <- 7.05
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -591,7 +591,7 @@ valueBox(
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-13.49
+num <-13.62
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -757,12 +757,12 @@ num <- tail(preco_vitoria,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
 #  color = "green",
-  icon= "fa-arrow-up")
+  icon= "fa-arrow-down")
 ```
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 7.64
+num <- 7.68
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -770,7 +770,7 @@ valueBox(
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-10.65
+num <-10.78
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -998,12 +998,12 @@ num <- tail(preco_vitoriase,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
 #  color = "green",
-  icon= "fa-arrow-down")
+  icon= "fa-arrow-up")
 ```
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 4.04
+num <- 4.11
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1011,7 +1011,7 @@ valueBox(
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-6.43
+num <-6.94
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
