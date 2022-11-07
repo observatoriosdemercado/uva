@@ -63,8 +63,8 @@ knitr::opts_chunk$set(
 library(lubridate)
 anterior <- as.Date("2022-02-01")
 atual <-  as.Date("2022-10-21")
-data <- as.Date("2022-10-28")
-sem_ano <- 43 #ajustar semanalmente
+data <- as.Date("2022-11-04")
+sem_ano <- 44 #ajustar semanalmente
 mes <- 3
 # Linhas que precisam de ajuste: 71, 104, 107
 ```
@@ -576,14 +576,14 @@ num <- tail(preco_arra,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
 #  color = "tomato",
-  icon= "fa-arrow-down")
+  icon= "fa-arrow-up")
 #arrow-trend-down
 #darkmagenta
 ```
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 8.20
+num <- 8.99
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -591,7 +591,7 @@ valueBox(
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-14.66
+num <-14.52
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -757,12 +757,12 @@ num <- tail(preco_vitoria,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
 #  color = "green",
-  icon= "fa-arrow-up")
+  icon= "fa-arrow-down")
 ```
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 7.71
+num <- 7.78
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -770,7 +770,7 @@ valueBox(
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-10.96
+num <-10.78
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1003,7 +1003,7 @@ valueBox(
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 3.48
+num <- 3.94
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -2275,7 +2275,7 @@ EMPREGO
 #setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_caged')
 setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
 
-atual <-  as.Date("2022-08-01")
+atual <-  as.Date("2022-09-01")
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2284,7 +2284,7 @@ library(scales)
 library(plotly)
 
 #Entrando dados no R
-dados1 <- read.csv2('agosto_2022.csv', header=T, sep=";", dec = ".")
+dados1 <- read.csv2('setembro_2022.csv', header=T, sep=";", dec = ".")
 colnames(dados1)[1] <- 'date'
 dados1$date <- seq(as.Date('2021-01-01'),to=atual,by='1 month')
 dados1a <- dados1 
@@ -2310,29 +2310,29 @@ saldom$mes <- factor(saldom$mes,levels = c("Jan", "Fev", "Mar", "Abr", "Mai",
 
 #Entrando com o restante dos dados
 
-load("agosto_22_caged.RData")
+load("setembro_22_caged.RData")
 
 #dados_03_vsf$sexo <- lapply(dados_03_vsf$sexo, factor)
 
-dados_08_vsf$sexo[dados_08_vsf$sexo == 1] <- 0
-dados_08_vsf$sexo[dados_08_vsf$sexo == 3] <- 1
+dados_09_vsf$sexo[dados_09_vsf$sexo == 1] <- 0
+dados_09_vsf$sexo[dados_09_vsf$sexo == 3] <- 1
 
-dados_08_vsf <- mutate(dados_08_vsf,
+dados_09_vsf <- mutate(dados_09_vsf,
                 sexo = factor(sexo, levels = 0:1, labels = c("Masculino", "Feminino")))
 
 # Mantendo apenas 
 
 #Separando as admissoes e as demissoes
-dados_08_vsf_positivos <-dados_08_vsf%>% filter(saldo_movim=="1")
-dados_08_vsf_negativos <-dados_08_vsf%>% filter(saldo_movim=="-1")
+dados_09_vsf_positivos <-dados_09_vsf%>% filter(saldo_movim=="1")
+dados_09_vsf_negativos <-dados_09_vsf%>% filter(saldo_movim=="-1")
 
 #Mantendo apenas o agronegocio
-secao_positivos <-dados_08_vsf_positivos%>% filter(secao=="A")
-secao_negativos <-dados_08_vsf_negativos%>% filter(secao=="A")
+secao_positivos <-dados_09_vsf_positivos%>% filter(secao=="A")
+secao_negativos <-dados_09_vsf_negativos%>% filter(secao=="A")
 
 #Mantendo apenas a uva
-subclasse_positivos <-dados_08_vsf_positivos%>% filter(subclasse=="132600")
-subclasse_negativos <-dados_08_vsf_negativos%>% filter(subclasse=="132600")
+subclasse_positivos <-dados_09_vsf_positivos%>% filter(subclasse=="132600")
+subclasse_negativos <-dados_09_vsf_negativos%>% filter(subclasse=="132600")
 
 subclasse_positivos <- mutate(subclasse_positivos,
                 grau_instrucao = factor(grau_instrucao, levels = 1:13, 
