@@ -1264,10 +1264,10 @@ checkX13()
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2022-08-01")
-atual <-  as.Date("2022-09-01")
+anterior <- as.Date("2022-09-01")
+atual <-  as.Date("2022-10-01")
 #today <- as.Date("2022-02-11")
-mes <- 9
+mes <- 10
 
 #Entrando dados no R
 dados1 <- read.csv2('exportacoes_2016_2022.csv', header=T, sep=";", dec = ".")
@@ -1466,7 +1466,7 @@ valueBox(
 
 ### Volume Exportação em `r strftime(atual, format = "%B")` de 2021 
 ``` {r d2}
-num <- 1993
+num <- 19850
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
@@ -1474,7 +1474,7 @@ valueBox(
 
 ### Volume Exportação em `r strftime(atual, format = "%B")` de 2020 
 ``` {r d3}
-num <- 3382
+num <- 14154
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
