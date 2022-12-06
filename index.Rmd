@@ -1264,10 +1264,10 @@ checkX13()
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2022-09-01")
-atual <-  as.Date("2022-10-01")
+anterior <- as.Date("2022-10-01")
+atual <-  as.Date("2022-11-01")
 #today <- as.Date("2022-02-11")
-mes <- 10
+mes <- 11
 
 #Entrando dados no R
 dados1 <- read.csv2('exportacoes_2016_2022.csv', header=T, sep=";", dec = ".")
@@ -1466,7 +1466,7 @@ valueBox(
 
 ### Volume Exportação em `r strftime(atual, format = "%B")` de 2021 
 ``` {r d2}
-num <- 19850
+num <- 21976
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
@@ -1474,7 +1474,7 @@ valueBox(
 
 ### Volume Exportação em `r strftime(atual, format = "%B")` de 2020 
 ``` {r d3}
-num <- 14154
+num <- 14912
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
@@ -1493,9 +1493,9 @@ mycolor1 <- "gold"
 mycolor2 <- "red"
 
 g1 <- ggplot(data=dados1) +  #estetica vai valer para todos os geom's
-  geom_col(aes(x=Ano, y=Toneladas, fill="Mil Toneladas"), lwd=1)+
+  geom_col(aes(x=Ano, y=Toneladas, fill="Toneladas"), lwd=1)+
     scale_fill_manual(values=mycolor1)+
-  geom_line(aes(x=Ano, y=Valor, colour="Milhões de Dólares"), size=2)+
+  geom_line(aes(x=Ano, y=Valor, colour="Mil de Dólares"), size=2)+
   scale_colour_manual(values=mycolor2)+
   labs(y= "US$ Mil / Ton", x= "Anos", title='Receita de Exportação e Volume Exportado de Uva: 2016 a 2022',
        caption = "") +
