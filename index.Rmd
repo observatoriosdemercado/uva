@@ -62,7 +62,6 @@ knitr::opts_chunk$set(
 
 library(lubridate)
 anterior <- as.Date("2022-02-01")
-atual <-  as.Date("2022-10-21")
 data <- as.Date("2022-12-09")
 sem_ano <- 49 #ajustar semanalmente
 mes <- 3
@@ -1686,122 +1685,35 @@ checkX13()
 
 options(digits=4)
 
-today <- as.Date("2022-02-01")
-atual <-  as.Date("2022-02-01")
-mes <- 2
+atual <-  as.Date("2022-09-01")
+
+mycolors <- c("lightblue3", "gray44", "gold")
+mycolors2 <- c("lightblue3", "orange")
+mycolors3 <- c("blue", "orange")
 
 #Dados de uva por estados
 
-dados3 <- read_excel("ceasas_mi_total22fev.xlsx", col_names = FALSE)
-dados3 <- dados3[,-1]
+#Entrando dados no R
+dados1 <- read_excel('ceagesp_total.xlsx', col_names = TRUE)
+dados1m <- melt(dados1, id.var='Anos')
 
-#Transpor a base de dados
-dados3 <- as.data.frame(t(dados3))
-colnames(dados3) <-c ('ano','mes','produto','origem','unidade','quilos')
-dados3 <- dados3 %>%
-  mutate(quilos=as.numeric(quilos))
+#Entrando dados no R
+dados2 <- read_excel('ceagesp_variedades.xlsx', col_names = TRUE)
+dados2m <- melt(dados2, id.var='Anos')
 
-dados3a <- dados3 %>% filter(ano<2022)
-dados3b <- dados3 %>% filter(ano==2022 & mes<=2)
-dados3c <- rbind(dados3a, dados3b)
+#Entrando dados no R
+uva_mespeba <- read_excel('ceagesp_tempo.xlsx', col_names = TRUE)
 
-dados3 <- dados3c
-
-#Total de uvas em todos os CEASAS todas as UF
-
-uva_anual_all <- dados3 %>% group_by(ano) %>% summarise(quilos=sum(quilos))
-uva_anual_all$todas_UF <- (uva_anual_all$quilos)/1000 #transformando em Toneladas
-uva_anual_all <- uva_anual_all[,-2]
-
-#Total de uvas em todos os CEASAS PE + BA
-
-uva_anual_pe <- dados3 %>% filter(origem=='PE') %>% group_by(ano) %>% summarise(quilos=sum(quilos))
-uva_anual_ba <- dados3 %>% filter(origem=='BA') %>% group_by(ano) %>% summarise(quilos=sum(quilos))
-
-uva_total_peba <- tibble(uva_anual_pe$quilos + uva_anual_ba$quilos)
-uva_total_peba <- uva_total_peba/1000 #passando o volume para toneladas
-colnames(uva_total_peba)[1]<-'pe+ba'
-
-#Juntando as bases de dados Total e PEBA
-uva_anual_all <- tibble(uva_anual_all, uva_total_peba)
-uva_anual_all$ano <- seq(as.Date('2017-01-01'),to=atual,by='1 year')
-uva_anual_allm <- melt(uva_anual_all, id.var='ano')
-
-#dados4 <- read_excel("ceasas_mi_peba22.xlsx", col_names = FALSE)
-#dados4 <- dados4[,-1]
-#dados4 <- as.data.frame(t(dados4))
-#colnames(dados4) <-c ('ano','produto','origem','unidade','quilos')
-
-#dados4 <- dados4 %>%
-#  mutate(quilos=as.numeric(quilos))
-
-#uva_anual_pe <- dados4 %>% filter(origem=='PE')
-#uva_anual_ba <- dados4 %>% filter(origem=='BA')
-
-#uva_total_peba <- tibble(uva_anual_pe$quilos + uva_anual_ba$quilos)
-#uva_total_peba <- uva_total_peba/1000 #passando o volume para toneladas
-#colnames(uva_total_peba)[1]<-'pe+ba'
-
-# Variação da oferta
-
-#dados5 <- read_excel("ceasas_mi_peba_mensal22.xlsx", col_names = FALSE)
-#dados5 <- dados5[,-1]
-
-#Transpor a base de dados
-#dados5 <- as.data.frame(t(dados5))
-#colnames(dados5) <-c ('ano','produto','mes','origem','unidade','quilos')
-#dados5 <- dados5 %>%
-#  mutate(quilos=as.numeric(quilos))
-
-# Geração da variável
-uva_mespe <-  dados3 %>%
-  filter(origem == "PE")
-
-uva_mesba <-  dados3 %>%
-  filter(origem == "BA")
-
-uva_mespeba <- tibble((uva_mespe$quilos + uva_mesba$quilos)/1000)
-uva_mespeba$mes <- seq(as.Date('2017-01-01'),to=atual,by='1 month')
-uva_mespeba$ano <- uva_mespe$ano
-colnames(uva_mespeba)[1] <-'toneladas'
-
-totalpeba_20 <- uva_mespeba %>% filter(ano=='2020')
-totalpeba_21 <- uva_mespeba %>% filter(ano=='2021')
-totalpeba_22 <- uva_mespeba %>% filter(ano=='2022')
-
-totalpeba_var20 <- as.matrix(totalpeba_20$toneladas)
-totalpeba_var21 <- as.matrix(totalpeba_21$toneladas)
-totalpeba_var22 <- matrix(NA, nrow=12, ncol=1)
-totalpeba_var222 <-  as.matrix(totalpeba_22$toneladas)
-
-#Calculo das variações
-variacaopeba_2120 <- ((totalpeba_var21/totalpeba_var20)-1)*100
-
-# Para 2022 comparando com 2021
-for(i in 1:mes){
-  totalpeba_var22[i,1] = totalpeba_var222[i,1]
-}
-
-variacaopeba_2221 <- ((totalpeba_var22/totalpeba_var21)-1)*100
-
-#meses <- seq(1:12)
-variacao_totalpeba <- data.frame(date2, variacaopeba_2120, variacaopeba_2221)
-colnames(variacao_totalpeba) = c('Meses', 'Ano 2021', 'Ano 2022')
-
-variacao_totalpebat <- melt(variacao_totalpeba, id.var='Meses')
+data <- as.Date("2022-09-01") #ajustar semanalmente
+uva_mespeba$date <- seq(as.Date('2012-01-01'),to=data,by='1 month') 
 
 #Tendencia PEBA
-uva_mespeba2 <- ts(uva_mespeba$toneladas, start = c(2017,1), freq=12)
+uva_mespeba2 <- ts(uva_mespeba$toneladas, start = c(2012,1), freq=12)
 trend_peba <- cmav(uva_mespeba2, outplot=F)
 
-#Sazonalidade PEBA
-decompa_peba<-decompose(uva_mespeba2, type = 'multiplicative')
-sazonal_peba <- decompa_peba$figure
-meses <- seq(as.Date("2021/1/1"), by = "month", length.out = 12)
-sazonalpeba_graph <- tibble(meses, sazonal_peba)
-
-
 #Comparações com os anos e entre as médias/max/min
+
+meses <- seq(as.Date("2021/1/1"), by = "month", length.out = 12)
 
 peba_2019 <- window(uva_mespeba2, end=c(2019,12))
 seaspeba_19<-seasplot(peba_2019, trend=F, outplot = F)
@@ -1813,14 +1725,16 @@ peba_2021 <- window(uva_mespeba2, end=c(2021,12))
 #seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
 #medias21 <- colMeans(seas21$season)
 
-peba_22 <- as.matrix(tail(uva_mespeba2,mes)) #ajustar mensalmente
+peba_22 <- as.matrix(tail(uva_mespeba2,9)) #ajustar mensalmente
 peba_2022 <- matrix(NA, nrow=12, ncol=1)
+
+mes<-9
 
 for(i in 1:mes){
   peba_2022[i,1] = peba_22[i,1]
 }
 
-#Como só se tem até a semana 12
+#Como só se tem até o mes 12
 mediaspeba_19 <- mediaspeba_19[1:12]
 
 matrixpeba = matrix(NA, nrow=12, ncol=2)
@@ -1843,9 +1757,7 @@ tablepeba_b <- table_peba[,-c(2,3,4)]
 
 tablepeba_a2 <- melt(tablepeba_a, id.var='Meses')
 tablepeba_b2 <- melt(tablepeba_b, id.var='Meses')
-mycolors <- c("lightblue3", "gray44", "gold")
-mycolor1 <- "gold"
-mycolors2 <- c("orange", "lightblue3")
+
 ```
 
 Row {data-height=125}
@@ -1885,29 +1797,27 @@ Row
 ## Gráfico Total de uvas e uvas PE+BA
 
 g1 <- ggplot()+
-  geom_col(data=uva_anual_allm, aes(x=ano, y=value, fill=variable), lwd=1, position = "dodge")+
-  scale_fill_manual(values=mycolors2)+
-  scale_y_continuous(limits = c(0, 150000), n.breaks = 10)+
-  scale_x_date(date_breaks = "1 year", labels = date_format("%Y"))+
-  labs(y= "Toneladas", x= "Anos", title='Volume Total comercializado de uva (CEASAS):2017 a 2022',
-       caption = "Fonte: PROHORT/CONAB reprocessado pelo Observatório de Mercado de uva da Embrapa")+
+  geom_col(data=dados1m, aes(x=Anos, y=value, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors)+
+   scale_x_continuous(breaks = seq(2012, 2022, by = 1))+
+  labs(y= "Toneladas", x= "Anos", title='Volume total comercializado de Uva (CEAGESP): 2012 a 2022',
+  caption = "Fonte: CEAGESP reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
   theme_minimal()+
-  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=20)),
-        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=20)),
-        axis.title.y = element_text(size=8, face = "bold"),
-        axis.title.x = element_text(size=8, face = "bold"),
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=10)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        plot.title = element_text(hjust = 0.5, size=12),
-        plot.caption = element_text(hjust = 0, size=8),
+        plot.title = element_text(hjust = 0.5, size=11),
+        plot.caption = element_text(hjust = 0, size=10),
         legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=8)) # Definindo posição da legenda
+        legend.text=element_text(size=9)) # Definindo posição da legenda
 
 ggplotly(g1) %>%
   layout(legend = list(
                       orientation = "h", 
                       x=0.30, 
-                      y=-0.30,
+                      y=-0.19,
                       title=''))
 ```
 
@@ -1916,15 +1826,15 @@ ggplotly(g1) %>%
 ```{r mi3}
 #Gráfico com Ggplot2 - Tendencia
 
-g3 <- ggplot(data=uva_mespeba, aes(x=mes)) +  #estetica vai valer para todos os geom's
-  geom_line(aes(y=toneladas, colour="TONELADAS"), lwd=1)+
+g3 <- ggplot(data=uva_mespeba, aes(x=date)) +  #estetica vai valer para todos os geom's
+  geom_line(aes(y=toneladas, colour="TONELADAS"), lwd=0.5)+
   geom_line(aes(y=trend_peba, colour="TENDÊNCIA"), lwd=1)+
   scale_colour_manual("",
                       breaks = c("TONELADAS", "TENDÊNCIA"),
-                      values = c("blue", "red")) +
-  labs(y= "Quantidade (T)", x= "Meses do Ano", title='Tendência do Volume comercializado de uva (CEASAS)',
-       caption = "Fonte: CONAB reprocessado pelo Observatório de Mercado de uva da Embrapa")+
-  scale_y_continuous(limits=c(0,12000), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+                      values = c("black", "tomato"))  +
+  labs(y= "Quantidade (T)", x= "Meses do Ano", title='Tendência do Volume comercializado de Uva (CEAGESP)',
+       caption = "Fonte: CEAGESP reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  scale_y_continuous(limits=c(0,4500), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   scale_x_date(date_breaks = "1 year",
                labels = date_format("%Y"))+
   theme_classic()+ #Definindo tema
@@ -1932,7 +1842,7 @@ g3 <- ggplot(data=uva_mespeba, aes(x=mes)) +  #estetica vai valer para todos os 
         axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
         axis.title.x = element_text(size=8, face = "bold", margin = margin(b=0)),
         axis.title.y = element_text(size=8, face = "bold", margin = margin(l=20)),
-        plot.title = element_text(hjust = 0.5, size=12),
+        plot.title = element_text(hjust = 0.5, size=11),
         plot.caption = element_text(hjust = 0, size=8),
         legend.position = "bottom", legend.title = element_blank(),
         legend.text=element_text(size=8)) # Definindo posição da legenda
@@ -1940,51 +1850,19 @@ g3 <- ggplot(data=uva_mespeba, aes(x=mes)) +  #estetica vai valer para todos os 
 ggplotly(g3) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.30, 
-                      y=-0.30,
-                      title=''))
-```
-
-### Sazonalidade do Volume comercializado de uva {.no-title}
-
-```{r mi4}
-# Gráfico da Sazonalidade
-
-g4 <- ggplot(data=sazonalpeba_graph)+
-  geom_line(aes(x=meses, y=sazonal_peba), color="blue", size=1.5)+
-  scale_y_continuous(limits=c(0,1.5), n.breaks = 5, expand = expansion(add=c(0,0.5)),
-                     labels=number_format(accuracy = 0.1)) +
-  scale_x_date(date_breaks = "1 month",
-               labels = date_format("%b"))+
-  labs(y= "", x= "Meses de cada Ano", title='Sazonalidade do Volume comercializado de uva (CEASAS)',
-       caption = "Observatório de Mercado de uva da Embrapa")+
-  theme_minimal()+
-  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=20)),
-        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=20)),
-        axis.title.y = element_text(size=8, face = "bold"),
-        axis.title.x = element_text(size=8, face = "bold"),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.title = element_text(hjust = 0.5, size=12),
-        plot.caption = element_text(hjust = 0, size=8),
-        legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=8)) # Definindo posição da legenda
-
-ggplotly(g4) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.30, 
-                      y=-0.25,
+                      x=0.35, 
+                      y=-0.18,
                       title=''))
 ```
 
 Row
 -----------------------------------------------------------------------
 
-### Estatísticas sobre a Evolução da Oferta de uva {.no-title}
 
-```{r mi5}
-#Evolução da Oferta Mensal de uva PEBA nos CEASAS do Brasil
+### Sazonalidade do Volume comercializado de uva {.no-title}
+
+```{r mi4}
+#Evolução da Oferta Mensal de Uva PEBA no CEAGESP do Brasil
 
 g5 <- ggplot()+
   geom_col(data=tablepeba_b2, aes(x=Meses, y=value, fill=variable), lwd=1,
@@ -1993,10 +1871,10 @@ g5 <- ggplot()+
   geom_line(data=tablepeba_a2, aes(x=Meses, y=value, colour=variable), linetype = "solid",
             size = 1)+
   scale_colour_manual(values = c("red", "chocolate", "darkgreen")) +
-  scale_y_continuous(limits = c(0, 12000), n.breaks = 10)+
+  scale_y_continuous(limits = c(0, 4500), n.breaks = 10)+
   scale_x_date(date_breaks = "1 month",
                labels = date_format("%B"))+
-  labs(y= "Toneladas", x= "Meses do Ano", title='Estatísticas sobre a Evolução da Oferta de uva (CEASAS)',
+  labs(y= "Toneladas", x= "Meses do Ano", title='Estatísticas sobre a Evolução da Oferta de Uva (CEAGESP)',
        caption = "")+
   theme_minimal()+
   theme(axis.text.x=element_text(angle=35, hjust=0.5, size=8, margin = margin(b=20)),
@@ -2005,7 +1883,7 @@ g5 <- ggplot()+
         axis.title.x = element_text(size=8, face = "bold"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        plot.title = element_text(hjust = 0.5, size=12),
+        plot.title = element_text(hjust = 0.5, size=11),
         plot.caption = element_text(hjust = 0, size=8),
         legend.position = "bottom", legend.title = element_blank(),
         legend.text=element_text(size=8)) # Definindo posição da legenda
@@ -2013,41 +1891,37 @@ g5 <- ggplot()+
 ggplotly(g5) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.05, 
-                      y=-0.35,
+                      x=0.20, 
+                      y=-0.16,
                       title=''))
 ```
+
 
 ### Variação do Volume comercializado de uva: 2017 a 2022 {.no-title}
 
 ```{r mi2}
-#Variação Volume PE+BA
-
-g2 <- ggplot()+
-  geom_col(data=variacao_totalpebat, aes(x=Meses, y=value, fill=variable), lwd=1, position = "dodge")+
-  scale_fill_manual(values=mycolors2)+
-  scale_y_continuous(limits = c(-20, 100), n.breaks = 10)+
-  scale_x_date(date_breaks = "1 month",
-               labels = date_format("%B"))+
-  labs(y= "Variação Percentual (%)", x= "Meses do Ano", title='Variação do Volume comercializado de uva (CEASAS)',
-       caption = "Fonte: Observatório de Mercado de uva da Embrapa")+
+g1 <- ggplot()+
+  geom_col(data=dados2m, aes(x=Anos, y=value, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors3)+
+   scale_x_continuous(breaks = seq(2018, 2022, by = 1))+
+  labs(y= "Toneladas", x= "Variedades Vitória e Branca Sem Semente", title='Volume total por variedade de Uva (CEAGESP): 2018 a 2022',
+  caption = "Fonte: CEAGESP reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
   theme_minimal()+
-  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=8, margin = margin(b=20)),
-        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=20)),
-        axis.title.y = element_text(size=8, face = "bold"),
-        axis.title.x = element_text(size=8, face = "bold"),
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=10)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        plot.title = element_text(hjust = 0.5, size=12),
-        plot.caption = element_text(hjust = 0, size=8),
+        plot.title = element_text(hjust = 0.5, size=11),
+        plot.caption = element_text(hjust = 0, size=10),
         legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=12)) # Definindo posição da legenda
+        legend.text=element_text(size=9)) # Definindo posição da legenda
 
-ggplotly(g2) %>%
+ggplotly(g1) %>%
   layout(legend = list(
                       orientation = "h", 
                       x=0.35, 
-                      y=-0.30,
+                      y=-0.17,
                       title=''))
 ```
 
