@@ -11,7 +11,7 @@ output:
     #css: styles.css
     vertical_layout: fill #sem barra de rolagem e scroll com barra
     theme: 
-      version: 5
+      version: 4
       bootswatch: bootstrap
       navbar-bg: "#183b8c"
       bg:        "#ffffff"
