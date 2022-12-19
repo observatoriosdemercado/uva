@@ -62,8 +62,8 @@ knitr::opts_chunk$set(
 
 library(lubridate)
 anterior <- as.Date("2022-02-01")
-data <- as.Date("2022-12-09")
-sem_ano <- 49 #ajustar semanalmente
+data <- as.Date("2022-12-16")
+sem_ano <- 50 #ajustar semanalmente
 mes <- 3
 # Linhas que precisam de ajuste: 71, 104, 107
 ```
@@ -582,7 +582,7 @@ valueBox(
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 11.56
+num <- 12.92
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -590,7 +590,7 @@ valueBox(
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-12.53
+num <-12.64
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -756,12 +756,12 @@ num <- tail(preco_vitoria,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
 #  color = "green",
-  icon= "fa-arrow-up")
+  icon= "fa-arrow-down")
 ```
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 8.10
+num <- 9.56
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -769,7 +769,7 @@ valueBox(
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <-9.32
+num <-9.92
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -997,12 +997,12 @@ num <- tail(preco_vitoriase,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
 #  color = "green",
-  icon= "fa-arrow-down")
+  icon= "fa-arrow-up")
 ```
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 4.77
+num <- 5.18
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1010,7 +1010,7 @@ valueBox(
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2020
 ``` {r}
-num <- 6.04
+num <- 6.23
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -2015,7 +2015,7 @@ ggplotly(g1) %>%
 
 ### Evolução da variação do consumo de uva {.no-title}
 
-``````{r consumo_uva2}
+```{r consumo_uva2}
 consumo_var <- dados1[,-2]
 variacao <- ((consumo_var[,3]-consumo_var[,2])/consumo_var[,2])*100
 consumo_vara<-cbind(consumo_var, round(variacao,2))
