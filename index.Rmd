@@ -61,10 +61,9 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-anterior <- as.Date("2022-02-01")
-data <- as.Date("2022-12-16")
-sem_ano <- 50 #ajustar semanalmente
-mes <- 3
+last <- as.Date("2023-01-27")
+data <- as.Date("2023-02-03")
+sem_ano <- 5 #ajustar semanalmente
 # Linhas que precisam de ajuste: 71, 104, 107
 ```
 
@@ -505,40 +504,40 @@ sazonal_graph <- tibble(cbind(semanas, sazonalidade))
 
 #Parte 3
 #Analise das comparações entre as médias
-preco_arra_2019 <- window(preco_arra, end=c(2019,52))
-seas19<-seasplot(preco_arra_2019, trend=F, outplot = F)
-medias19 <- colMeans(seas19$season)
-
 preco_arra_2020 <- window(preco_arra, end=c(2020,52))
+seas20<-seasplot(preco_arra_2020, trend=F, outplot = F)
+medias20 <- colMeans(seas20$season)
 
 preco_arra_2021 <- window(preco_arra, end=c(2021,52))
+
+preco_arra_2022 <- window(preco_arra, end=c(2022,52))
 #seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
 #medias21 <- colMeans(seas21$season)
 
-preco_arra_22 <- as.matrix(tail(arra$preco_def,sem_ano))
-preco_arra_2022 <- matrix(NA, nrow=52, ncol=1)
+preco_arra_23 <- as.matrix(tail(arra$preco_def,sem_ano))   
+preco_arra_2023 <- matrix(NA, nrow=52, ncol=1)
 
 for(i in 1:sem_ano){
-  preco_arra_2022[i,1] = preco_arra_22[i,1]
+  preco_arra_2023[i,1] = preco_arra_23[i,1]
 }
   
 
 #Como só se tem até a semana 52
-medias19 <- medias19[1:52]
+medias20 <- medias20[1:52]
 #medias21 <- medias21[1:52]
 
 matrix = matrix(NA, nrow=52, ncol=2)
 
 for(i in 1:52){
-  matrix[i,1] = min(seas19$season[,i])
-  matrix[i,2] = max(seas19$season[,i])
+  matrix[i,1] = min(seas20$season[,i])
+  matrix[i,2] = max(seas20$season[,i])
 }
 
 time <- seq(1:52)
-table <- data.frame(time, matrix[,1], round(medias19,2), matrix[,2], round(tail(preco_arra_2020,52),2),
-                    round(tail(preco_arra_2021,52),2), preco_arra_2022[,1])
-colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', '2020', '2021', 
-                    '2022')
+table <- data.frame(time, matrix[,1], round(medias20,2), matrix[,2], round(tail(preco_arra_2021,52),2),
+                    round(tail(preco_arra_2022,52),2), preco_arra_2023[,1])
+colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2021', 'Ano 2022', 
+                    'Ano 2023')
 tablea <- table[,-c(5:7)]
 tableb <- table[,-c(2,3,4)]
 
@@ -548,15 +547,15 @@ mycolors <- c("dodgerblue2", "gold", "darkmagenta")
 
 #Parte 4
 
-preco_arra_21 <- arra %>% filter(ano=='2021')
-preco_arra_2021 <- as.matrix(preco_arra_21$preco_def)
-variacao_21 <- (preco_arra_2021/lag(preco_arra_2021, 1) - 1)*100
-
+preco_arra_22 <- arra %>% filter(ano=='2022')
+preco_arra_2022 <- as.matrix(preco_arra_22$preco_def)
 variacao_22 <- (preco_arra_2022/lag(preco_arra_2022, 1) - 1)*100
 
+variacao_23 <- (preco_arra_2023/lag(preco_arra_2023, 1) - 1)*100
+
 semanas <- seq(1:52)
-variacao <- data.frame(semanas, variacao_21[,1], variacao_22[,1])
-colnames(variacao) = c('Semanas', '2021', '2022')
+variacao <- data.frame(semanas, variacao_22[,1], variacao_23[,1])
+colnames(variacao) = c('Semanas', 'Ano 2022', 'Ano 2023')
 
 variacao <- melt(variacao, id.var='Semanas')
 
@@ -569,7 +568,7 @@ mycolors2 <- c("orange", "lightblue3")
 Row {data-height=125}
 -----------------------------------------------------------------------
 
-### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2022 
+### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2023 
 ``` {r}
 num <- tail(preco_arra,1)
 valueBox(
@@ -580,17 +579,17 @@ valueBox(
 #darkmagenta
 ```
 
-### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2021
+### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2022
 ``` {r}
-num <- 12.92
+num <- 12.94
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
 ```
 
-### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2020
+### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <-12.64
+num <-12.54
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -599,7 +598,7 @@ valueBox(
 Row
 -----------------------------------------------------------------------
 
-### Mínimo, Máximo, Media e preços de 2020 a 2022 de Uva Branca Embalada {.no-title}
+### Mínimo, Máximo, Media e preços de 2021 a 2023 de Uva Branca Embalada {.no-title}
 ```{r palmer3, results='', fig.cap=''}
 
 g1 <- ggplot()+
@@ -612,7 +611,7 @@ g1 <- ggplot()+
   scale_y_continuous(limits = c(0, 18), n.breaks = 10, labels = number_format(accuracy = 0.01,
                                                        decimal.mark = ","))+
   scale_x_continuous(breaks = seq(1, 52, by = 2))+
-  labs(y= "Preço R$", x= "Semanas de cada Ano", title='Mínimo, Máximo, Média e preços de 2020 a 2022 de Uva Branca Embalada',
+  labs(y= "Preço R$", x= "Semanas de cada Ano", title='Mínimo, Máximo, Média e preços de Uva Branca Embalada',
        caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
   theme_classic()+
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
@@ -634,7 +633,7 @@ ggplotly(g1) %>%
                       title=''))
 ```
 
-### Variação Semanal em 2020 e 2021 de Uva Branca Embalada {.no-title}
+### Variação Semanal em 2023 e 2022 de Uva Branca Embalada {.no-title}
 
 ```{r palmer 5, results='', fig.cap=''}
 
@@ -750,26 +749,26 @@ NEGRA SEEDLESS EMBALADA {data-navmenu="PREÇOS AO PRODUTOR"}
 Row {data-height=125}
 -----------------------------------------------------------------------
 
-### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2022 
+### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2023 
 ``` {r}
 num <- tail(preco_vitoria,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
 #  color = "green",
-  icon= "fa-arrow-down")
+  icon= "fa-arrow-up")
 ```
 
-### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2021
+### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2022
 ``` {r}
-num <- 9.56
+num <- 10.27
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
 ```
 
-### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2020
+### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <-9.92
+num <-11.56
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -783,39 +782,39 @@ Row
 ```{r negra_setup}
 
 #Analise das comparações entre as médias
-preco_vitoria_2019 <- window(preco_vitoria, end=c(2019,52))
-seas19<-seasplot(preco_vitoria_2019, trend=F, outplot = F)
-medias19 <- colMeans(seas19$season)
-
 preco_vitoria_2020 <- window(preco_vitoria, end=c(2020,52))
+seas20<-seasplot(preco_vitoria_2020, trend=F, outplot = F)
+medias20 <- colMeans(seas20$season)
 
 preco_vitoria_2021 <- window(preco_vitoria, end=c(2021,52))
+
+preco_vitoria_2022 <- window(preco_vitoria, end=c(2022,52))
 #seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
 #medias21 <- colMeans(seas21$season)
 
-preco_vitoria_22 <- as.matrix(tail(vitoria$preco_def,sem_ano))
-preco_vitoria_2022 <- matrix(NA, nrow=52, ncol=1)
+preco_vitoria_23 <- as.matrix(tail(vitoria$preco_def,sem_ano))  
+preco_vitoria_2023 <- matrix(NA, nrow=52, ncol=1)
 
 for(i in 1:sem_ano){
-  preco_vitoria_2022[i,1] = preco_vitoria_22[i,1]
+  preco_vitoria_2023[i,1] = preco_vitoria_23[i,1]
 }
   
 #Como só se tem até a semana 52
-medias19 <- medias19[1:52]
+medias20 <- medias20[1:52]
 #medias21 <- medias21[1:52]
 
 matrix = matrix(NA, nrow=52, ncol=2)
 
 for(i in 1:52){
-  matrix[i,1] = min(seas19$season[,i])
-  matrix[i,2] = max(seas19$season[,i])
+  matrix[i,1] = min(seas20$season[,i])
+  matrix[i,2] = max(seas20$season[,i])
 }
 
 time <- seq(1:52)
-table <- data.frame(time, matrix[,1], round(medias19,2), matrix[,2], round(tail(preco_vitoria_2020,52),2),
-                    round(tail(preco_vitoria_2021,52),2), preco_vitoria_2022[,1])
-colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', '2020', '2021', 
-                    '2022')
+table <- data.frame(time, matrix[,1], round(medias20,2), matrix[,2], round(tail(preco_vitoria_2021,52),2),
+                    round(tail(preco_vitoria_2022,52),2), preco_vitoria_2023[,1])
+colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2021', 'Ano 2022', 
+                    'Ano 2023')
 tablea <- table[,-c(5:7)]
 tableb <- table[,-c(2,3,4)]
 
@@ -836,7 +835,7 @@ g5 <- ggplot()+
   scale_y_continuous(limits = c(0, 20), n.breaks = 10, labels = number_format(accuracy = 0.01,
                                                        decimal.mark = ","))+
   scale_x_continuous(breaks = seq(1, 52, by = 2))+
-  labs(y= "Preço R$", x= "Semanas de cada Ano", title='Mínimo, Máximo, Média e preços de 2020 a 2022 de Uva Negra Embalada',
+  labs(y= "Preço R$", x= "Semanas de cada Ano", title='Mínimo, Máximo, Média e preços de Uva Negra Embalada',
        caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
   theme_classic()+
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
@@ -858,21 +857,21 @@ ggplotly(g5) %>%
                       title=''))
 ```
 
-### Variação Semanal em 2020 e 2021 de Uva Negra Embalada {.no-title}
+### Variação Semanal em 2022 e 2023 de Uva Negra Embalada {.no-title}
 
 ```{r negra2, results='', fig.cap=''}
 
 #Parte 4
 
-preco_vitoria_21 <- vitoria %>% filter(ano=='2021')
-preco_vitoria_2021 <- as.matrix(preco_vitoria_21$preco_def)
-variacao_21 <- (preco_vitoria_2021/lag(preco_vitoria_2021, 1) - 1)*100
-
+preco_vitoria_22 <- vitoria %>% filter(ano=='2022')
+preco_vitoria_2022 <- as.matrix(preco_vitoria_22$preco_def)
 variacao_22 <- (preco_vitoria_2022/lag(preco_vitoria_2022, 1) - 1)*100
 
+variacao_23 <- (preco_vitoria_2023/lag(preco_vitoria_2023, 1) - 1)*100
+
 semanas <- seq(1:52)
-variacao <- data.frame(semanas, variacao_21[,1], variacao_22[,1])
-colnames(variacao) = c('Semanas', '2021', '2022')
+variacao <- data.frame(semanas, variacao_22[,1], variacao_23[,1])
+colnames(variacao) = c('Semanas', 'Ano 2022', 'Ano 2023')
 
 variacao <- melt(variacao, id.var='Semanas')
 
@@ -991,7 +990,7 @@ NEGRA SEEDLESS {data-navmenu="PREÇOS AO PRODUTOR"}
 Row {data-height=125}
 -----------------------------------------------------------------------
 
-### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2022 
+### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2023 
 ``` {r}
 num <- tail(preco_vitoriase,1)
 valueBox(
@@ -1000,17 +999,17 @@ valueBox(
   icon= "fa-arrow-up")
 ```
 
-### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2021
+### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2022
 ``` {r}
-num <- 5.18
+num <- 6.06
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
 ```
 
-### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2020
+### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 6.23
+num <- 6.18
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1019,7 +1018,7 @@ valueBox(
 Row
 -----------------------------------------------------------------------
 
-### Mínimo, Máximo, Media e preços de 2020 a 2022 de Uva Negra {.no-title}
+### Mínimo, Máximo, Media e preços de 2021 a 2023 de Uva Negra {.no-title}
 
 ```{r negrase_setup}
 
@@ -1029,16 +1028,19 @@ seas20<-seasplot(preco_vitoriase_2020, trend=F, outplot = F)
 medias20 <- colMeans(seas20$season)
 
 preco_vitoriase_2021 <- window(preco_vitoriase, end=c(2021,52))
+
+preco_vitoriase_2022 <- window(preco_vitoriase, end=c(2022,52))
 #seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
 #medias21 <- colMeans(seas21$season)
 
-preco_vitoriase_22 <- as.matrix(tail(vitoriase$preco_def,sem_ano))
-preco_vitoriase_2022 <- matrix(NA, nrow=52, ncol=1)
+preco_vitoriase_23 <- as.matrix(tail(vitoriase$preco_def,sem_ano)) #ajustar toda semana
+preco_vitoriase_2023 <- matrix(NA, nrow=52, ncol=1)
 
 for(i in 1:sem_ano){
-  preco_vitoriase_2022[i,1] = preco_vitoriase_22[i,1]
+  preco_vitoriase_2023[i,1] = preco_vitoriase_23[i,1]
 }
   
+
 #Como só se tem até a semana 52
 medias20 <- medias20[1:52]
 #medias21 <- medias21[1:52]
@@ -1051,10 +1053,10 @@ for(i in 1:52){
 }
 
 time <- seq(1:52)
-table <- data.frame(time, matrix[,1], round(medias20,2), matrix[,2], round(tail(preco_vitoriase_2020,52),2),
-                    round(tail(preco_vitoriase_2021,52),2), preco_vitoriase_2022[,1])
-colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', '2020', '2021', 
-                    '2022')
+table <- data.frame(time, matrix[,1], round(medias20,2), matrix[,2], round(tail(preco_vitoriase_2021,52),2),
+                    round(tail(preco_vitoriase_2022,52),2), preco_vitoriase_2023[,1])
+colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2021', 'Ano 2022', 'Ano 2023')
+
 tablea <- table[,-c(5:7)]
 tableb <- table[,-c(2,3,4)]
 
@@ -1075,7 +1077,7 @@ g9 <- ggplot()+
   scale_y_continuous(limits = c(0, 12), n.breaks = 10, labels = number_format(accuracy = 0.01,
                                                        decimal.mark = ","))+
   scale_x_continuous(breaks = seq(1, 52, by = 2))+
-  labs(y= "Preço R$", x= "Semanas de cada Ano", title='Mínimo, Máximo, Média e preços de 2021 e 2022 de Uva Negra',
+  labs(y= "Preço R$", x= "Semanas de cada Ano", title='Mínimo, Máximo, Média e preços de Uva Negra',
        caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
   theme_classic()+
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
@@ -1097,21 +1099,21 @@ ggplotly(g9) %>%
                       title=''))
 ```
 
-### Variação Semanal em 2020 e 2021 de Uva Negra {.no-title}
+### Variação Semanal em 2023 e 2022 de Uva Negra {.no-title}
 
 ```{r negrase2, results='', fig.cap=''}
 
 #Parte 4
 
-preco_vitoriase_21 <- vitoriase %>% filter(ano=='2021')
-preco_vitoriase_2021 <- as.matrix(preco_vitoriase_21$preco_def)
-variacao_21 <- (preco_vitoriase_2021/lag(preco_vitoriase_2021, 1) - 1)*100
-
+preco_vitoriase_22 <- vitoriase %>% filter(ano=='2022')
+preco_vitoriase_2022 <- as.matrix(preco_vitoriase_22$preco_def)
 variacao_22 <- (preco_vitoriase_2022/lag(preco_vitoriase_2022, 1) - 1)*100
 
+variacao_23 <- (preco_vitoriase_2023/lag(preco_vitoriase_2023, 1) - 1)*100
+
 semanas <- seq(1:52)
-variacao <- data.frame(semanas, variacao_21[,1], variacao_22[,1])
-colnames(variacao) = c('Semanas', '2021', '2022')
+variacao <- data.frame(semanas, variacao_22[,1], variacao_23[,1])
+colnames(variacao) = c('Semanas', 'Ano 2022', 'Ano 2023')
 
 variacao <- melt(variacao, id.var='Semanas')
 
@@ -1263,10 +1265,10 @@ checkX13()
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2022-10-01")
-atual <-  as.Date("2022-11-01")
+anterior <- as.Date("2022-11-01")
+atual <-  as.Date("2022-12-01")
 #today <- as.Date("2022-02-11")
-mes <- 11
+mes <- 12
 
 #Entrando dados no R
 dados1 <- read.csv2('exportacoes_2016_2022.csv', header=T, sep=";", dec = ".")
@@ -1454,26 +1456,26 @@ importacao <- melt(importacao, id.var='date')
 Row {data-height=125}
 -----------------------------------------------------------------------
 
-### Volume Exportação em `r strftime(atual, format = "%B")` de 2022 
+### Volume Exportação em 2022 
 ``` {r d1}
-num <- tail(exporta_uva_volume,1)
+num <- tail(dados1$Toneladas,1)
 valueBox(
   value = paste0(format(num, decimal.mark =  "."), " Toneladas"),
 #  color = "green",
   icon= "fa-arrow-up")
 ```
 
-### Volume Exportação em `r strftime(atual, format = "%B")` de 2021 
+### Volume Exportação em 2021 
 ``` {r d2}
-num <- 21976
+num <- 76609
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
 ```
 
-### Volume Exportação em `r strftime(atual, format = "%B")` de 2020 
+### Volume Exportação em 2020 
 ``` {r d3}
-num <- 14912
+num <- 49228
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
@@ -2149,7 +2151,7 @@ EMPREGO
 #setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_caged')
 setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
 
-atual <-  as.Date("2022-10-01")
+atual <-  as.Date("2022-12-01")
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2158,7 +2160,7 @@ library(scales)
 library(plotly)
 
 #Entrando dados no R
-dados1 <- read.csv2('outubro_2022.csv', header=T, sep=";", dec = ".")
+dados1 <- read.csv2('dezembro_2022.csv', header=T, sep=";", dec = ".")
 colnames(dados1)[1] <- 'date'
 dados1$date <- seq(as.Date('2021-01-01'),to=atual,by='1 month')
 dados1a <- dados1 
@@ -2184,29 +2186,29 @@ saldom$mes <- factor(saldom$mes,levels = c("Jan", "Fev", "Mar", "Abr", "Mai",
 
 #Entrando com o restante dos dados
 
-load("outubro_22_caged.RData")
+load("dezembro_22_caged.RData")
 
 #dados_03_vsf$sexo <- lapply(dados_03_vsf$sexo, factor)
 
-dados_10_vsf$sexo[dados_10_vsf$sexo == 1] <- 0
-dados_10_vsf$sexo[dados_10_vsf$sexo == 3] <- 1
+dados_12_vsf$sexo[dados_12_vsf$sexo == 1] <- 0
+dados_12_vsf$sexo[dados_12_vsf$sexo == 3] <- 1
 
-dados_10_vsf <- mutate(dados_10_vsf,
+dados_12_vsf <- mutate(dados_12_vsf,
                 sexo = factor(sexo, levels = 0:1, labels = c("Masculino", "Feminino")))
 
 # Mantendo apenas 
 
 #Separando as admissoes e as demissoes
-dados_10_vsf_positivos <-dados_10_vsf%>% filter(saldo_movim=="1")
-dados_10_vsf_negativos <-dados_10_vsf%>% filter(saldo_movim=="-1")
+dados_12_vsf_positivos <-dados_12_vsf%>% filter(saldo_movim=="1")
+dados_12_vsf_negativos <-dados_12_vsf%>% filter(saldo_movim=="-1")
 
 #Mantendo apenas o agronegocio
-secao_positivos <-dados_10_vsf_positivos%>% filter(secao=="A")
-secao_negativos <-dados_10_vsf_negativos%>% filter(secao=="A")
+secao_positivos <-dados_12_vsf_positivos%>% filter(secao=="A")
+secao_negativos <-dados_12_vsf_negativos%>% filter(secao=="A")
 
 #Mantendo apenas a uva
-subclasse_positivos <-dados_10_vsf_positivos%>% filter(subclasse=="132600")
-subclasse_negativos <-dados_10_vsf_negativos%>% filter(subclasse=="132600")
+subclasse_positivos <-dados_12_vsf_positivos%>% filter(subclasse=="132600")
+subclasse_negativos <-dados_12_vsf_negativos%>% filter(subclasse=="132600")
 
 subclasse_positivos <- mutate(subclasse_positivos,
                 grau_instrucao = factor(grau_instrucao, levels = 1:13, 
@@ -2223,6 +2225,8 @@ subclasse_positivos <- mutate(subclasse_positivos,
                                                    "Doutorado",
                                                    "Pós-Graduação completa",
                                                    "Não Identificado")))
+
+subclasse_positivos <- na.omit(subclasse_positivos)
 ```
 
 Row {data-height=125}
@@ -2230,7 +2234,7 @@ Row {data-height=125}
 
 ### pela viticultura em `r strftime(atual, format = "%B")` de 2022 
 ``` {r emp1}
-num <- 2462
+num <- 1425
 valueBox(
   value = paste0(num, " Contratados"),
 #  color = "green",
@@ -2239,7 +2243,7 @@ valueBox(
 
 ### pela viticultura em `r strftime(atual, format = "%B")` de 2022 
 ``` {r emp2}
-num <- 2128
+num <- 3003
 valueBox(
   value = paste0(num, " Demitidos"),
 #  color = "tomato",
@@ -2248,7 +2252,7 @@ valueBox(
 
 ### Saldo Gerado pela viticultura em `r strftime(atual, format = "%B")` de 2022 
 ``` {r emp3}
-num <- 334
+num <- -1578
 valueBox(
   value = paste0(num, " Empregos"),
 #  color = "green",
@@ -2271,7 +2275,7 @@ g1 <- ggplot() +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolors2)+
     labs(y= "Saldo de Emprego (unidade)", x= "Meses do Ano", title='Saldo mensal de Empregos na Viticultura: 2021 e 2022',
        caption = "")+
-    scale_y_continuous(limits=c(-2600, 2200), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    scale_y_continuous(limits=c(-2600, 2600), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_minimal()+ #Definindo tema
   theme(axis.text.x=element_text(angle=30, hjust=0.5, size=10, margin = margin(b=20)),
         axis.text.y=element_text(hjust=1, size=10, margin = margin(l=20)),
@@ -2351,7 +2355,7 @@ ggplotly(g3)
 
 g4 <- ggplot(data = subclasse_positivos, aes(x = grau_instrucao, y = ..count..)) +
   geom_bar(fill='#1e4971')+
-    scale_y_continuous(limits=c(0, 900), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    scale_y_continuous(limits=c(0, 450), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
 labs(y= "Contratados Uva - VSF", x= "Grau de Instrução", title='Grau de Instrução dos empregos gerados',
        caption = "")+
   theme_minimal() +
