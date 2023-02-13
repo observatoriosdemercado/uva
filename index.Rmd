@@ -1265,15 +1265,15 @@ checkX13()
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2022-11-01")
-atual <-  as.Date("2022-12-01")
+anterior <- as.Date("2022-12-01")
+atual <-  as.Date("2023-01-01")
 #today <- as.Date("2022-02-11")
-mes <- 12
+mes <- 1
 
 #Entrando dados no R
-dados1 <- read.csv2('exportacoes_2016_2022.csv', header=T, sep=";", dec = ".")
+dados1 <- read.csv2('exportacoes_2016_2023.csv', header=T, sep=";", dec = ".")
 dados1 <- dados1/1000
-dados1[,1] <- seq(2016, 2022, by = 1)
+dados1[,1] <- seq(2016, 2023, by = 1)
 colnames(dados1) = c('Ano', 'Valor', "Toneladas")
 dados1 <- tibble(dados1)
 
@@ -1283,15 +1283,15 @@ dados2 <- read.csv2('total_exporta_uva_br.csv', header=T, sep=";", dec = ".")
 colnames(dados2)[1]<-'ano'
 
 #Entrando dados no R
-dados3 <- read.csv2('destinos_2022.csv', header=T, sep=";", dec = ".")
+dados3 <- read.csv2('destinos_2023.csv', header=T, sep=";", dec = ".")
 colnames(dados3) = c('Paises', "Participacao")
 
 #Entrando dados no R
-dados4 <- read.csv2('via_2022.csv', header=T, sep=";", dec = ".")
+dados4 <- read.csv2('via_2023.csv', header=T, sep=";", dec = ".")
 colnames(dados4) = c('Vias', "Participacao")
 
 #Entrando dados no R
-dados5 <- read.csv2('uf_2022.csv', header=T, sep=";" , dec = ".")
+dados5 <- read.csv2('uf_2023.csv', header=T, sep=";" , dec = ".")
 colnames(dados5) = c('UF', "Participacao")
 
 # Entrando dados no R
@@ -1314,43 +1314,43 @@ trend_valor <- tibble(date, trend_valor)
 decompa<-decompose(exporta_uva_valor, type = 'multiplicative')
 sazonal_valor <- decompa$figure
 #meses <- seq(1:12)
-meses <- seq(as.Date("2021/1/1"), by = "month", length.out = 12) 
+meses <- seq(as.Date("2023/1/1"), by = "month", length.out = 12) 
 sazonal_graph <- tibble(meses, sazonal_valor)
 
 #Comparações com os anos e entre as médias/max/min
 
-exporta_uva_valor_2019 <- window(exporta_uva_valor, end=c(2019,12))
-seas19<-seasplot(exporta_uva_valor_2019, trend=F, outplot = F)
-medias19 <- colMeans(seas19$season)
-
 exporta_uva_valor_2020 <- window(exporta_uva_valor, end=c(2020,12))
+seas20<-seasplot(exporta_uva_valor_2020, trend=F, outplot = F)
+medias20 <- colMeans(seas20$season)
 
 exporta_uva_valor_2021 <- window(exporta_uva_valor, end=c(2021,12))
+
+exporta_uva_valor_2022 <- window(exporta_uva_valor, end=c(2022,12))
 #medias21 <- colMeans(seas21$season)
 
-exporta_uva_valor_22 <- as.matrix(tail(exporta_uva_valor,mes)) 
-exporta_uva_valor_2022 <- matrix(NA, nrow=12, ncol=1)
+exporta_uva_valor_23 <- as.matrix(tail(exporta_uva_valor,mes)) 
+exporta_uva_valor_2023 <- matrix(NA, nrow=12, ncol=1)
 
 for(i in 1:mes){
-  exporta_uva_valor_2022[i,1] = exporta_uva_valor_22[i,1]
+  exporta_uva_valor_2023[i,1] = exporta_uva_valor_23[i,1]
 }
   
 #Como só se tem até a semana 12
-medias19 <- medias19[1:12]
+medias20 <- medias20[1:12]
 
 matrix = matrix(NA, nrow=12, ncol=2)
 
 for(i in 1:12){
-  matrix[i,1] = min(seas19$season[,i])
-  matrix[i,2] = max(seas19$season[,i])
+  matrix[i,1] = min(seas20$season[,i])
+  matrix[i,2] = max(seas20$season[,i])
 }
 
 #time <- c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", #"Dezembro")
 #time <-seq(1:12)
-table <- data.frame(meses, matrix[,1], round(medias19,3), matrix[,2], round(tail(exporta_uva_valor_2020,12),3),
-                    round(tail(exporta_uva_valor_2021,12),3), exporta_uva_valor_2022[,1])
-colnames(table) = c('Meses', 'Mínimo', 'Média', 'Máximo', '2020', '2021', 
-                    '2022')
+table <- data.frame(meses, matrix[,1], round(medias20,3), matrix[,2], round(tail(exporta_uva_valor_2021,12),3),
+                    round(tail(exporta_uva_valor_2022,12),3), exporta_uva_valor_2023[,1])
+colnames(table) = c('Meses', 'Mínimo', 'Média', 'Máximo', '2021', '2022', 
+                    '2023')
 
 tablea <- table[,-c(5:7)]
 tableb <- table[,-c(2,3,4)]
@@ -1366,13 +1366,13 @@ exporta_uva_volume<-exporta_uva_volume/1000  #passando de quilo para tonelada
 
 #Ajuste para a variação Mensal do Volume
 
-variacao_volume_20 <-  dados2 %>% filter(ano=='2020')
 variacao_volume_21 <-  dados2 %>% filter(ano=='2021')
 variacao_volume_22 <-  dados2 %>% filter(ano=='2022')
+variacao_volume_23 <-  dados2 %>% filter(ano=='2023')
 
-variacao_volume_20 <-  variacao_volume_20[,4]/1000
 variacao_volume_21 <-  variacao_volume_21[,4]/1000
 variacao_volume_22 <-  variacao_volume_22[,4]/1000
+variacao_volume_23 <-  variacao_volume_23[,4]/1000
 
 #Setando como uma série temporal
 exporta_uva_volume <- ts(exporta_uva_volume, start=c(2016,1), freq=12)
@@ -1388,37 +1388,37 @@ sazonal_graph_volume <- tibble(meses, sazonal_volume)
 
 #Comparações com os anos e entre as médias/max/min
 
-exporta_uva_volume_2019 <- window(exporta_uva_volume, end=c(2019,12))
-seas19_vol<-seasplot(exporta_uva_volume_2019, trend=F, outplot = F)
-medias19_vol <- colMeans(seas19_vol$season)
-
 exporta_uva_volume_2020 <- window(exporta_uva_volume, end=c(2020,12))
+seas20_vol<-seasplot(exporta_uva_volume_2020, trend=F, outplot = F)
+medias20_vol <- colMeans(seas20_vol$season)
 
 exporta_uva_volume_2021 <- window(exporta_uva_volume, end=c(2021,12))
 
-exporta_uva_volume_22 <- as.matrix(tail(exporta_uva_volume,mes)) #ajustar mensalmente
-exporta_uva_volume_2022 <- matrix(NA, nrow=12, ncol=1)
+exporta_uva_volume_2022 <- window(exporta_uva_volume, end=c(2022,12))
+
+exporta_uva_volume_23 <- as.matrix(tail(exporta_uva_volume,mes)) #ajustar mensalmente
+exporta_uva_volume_2023 <- matrix(NA, nrow=12, ncol=1)
 
 for(i in 1:mes){
-  exporta_uva_volume_2022[i,1] = exporta_uva_volume_22[i,1]
+  exporta_uva_volume_2023[i,1] = exporta_uva_volume_23[i,1]
 }
   
 #Como só se tem até a semana 12
-medias19_vol <- medias19_vol[1:12]
+medias20_vol <- medias20_vol[1:12]
 
 matrix_vol = matrix(NA, nrow=12, ncol=2)
 
 for(i in 1:12){
-  matrix_vol[i,1] = min(seas19_vol$season[,i])
-  matrix_vol[i,2] = max(seas19_vol$season[,i])
+  matrix_vol[i,1] = min(seas20_vol$season[,i])
+  matrix_vol[i,2] = max(seas20_vol$season[,i])
 }
 
 #time <- c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", #"Dezembro")
 #time <-seq(1:12)
-table_volume <- data.frame(meses, round(matrix_vol[,1],0), round(medias19_vol,0), round(matrix_vol[,2],0), round(tail(exporta_uva_volume_2020,12),0),
-round(tail(exporta_uva_volume_2021,12),0), round(exporta_uva_volume_2022[,1],0))
-colnames(table_volume) = c('Meses', 'Mínimo', 'Média', 'Máximo', '2020', '2021', 
-                    '2022')
+table_volume <- data.frame(meses, round(matrix_vol[,1],0), round(medias20_vol,0), round(matrix_vol[,2],0), round(tail(exporta_uva_volume_2021,12),0),
+round(tail(exporta_uva_volume_2022,12),0), round(exporta_uva_volume_2023[,1],0))
+colnames(table_volume) = c('Meses', 'Mínimo', 'Média', 'Máximo', '2021', '2022', 
+                    '2023')
 
 tablea_vol <- table_volume[,-c(5:7)]
 tableb_vol <- table_volume[,-c(2,3,4)]
@@ -1429,20 +1429,20 @@ tableb2_vol <- melt(tableb_vol, id.var='Meses')
 
 #Variação Mensal 2021
 
-variacao_volume_2020 <- as.matrix(variacao_volume_20)
 variacao_volume_2021 <- as.matrix(variacao_volume_21)
-variacao_volume_2022 <- matrix(NA, nrow=12, ncol=1)
-variacao_volume_22 <- as.matrix(variacao_volume_22)
+variacao_volume_2022 <- as.matrix(variacao_volume_22)
+variacao_volume_2023 <- matrix(NA, nrow=12, ncol=1)
+variacao_volume_23 <- as.matrix(variacao_volume_23)
 
 for(i in 1:mes){
-  variacao_volume_2022[i,1] = variacao_volume_22[i,1]
+  variacao_volume_2023[i,1] = variacao_volume_23[i,1]
 }
 
-variacao_21 <- ((variacao_volume_2021/variacao_volume_2020) - 1)*100
 variacao_22 <- ((variacao_volume_2022/variacao_volume_2021) - 1)*100
+variacao_23 <- ((variacao_volume_2023/variacao_volume_2022) - 1)*100
 
-variacao <- data.frame(meses, variacao_21, variacao_22)
-colnames(variacao) = c('Meses', 'Variação 2021 e 2020', 'Variação 2022 e 2021')
+variacao <- data.frame(meses, variacao_22, variacao_23)
+colnames(variacao) = c('Meses', 'Variação 2022 e 2021', 'Variação 2023 e 2022')
 
 variacaom <- melt(variacao, id.var='Meses')
 
@@ -1456,7 +1456,7 @@ importacao <- melt(importacao, id.var='date')
 Row {data-height=125}
 -----------------------------------------------------------------------
 
-### Volume Exportação em 2022 
+### Volume Exportação em `r strftime(atual, format = "%B de %Y")` 
 ``` {r d1}
 num <- tail(dados1$Toneladas,1)
 valueBox(
@@ -1465,17 +1465,17 @@ valueBox(
   icon= "fa-arrow-up")
 ```
 
-### Volume Exportação em 2021 
+### Volume Exportação em `r strftime(atual, format = "%B")` de 2022 
 ``` {r d2}
-num <- 76609
+num <- 1124
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
 ```
 
-### Volume Exportação em 2020 
+### Volume Exportação em `r strftime(atual, format = "%B")` de 2021 
 ``` {r d3}
-num <- 49228
+num <- 950
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
@@ -1498,10 +1498,10 @@ g1 <- ggplot(data=dados1) +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolor1)+
   geom_line(aes(x=Ano, y=Valor, colour="Mil de Dólares"), size=2)+
   scale_colour_manual(values=mycolor2)+
-  labs(y= "US$ Mil / Ton", x= "Anos", title='Receita de Exportação e Volume Exportado de Uva: 2016 a 2022',
+  labs(y= "US$ Mil / Ton", x= "Anos", title='Receita de Exportação e Volume Exportado de Uva: 2016 a 2023',
        caption = "") +
   scale_y_continuous(limits=c(0, 160000), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2016, 2022, by = 1))+
+  scale_x_continuous(breaks = seq(2016, 2023, by = 1))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
         axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
@@ -1533,7 +1533,7 @@ g10 <- ggplot(data=dados3) +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolor1) +
   labs(y= "% do Volume Total Exportados", x= "Países", title='Principais Destinos da Uva',
        caption = "")+
-  scale_y_continuous(limits=c(0, 50), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_y_continuous(limits=c(0, 35), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
         axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
