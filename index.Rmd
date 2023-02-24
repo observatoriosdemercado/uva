@@ -61,9 +61,9 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-last <- as.Date("2023-02-10")
-data <- as.Date("2023-02-17")
-sem_ano <- 7 #ajustar semanalmente
+last <- as.Date("2023-02-17")
+data <- as.Date("2023-02-24")
+sem_ano <- 8 #ajustar semanalmente
 # Linhas que precisam de ajuste: 71, 104, 107
 ```
 
@@ -574,14 +574,14 @@ num <- tail(preco_arra,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
 #  color = "tomato",
-  icon= "fa-arrow-up")
+  icon= "fa-arrow-down")
 #arrow-trend-down
 #darkmagenta
 ```
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2022
 ``` {r}
-num <- 13.79
+num <- 13.61
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -589,7 +589,7 @@ valueBox(
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <-13.24
+num <-13.05
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -760,7 +760,7 @@ valueBox(
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2022
 ``` {r}
-num <- 12.26
+num <- 11.98
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -768,7 +768,7 @@ valueBox(
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <-12.05
+num <-10.95
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1001,7 +1001,7 @@ valueBox(
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2022
 ``` {r}
-num <- 7.26
+num <- 7.93
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1009,7 +1009,7 @@ valueBox(
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 6.26
+num <- 6.25
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
