@@ -1,5 +1,5 @@
 ---
-title: "OBSERVATÓRIO DO MERCADO DE MANGA DA EMBRAPA SEMIÁRIDO"
+title: "OBSERVATÓRIO DO MERCADO DE UVA DA EMBRAPA SEMIÁRIDO"
 author: "João Ricardo F. de Lima"
 date: "`r format(Sys.Date(), '%d de %B de %Y.')`"
 output:
@@ -28,27 +28,28 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-anterior <- as.Date("2023-02-01")
 atual <-  as.Date("2023-03-01")
-
-#Linhas precisam de ajuste semanal: 30, 104, 201, 204
 ```
 
 <br>
 
-# ANÁLISE DOS EMPREGOS GERADOS NA MANGICULTURA EM `r toupper(strftime(atual, format = "%B DE %Y"))`
+# ANÁLISE DOS EMPREGOS GERADOS NA VITICULTURA EM `r toupper(strftime(atual, format = "%B DE %Y"))`
 
 <br>
 
-Os dados utilizados nesta análise são mensais e disponibilizados pelo CAGED (Cadastro Geral de Empregados e Desempregados) até o mês de `r strftime(atual, format = "%B de %Y")`. As variáveis são saldo de empregos, empregos por gênero, contratados por idade e por escolaridade para a cultura da manga. Considera-se o conjunto de municípios da Bahia (Casa Nova, Curaçá, Juazeiro, Sento Sé, Sobradinho, etc.) e Pernambuco (Belém do S. Francisco, Lagoa Grande, Orocó, Petrolina, etc.) que formam o Vale do Submédio São Francisco.
+Os dados utilizados nesta análise são mensais e disponibilizados pelo CAGED (Cadastro Geral de Empregados e Desempregados) até o mês de `r strftime(atual, format = "%B de %Y")`. As variáveis são saldo de empregos, empregos por gênero, contratados por idade e por escolaridade para a cultura da uva. Considera-se o conjunto de municípios da Bahia (Casa Nova, Curaçá, Juazeiro, Sento Sé, Sobradinho, etc.) e Pernambuco (Belém do S. Francisco, Lagoa Grande, Orocó, Petrolina, etc.) que formam o Vale do Submédio São Francisco.
 
-O saldo de empregos na mangicultura em `r strftime(atual, format = "%B de %Y")` no Vale do São Francisco foi positivo, de 280 pessoas, ou seja, o total de contratações (887) foi maior do que o total de demissões (607). Em relação ao mesmo mês do ano passado, se tem uma piora no saldo total (424 em 2022 e 280 em 2023), com menos pessoas conseguindo emprego. 
+O saldo de empregos na viticultura em `r strftime(atual, format = "%B de %Y")` no Vale do São Francisco é de -272 pessoas, ou seja, o total de contratações (2.081) foi menor do que o total de demissões (2.353). Em relação ao mesmo mês do ano passado, se tem uma melhora no saldo total (-574 em 2022 e -272 em 2023), pois o número de pessoas que perderam o emprego foi menor. 
 
-Dos contratados no mês, 580 são do sexo masculino e 307 do sexo feminino. Em relação à idade, 51,07% se concentra abaixo dos 30 anos: 151 pessoas até 21 anos, 124 até 24 anos, 101 ate 27 anos e 77 até 30 anos. 
+Dos contratados no mês, 1.055 são do sexo masculino e 1.026 do sexo feminino. Em relação à idade, 15,52% dos contratados tem até 21 anos, 14,42% até 24 anos, 11,29% até 27 anos e 7,78% até 30 anos.
 
-Sobre o nível de escolaridade, a maioria das admissões é de pessoas com ensino médio completo (446). Do total de contratados, 50,28% possuem este nível de escolaridade. 
+Sobre o nível de escolaridade, a maioria das admissões é de pessoas com ensino médio completo (814). Do total de contratados, 39,12% possuem este nível de escolaridade.
 
-Com relação aos salários pagos, 82,53% dos contratados foram pelo valor de R\$ 1.302,00, o salário mínimo nacional. O maior salário foi R\$ 11 mil. 
+Com relação aos salários pagos, 77,46% dos contratados foram pelo valor de R\$ 1.302,00, o salário mínimo nacional. O salário mais elevado foi R\$ 7.295,00.
+
+<br>
+
+# 1. EVOLUÇÃO DO SALDO DE EMPREGOS GERADOS NA VITICULTURA {.tabset .tabset-fade}
 
 <br>
 
@@ -61,7 +62,7 @@ setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
 library(ggplot2)
 library(scales)
 library(plotly)
-library(dplyr)
+library(magrittr)# pipe operations
 library(DT)
 library(tidyverse)
 
@@ -76,13 +77,12 @@ dados1a$mes <- strftime(dados1a$date, format="%B")
 saldo_22 <- dados1a %>% filter(ano=='2022')
 
 saldo_22 <- saldo_22 %>%
-  select(c(ano, mes, Saldo_Manga))
-
+  select(c(ano, mes, Saldo_uva))
 
 saldo_23 <- dados1a %>% filter(ano=='2023')
 
 saldo_23 <- saldo_23 %>%
-  select(c(ano, mes, Saldo_Manga))
+  select(c(ano, mes, Saldo_uva))
 
 saldom <- rbind(saldo_22, saldo_23)
 saldom$mes <- factor(saldom$mes,levels = c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", 
@@ -90,7 +90,7 @@ saldom$mes <- factor(saldom$mes,levels = c("Janeiro", "Fevereiro", "Março", "Ab
                                            "Novembro", "Dezembro"))
 
 total_22 <- dados1a %>%
-  select(c(ano, mes, Contratados_Manga, Demitidos_Manga, Saldo_Manga))%>% 
+  select(c(ano, mes, Contratados_Uva, Demitidos_Uva, Saldo_uva))%>% 
   filter(ano=='2022')
 
 total_22$mes <- factor(total_22$mes,levels = c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", 
@@ -98,31 +98,33 @@ total_22$mes <- factor(total_22$mes,levels = c("Janeiro", "Fevereiro", "Março",
                                            "Novembro", "Dezembro"))
 
 total_23 <- dados1a %>%
-  select(c(ano, mes, Contratados_Manga, Demitidos_Manga, Saldo_Manga)) %>% 
+  select(c(ano, mes, Contratados_Uva, Demitidos_Uva, Saldo_uva)) %>% 
   filter(ano=='2023')
 
-total_23$mes <- factor(total_23$mes,levels = c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro",  "Novembro", "Dezembro"))
+total_23$mes <- factor(total_23$mes,levels = c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", 
+                                           "Junho", "Julho", "Agosto", "Setembro", "Outubro",
+                                           "Novembro", "Dezembro"))
+
 
 totalm <- merge(total_22, total_23, by="mes", all = T)
-
-#totalm <- inner_join(total_22, total_23, by="mes")
-
-totalm <- totalm %>%
-        select(c(mes,Contratados_Manga.x, Demitidos_Manga.x, Contratados_Manga.y, Demitidos_Manga.y, Saldo_Manga.x, Saldo_Manga.y))
+#totalm <- inner_join(total_21, total_22, by="mes")
 
 totalm <- totalm %>%
-  rename("Contratados 2022" = Contratados_Manga.x,
-         "Demitidos 2022" = Demitidos_Manga.x,
-         "Contratados 2023" = Contratados_Manga.y,
-         "Demitidos 2023" = Demitidos_Manga.y,
-         "Saldo 2022" = Saldo_Manga.x,
-         "Saldo 2023" = Saldo_Manga.y)
+  select(c(mes, Contratados_Uva.x, Demitidos_Uva.x, Contratados_Uva.y, Demitidos_Uva.y, Saldo_uva.x, Saldo_uva.y))
+
+totalm <- totalm %>%
+  rename("Contratados 2022" = Contratados_Uva.x,
+         "Demitidos 2022" = Demitidos_Uva.x,
+         "Contratados 2023" = Contratados_Uva.y,
+         "Demitidos 2023" = Demitidos_Uva.y,
+         "Saldo 2022" = Saldo_uva.x,
+         "Saldo 2023" = Saldo_uva.y)
 
 #Entrando com o restante dos dados
 
 load("marco_23_caged.RData")
 
-#dados_06_vsf$sexo <- lapply(dados_06_vsf$sexo, factor)
+#dados_03_vsf$sexo <- lapply(dados_03_vsf$sexo, factor)
 
 dados_03_vsf$sexo[dados_03_vsf$sexo == 1] <- 0
 dados_03_vsf$sexo[dados_03_vsf$sexo == 3] <- 1
@@ -140,13 +142,9 @@ dados_03_vsf_negativos <-dados_03_vsf%>% filter(saldo_movim=="-1")
 secao_positivos <-dados_03_vsf_positivos%>% filter(secao=="A")
 secao_negativos <-dados_03_vsf_negativos%>% filter(secao=="A")
 
-#Mantendo apenas a manga
-subclasse_positivos <-dados_03_vsf_positivos%>% filter(subclasse=="133410")
-subclasse_negativos <-dados_03_vsf_negativos%>% filter(subclasse=="133410")
-
-#Ajustando o grau de escolaridade
-subclasse_positivos$grau_instrucao[subclasse_positivos$grau_instrucao == 80] <- 12
-subclasse_positivos$grau_instrucao[subclasse_positivos$grau_instrucao == 99] <- 13
+#Mantendo apenas a uva
+subclasse_positivos <-dados_03_vsf_positivos%>% filter(subclasse=="132600")
+subclasse_negativos <-dados_03_vsf_negativos%>% filter(subclasse=="132600")
 
 subclasse_positivos <- mutate(subclasse_positivos,
                 grau_instrucao = factor(grau_instrucao, levels = 1:13, 
@@ -164,6 +162,8 @@ subclasse_positivos <- mutate(subclasse_positivos,
                                                    "Pós-Graduação completa",
                                                    "Não Identificado")))
 
+subclasse_positivos <- na.omit(subclasse_positivos)
+
 # Ajustando a variavel salario
 subclasse_positivos$salario <- as.numeric(sub(',', '.', subclasse_positivos$salario, fixed = TRUE))
 
@@ -175,10 +175,6 @@ prob_table$Freq <- round(prob_table$Freq,2)
 colnames(prob_table) <- c("Salários", "Frequencia Relativa")
 ```
 
-# 1. EVOLUÇÃO DO SALDO DE EMPREGOS GERADOS NA MANGICULTURA {.tabset .tabset-fade}
-
-<br>
-
 ## GRÁFICO
 
 ```{r emp1}
@@ -188,19 +184,19 @@ mycolor1 <- "gold"
 mycolors2 <- c("orange", "lightblue3")
 
 g1 <- ggplot() +  #estetica vai valer para todos os geom's
-  geom_col(data=saldom, aes(x=mes, y=Saldo_Manga, fill=ano), size=2, width = 0.9, position = "dodge")+
+  geom_col(data=saldom, aes(x=mes, y=Saldo_uva, fill=ano), size=2, width = 0.9, position = "dodge")+
     scale_fill_manual(values=mycolors2)+
     labs(y= "Saldo de Emprego (unidade)", x= "Meses do Ano", title='',
        caption = "")+
-    scale_y_continuous(limits=c(-2100, 1600), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    scale_y_continuous(limits=c(-2600, 2200), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_minimal()+ #Definindo tema
-  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=14, margin = margin(b=20)),
-        axis.text.y=element_text(hjust=1, size=14, margin = margin(l=20)),
-        axis.title.x = element_text(size=14, face = "bold", margin = margin(b=20)),
-        axis.title.y = element_text(size=14, face = "bold", margin = margin(l=20)),
+  theme(axis.text.x=element_text(angle=30, hjust=0.5, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=1, size=10, margin = margin(l=20)),
+        axis.title.x = element_text(size=10, face = "bold", margin = margin(b=20)),
+        axis.title.y = element_text(size=10, face = "bold", margin = margin(l=20)),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        plot.title = element_text(hjust = 0.5, size=16, face="italic"),
+        plot.title = element_text(hjust = 0.5, size=12),
         plot.caption = element_text(hjust = 0, size=12),
         legend.position = "bottom", legend.title = element_blank(),
         legend.text=element_text(size=12)) # Definindo posição da legenda
@@ -208,7 +204,7 @@ g1 <- ggplot() +  #estetica vai valer para todos os geom's
 ggplotly(g1) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.35, 
+                      x=0.45, 
                       y=-0.25,
                       title=''))
 ```
@@ -223,7 +219,9 @@ datatable(totalm, option = list(
   autoWidth = TRUE,
   pageLength = 12))
 ```
-Fonte: CAGED reprocessado pelo Observatório de Mercado de Manga da Embrapa
+Fonte: CAGED reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+<br>
 
 <br>
 
@@ -239,7 +237,7 @@ Fonte: CAGED reprocessado pelo Observatório de Mercado de Manga da Embrapa
 
 g2 <- ggplot(data = subclasse_positivos, aes(x = sexo, y = ..count..)) +
   geom_bar(fill='steelblue')+
-    labs(y= "Contratados Manga - VSF", x= "Gênero", title='',
+    labs(y= "Contratados Uva - VSF", x= "Gênero", title='',
        caption = "")+
   theme_minimal()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
@@ -266,8 +264,8 @@ ggplotly(g2)
 ### Histograma (Orçamentos de produção)
 g3 <- ggplot(data=subclasse_positivos, aes(x=idade))+
   geom_histogram(binwidth=3, fill="#69b3a2", color="#e9ecef", alpha=0.9)+
-    scale_x_continuous(limits=c(18, 65), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
-    labs(y= "Contratados Manga - VSF", x= "Idades", title='Distribuição dos empregos gerados por idade',
+    scale_x_continuous(limits=c(17, 67), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    labs(y= "Contratados Uva - VSF", x= "Idades", title='',
        caption = "")+
   theme_minimal() +
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
@@ -296,7 +294,7 @@ ggplotly(g3)
 
 g4 <- ggplot(data = subclasse_positivos, aes(x = grau_instrucao, y = ..count..)) +
   geom_bar(fill='steelblue')+
-    scale_y_continuous(limits=c(0,500), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    scale_y_continuous(limits=c(0, 900), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
 labs(y= "Contratados", x= "Grau de Instrução", title='',
        caption = "")+
   theme_minimal() +
@@ -324,8 +322,8 @@ ggplotly(g4)
 ### Histograma (Orçamentos de produção)
 g5 <- ggplot(data=subclasse_positivos, aes(x=salario))+
   geom_histogram(binwidth=700, fill="#69b3a2", color="#e9ecef")+
-  scale_x_continuous(limits=c(0, 9000), n.breaks = 6, expand = expansion(add=c(0,0.5)))+
-    labs(y= "Contratados Manga - VSF", x= "Salários", title='Distribuição dos empregos gerados por salarios',
+  scale_x_continuous(limits=c(0, 7500), n.breaks = 6, expand = expansion(add=c(0,0.5)))+
+    labs(y= "Contratados Uva - VSF", x= "Salários", title='Distribuição dos empregos gerados por salarios',
        caption = "")+
   theme_minimal() +
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
@@ -354,16 +352,15 @@ datatable(prob_table, option = list(
   pageLength = 15,
   columnDefs =list(list(className = 'dt-center', targets = "_all"))))
 ```
-Fonte: CAGED reprocessado pelo Observatório de Mercado de Manga da Embrapa
+Fonte: CAGED reprocessado pelo Observatório de Mercado de Uva da Embrapa
 
 <br>
-
 
 # INFORMAÇÕES
 <br>
 <br>
 
-<center>![](logo_manga.jpg){width=16cm}</center>
+<center>![](logo_uva.jpg){width=16cm}</center>
 
 <br>
 <br>
@@ -373,8 +370,10 @@ Fonte: CAGED reprocessado pelo Observatório de Mercado de Manga da Embrapa
 
 <br>
 
-<center> [https://www.embrapa.br/observatorio-da-manga](https://www.embrapa.br/observatorio-da-manga) </center>
-<center> [Dashboard Mercado de Manga](https://bit.ly/3KTVLkJ) </center>
+<center> [https://www.embrapa.br/observatorio-da-uva](https://www.embrapa.br/observatorio-da-uva) </center>
+
+<center> [Dashboard Mercado de Uva](https://bit.ly/3OgmyKp) </center>
+
 
 <br>
 
