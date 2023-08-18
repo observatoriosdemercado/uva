@@ -61,9 +61,9 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-last <- as.Date("2023-08-04")
-data <- as.Date("2023-08-11")
-sem_ano <- 32 #ajustar semanalmente
+last <- as.Date("2023-08-11")
+data <- as.Date("2023-08-18")
+sem_ano <- 33 #ajustar semanalmente
 # Linhas que precisam de ajuste: 71, 104, 107
 ```
 
@@ -581,7 +581,7 @@ valueBox(
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2022
 ``` {r}
-num <- 11.26
+num <- 10.98
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -589,7 +589,7 @@ valueBox(
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 10.10
+num <- 10.16
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -755,12 +755,12 @@ num <- tail(preco_vitoria,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
 #  color = "green",
-  icon= "fa-arrow-up")
+  icon= "fa-arrow-down")
 ```
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2022
 ``` {r}
-num <- 8.68
+num <- 9.46
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -768,7 +768,7 @@ valueBox(
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 7.47
+num <- 7.55
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -996,12 +996,12 @@ num <- tail(preco_vitoriase,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
 #  color = "green",
-  icon= "fa-arrow-up")
+  icon= "fa-arrow-down")
 ```
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2022
 ``` {r}
-num <- 5.58
+num <- 5.91
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1009,7 +1009,7 @@ valueBox(
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2021
 ``` {r}
-num <- 4.13
+num <- 4.22
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
