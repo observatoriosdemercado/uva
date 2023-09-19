@@ -76,12 +76,12 @@ BRASIL {data-navmenu="DADOS GERAIS"}
 setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 options(digits=4)
-today <- as.Date("2022-01-01")
-date <- seq(as.Date('2021-01-01'),to=as.Date('2021-12-01'),by='1 month')
-date2 <- seq(as.Date('2021-01-01'),to=as.Date('2021-12-01'),by='1 month')
+today <- as.Date("2023-01-01")
+date <- seq(as.Date('2022-01-01'),to=as.Date('2022-12-01'),by='1 month')
+date2 <- seq(as.Date('2022-01-01'),to=as.Date('2022-12-01'),by='1 month')
 
 #Entrando dados no R
-dados <- read_excel("uva_ibge2021.xlsx", col_names = TRUE)
+dados <- read_excel("uva_ibge2022.xlsx", col_names = TRUE)
 dados$produtividade <- round(dados$produtividade,0)
 
 #Cores para os gráficos
@@ -95,29 +95,38 @@ mycolor4 <- "red"
 Row {data-height=125}
 -----------------------------------------------------------------------
 
-### Área Plantada com Uva no Brasil em 2021 
+### Área Plantada com Uva no Brasil em 2022 
 ``` {r}
-num <- 29.380 
+num <- 29.568 
 valueBox(
   value = paste0(num, " Hectares"),
 #  color = "lightblue3",
   icon= "fa-pen")
 ```
 
-### Produtividade média da Uva no Brasil em 2021 
+### Produtividade média da Uva no Brasil em 2022 
 ``` {r}
-num <- 27
+num <- 24
 valueBox(
   value = paste0( num, " Toneladas/Hectare"),
 #  color = "lightblue3",
   icon= "fa-pen")
 ```
 
-### Volume com Uva produzida no Brasil em 2021 
+### Volume com Uva produzida no Brasil em 2022 
 ``` {r}
-num <- 796.9
+num <- 715.8
 valueBox(
   value = paste0(format(num, decimal.mark =  ","), " Mil Toneladas" ),
+#  color = "lightblue3",
+  icon= "fa-pen")
+```
+
+### VBP com Uva produzida no Brasil em 2022 
+``` {r}
+num <- 3.3
+valueBox(
+  value = paste0(format(num, decimal.mark =  ","), " Bilhões de Reais" ),
 #  color = "lightblue3",
   icon= "fa-pen")
 ```
@@ -125,7 +134,7 @@ valueBox(
 Row
 -----------------------------------------------------------------------
 
-### Evolução da Area com uva no Brasil: 2015:2021 {.no-title}
+### Evolução da Area com uva no Brasil: 2013:2022 {.no-title}
 
 ```{r ibge1}
 g1 <- dados %>% 
@@ -133,10 +142,10 @@ g1 <- dados %>%
   ggplot() + #estetica vai valer para todos os geom's
   geom_col(aes(x=ano, y=area, fill="Area uva (Hectares)"), lwd=1)+
   scale_fill_manual(values=mycolor1)+
-  labs(y= "Hectares", x= "Anos", title='Evolução da Area com Uva no Brasil: 2015-2021',
-       caption = "Fonte: IBGE (2022)") +
+  labs(y= "Hectares", x= "Anos", title='Evolução da Area com Uva no Brasil: 2013-2022',
+       caption = "Fonte: IBGE (2023)") +
   scale_y_continuous(limits=c(0, 30000), n.breaks = 6, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2015, 2021, by = 1))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
         axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
@@ -155,7 +164,7 @@ ggplotly(g1) %>%
                       title=''))
 ```
 
-### Evolução do Volume com uva no Brasil: 2015-2021 {.no-title}
+### Evolução do Volume com uva no Brasil: 2013-2022 {.no-title}
 
 ```{r ibge2}
 g2 <- dados %>% 
@@ -163,10 +172,10 @@ g2 <- dados %>%
   ggplot() + #estetica vai valer para todos os geom's
   geom_col(aes(x=ano, y=quantidade/1000, fill="Volume (Mil Toneladas)"), lwd=1)+
   scale_fill_manual(values=mycolor2)+
-  labs(y= "Mil Toneladas", x= "Anos", title='Evolução do Volume de Uva no Brasil: 2015-2021',
-       caption = "Fonte: IBGE (2022)") +
+  labs(y= "Mil Toneladas", x= "Anos", title='Evolução do Volume de Uva no Brasil: 2013-2022',
+       caption = "Fonte: IBGE (2023)") +
   scale_y_continuous(limits=c(0, 900), n.breaks = 6, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2015, 2021, by = 1))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
         axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
@@ -188,7 +197,7 @@ ggplotly(g2) %>%
 Row
 -----------------------------------------------------------------------
 
-### Evolução da Produtividade com uva no Brasil: 2015-2021 {.no-title}
+### Evolução da Produtividade com uva no Brasil: 2013-2022 {.no-title}
 
 ```{r ibge3}
 g3 <- dados %>% 
@@ -196,10 +205,10 @@ g3 <- dados %>%
   ggplot() + #estetica vai valer para todos os geom's
   geom_col(aes(x=ano, y=produtividade, fill="Produtividade (Toneladas/Hectares)"), lwd=1)+
   scale_fill_manual(values=mycolor3)+
-  labs(y= "Produtividade (Ton/Ha)", x= "Anos", title='Evolução da Produtividade da Uva no Brasil: 2015-2021',
-       caption = "IBGE (2022)") +
+  labs(y= "Produtividade (Ton/Ha)", x= "Anos", title='Evolução da Produtividade da Uva no Brasil: 2013-2022',
+       caption = "Fonte: IBGE (2023)") +
   scale_y_continuous(limits=c(0, 30), n.breaks = 5, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2015, 2021, by = 1))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
         axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
@@ -218,18 +227,18 @@ ggplotly(g3) %>%
                       title=''))
 ```
 
-### Evolução do Valor Bruto da Produção com uva no Brasil: 2015-2021  {.no-title}
+### Evolução do Valor Bruto da Produção com uva no Brasil: 2013-2022  {.no-title}
 
 ```{r ibge4}
 g4 <- dados %>% 
   filter(abrangencia=='brasil') %>% 
   ggplot() + #estetica vai valer para todos os geom's
-  geom_col(aes(x=ano, y=vbp/1000, fill="Valor Bruto Produção (Mil R$)"), lwd=1)+
+  geom_col(aes(x=ano, y=vbp/1000, fill="Valor Bruto Produção (Milhões R$)"), lwd=1)+
   scale_fill_manual(values=mycolor4)+
-  labs(y= "VBP (Mil R$)", x= "Anos", title='Evolução do Valor Bruto da Produção da Uva no Brasil: 2015-2021',
-       caption = "IBGE (2022)") +
-  scale_y_continuous(limits=c(0, 2600), n.breaks = 5, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2015, 2021, by = 1))+
+  labs(y= "VBP (Milhões R$)", x= "Anos", title='Evolução do Valor Bruto da Produção da Uva no Brasil: 2013-2022',
+       caption = "Fonte: IBGE (2023)") +
+  scale_y_continuous(limits=c(0, 3400), n.breaks = 5, expand = expansion(add=c(0,0.5)))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
         axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
@@ -255,29 +264,38 @@ VALE DO S. FRANCISCO {data-navmenu="DADOS GERAIS"}
 Row {data-height=125}
 -----------------------------------------------------------------------
 
-### Área Plantada com Uva no Vale S. Francisco em 2021 
+### Área Plantada com Uva no Vale S. Francisco em 2022 
 ``` {r}
-num <- 10.646 
+num <- 11.114 
 valueBox(
   value = paste0(num, " Hectares"),
 #  color = "lightblue3",
   icon= "fa-pen")
 ```
 
-### Produtividade média da Uva no Vale S. Francisco em 2021 
+### Produtividade média da Uva no Vale S. Francisco em 2022 
 ``` {r}
-num <- 46
+num <- 36
 valueBox(
   value = paste0( num, " Toneladas/Hectare"),
 #  color = "lightblue3",
   icon= "fa-pen")
 ```
 
-### Volume com Uva produzida no Vale S. Francisco em 2021 
+### Volume com Uva produzida no Vale S. Francisco em 2022 
 ``` {r}
-num <- 473.9
+num <- 396.7
 valueBox(
   value = paste0(format(num, decimal.mark =  ","), " Mil Toneladas" ),
+#  color = "lightblue3",
+  icon= "fa-pen")
+```
+
+### VBP com Uva produzida no Vale S. Francisco em 2022 
+``` {r}
+num <- 1.95
+valueBox(
+  value = paste0(format(num, decimal.mark =  ","), " Bilhões de Reais" ),
 #  color = "lightblue3",
   icon= "fa-pen")
 ```
@@ -285,16 +303,16 @@ valueBox(
 Row
 -----------------------------------------------------------------------
 
-### Evolução da Area com uva no Vale do São Francisco: 2015:2021 {.no-title}
+### Evolução da Area com uva no Vale do São Francisco: 2013:2022 {.no-title}
 
 ```{r ibge1b}
 g1 <- ggplot(data=dados) +  #estetica vai valer para todos os geom's
   geom_col(aes(x=ano, y=area, fill="Area uva (Hectares)"), lwd=1)+
   scale_fill_manual(values=mycolor1)+
-  labs(y= "Hectares", x= "Anos", title='Evolução da Area com Uva no Vale do São Francisco: 2015-2021',
-       caption = "Fonte: IBGE (2022)") +
+  labs(y= "Hectares", x= "Anos", title='Evolução da Area com Uva no Vale do São Francisco: 2013-2022',
+       caption = "Fonte: IBGE (2023)") +
   scale_y_continuous(limits=c(0, 12000), n.breaks = 6, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2015, 2021, by = 1))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
         axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
@@ -313,16 +331,16 @@ ggplotly(g1) %>%
                       title=''))
 ```
 
-### Evolução do Volume com uva no Vale do São Francisco: 2015-2021 {.no-title}
+### Evolução do Volume com uva no Vale do São Francisco: 2013-2022 {.no-title}
 
 ```{r ibge2b}
 g2 <- ggplot(data=dados) +  #estetica vai valer para todos os geom's
   geom_col(aes(x=ano, y=quantidade/1000, fill="Volume (Mil Toneladas)"), lwd=1)+
   scale_fill_manual(values=mycolor2)+
-  labs(y= "Mil Toneladas", x= "Anos", title='Evolução do Volume de Uva no Vale do São Francisco: 2015-2021',
-       caption = "Fonte: IBGE (2022)") +
-  scale_y_continuous(limits=c(0, 600), n.breaks = 6, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2015, 2021, by = 1))+
+  labs(y= "Mil Toneladas", x= "Anos", title='Evolução do Volume de Uva no Vale do São Francisco: 2013-2022',
+       caption = "Fonte: IBGE (2023)") +
+  scale_y_continuous(limits=c(0, 520), n.breaks = 6, expand = expansion(add=c(0,0.5)))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
         axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
@@ -344,16 +362,16 @@ ggplotly(g2) %>%
 Row
 -----------------------------------------------------------------------
 
-### Evolução da Produtividade com uva no Vale do São Francisco: 2015-2021 {.no-title}
+### Evolução da Produtividade com uva no Vale do São Francisco: 2013-2022 {.no-title}
 
 ```{r ibge3b}
 g3 <- ggplot(data=dados) +  #estetica vai valer para todos os geom's
   geom_col(aes(x=ano, y=produtividade, fill="Produtividade (Toneladas/Hectares)"), lwd=1)+
   scale_fill_manual(values=mycolor3)+
-  labs(y= "Produtividade (Ton/Ha)", x= "Anos", title='Evolução da Produtividade da Uva no Vale do São Francisco: 2015-2021',
-       caption = "IBGE (2022)") +
-  scale_y_continuous(limits=c(0, 60), n.breaks = 6, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2015, 2021, by = 1))+
+  labs(y= "Produtividade (Ton/Ha)", x= "Anos", title='Evolução da Produtividade da Uva no Vale do São Francisco: 2013-2022',
+       caption = "IBGE (2023)") +
+  scale_y_continuous(limits=c(0, 52), n.breaks = 5, expand = expansion(add=c(0,0.5)))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
         axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
@@ -372,16 +390,16 @@ ggplotly(g3) %>%
                       title=''))
 ```
 
-### Evolução do Valor Bruto da Produção com uva no Vale do São Francisco: 2015-2021  {.no-title}
+### Evolução do Valor Bruto da Produção com uva no Vale do São Francisco: 2013-2022  {.no-title}
 
 ```{r ibge4b}
 g4 <- ggplot(data=dados) +  #estetica vai valer para todos os geom's
-  geom_col(aes(x=ano, y=vbp/1000, fill="Valor Bruto Produção (Mil R$)"), lwd=1)+
+  geom_col(aes(x=ano, y=vbp/1000, fill="Valor Bruto Produção (Milhões R$)"), lwd=1)+
   scale_fill_manual(values=mycolor4)+
-  labs(y= "VBP (Mil R$)", x= "Anos", title='Evolução do Valor Bruto da Produção da Uva no Vale do São Francisco: 2015-2021',
-       caption = "IBGE (2022)") +
-  scale_y_continuous(limits=c(0, 1600), n.breaks = 5, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2015, 2021, by = 1))+
+  labs(y= "VBP (Milhões R$)", x= "Anos", title='Evolução do Valor Bruto da Produção da Uva no Vale do São Francisco: 2013-2022',
+       caption = "IBGE (2023)") +
+  scale_y_continuous(limits=c(0, 2000), n.breaks = 5, expand = expansion(add=c(0,0.5)))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
         axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
