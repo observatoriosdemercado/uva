@@ -1283,10 +1283,10 @@ checkX13()
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2023-08-01")
-atual <-  as.Date("2023-09-01")
+anterior <- as.Date("2023-09-01")
+atual <-  as.Date("2023-10-01")
 #today <- as.Date("2022-02-11")
-mes <- 9
+mes <- 10
 
 #Entrando dados no R
 dados1 <- read.csv2('exportacoes_2016_2023.csv', header=T, sep=";", dec = ".")
@@ -1485,7 +1485,7 @@ valueBox(
 
 ### Volume Exportação em `r strftime(atual, format = "%B")` de 2022 
 ``` {r d2}
-num <- 2279
+num <- 11473
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
@@ -1493,7 +1493,7 @@ valueBox(
 
 ### Volume Exportação em `r strftime(atual, format = "%B")` de 2021 
 ``` {r d3}
-num <- 1993
+num <- 19850
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
@@ -1581,7 +1581,7 @@ g11 <- ggplot(data=dados4) +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolor1) +
   labs(y= "% de Exportação", x= "Vias", title='Principais vias de exportação',
        caption = "")+
-  scale_y_continuous(limits=c(0, 90), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_y_continuous(limits=c(0, 95), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
         axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
