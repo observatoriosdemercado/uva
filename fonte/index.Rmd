@@ -26,11 +26,6 @@ knitr::opts_chunk$set(
   comment    = "#",
   size       = "normalsize"
   )
-
-library(lubridate)
-last <- as.Date("2022-04-01")
-today <- as.Date("2022-04-08")
-sem_ano <- 14 #ajustar semanalmente
 ```
 
 <br>
@@ -61,31 +56,34 @@ CAGED (CADASTRO GERAL DE EMPREGOS E DESEMPREGADOS). Microdados. Disponível em: 
 
 Os dados utilizados nesta dashboard são de diversas fontes, como demonstrado acima. 
 
-No caso dos dados de **Preços ao Produtor**, são semanais e disponibilizados pelo **CEPEA (Esalq-USP)** englobando o período de 2012 a 2022, para as variedades de manga *Palmer* e *Tommy Atkins*, no caso da manga e *Branca Embalada*, *Negra Embalada* e *Uva Negra* no caso da uva, sempre ao produtor do Vale do São Francisco.  Os preços até em cada semana são deflacionados pelo IGP-DI e depois comparados com a média de cada semana entre 2012 e 2019 (pré pandemia), mínimo para cada semana e máximo. Os preços deflacionados de 2020 e de 2021 também são apresentados para comparação de 2022 com os dois anos anteriores. 
+No caso dos dados de **Preços ao Produtor**, são semanais e disponibilizados pelo **CEPEA (Esalq-USP)** englobando o período de 2012 a 2024, para as variedades de manga *Palmer* e *Tommy Atkins*, no caso da manga e *Branca Embalada*, *Negra Embalada* e *Uva Negra* no caso da uva, sempre ao produtor do Vale do São Francisco.  Os preços até em cada semana são deflacionados pelo IGP-DI e depois comparados com a média de cada semana entre 2012 e 2021, mínimo para cada semana e máximo. Os preços deflacionados de 2022 e de 2023 também são apresentados para comparação de 2024 com os dois anos anteriores. 
 
-Para as exportações, os dados utilizados são mensais e disponibilizados pelo **Comexstat (MDIC)** para o período de *2012 a 2022*, relacionados ao volume exportado e as receitas de exportação.
+Para as exportações, os dados utilizados são mensais e disponibilizados pelo **Comexstat (MDIC)** para o período de *2012 a 2024*, relacionados ao volume exportado e as receitas de exportação.
 
 Para **Emprego**, os dados utilizados nesta análise são mensais e disponibilizados pelo CAGED (Cadastro Geral de Empregados e Desempregados). As variáveis são saldo de empregos, empregos por gênero, contratados por idade e por escolaridade para a cultura da manga e da uva. Considera-se o conjunto de municípios da Bahia (Casa Nova, Curaçá, Juazeiro, Sento Sé, Sobradinho, etc. ) e Pernambuco (Belém do S. Francisco, Lagoa Grande, Orocó, Petrolina, etc. ) que formam o Vale do Submédio São Francisco.
 
-# OUTRAS INFORMAÇÕES
-<br>
 <br>
 
-<center> João Ricardo F. de Lima </center>
-<center> Email: joao.ricardo@embrapa.br </center>
+# INFORMAÇÕES E APOIO
 
 <br>
 
-<center> Telefones: </center>
-<center> 87-3866-3667 </center> 
-<center> 87-99961-5799 </center>
+<center>João Ricardo F. de Lima</center>
+
+<center>Email Coordenador: joao.ricardo\@embrapa.br</center>
 
 <br>
 
-<center>![](logo_embrapa.jpg){width=6cm}</center>
+<center>Telefones:</center>
+
+<center>87-3866-3667</center>
+
+<center>87-99961-5799</center>
 
 <br>
-<br>
 
+<center>![](apoio1.png){width="6cm"}</center>
+
+<br>
 
 
