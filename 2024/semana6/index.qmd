@@ -45,11 +45,11 @@ sem_ano <- 6 #ajustar semanalmente
 
 Os dados utilizados nesta análise são semanais e disponibilizados pelo **CEPEA (Esalq-USP)** englobando o período de 2017 a 2024, de uva sem semente branca e negra embaladas (incluso uva+material de embalagem+resfriamento, FOB-Petrolina), para os produtores do Vale do São Francisco. Também mostra informações sobre a uva negra sem embalagem, com dados semanais de 2019 à 2024. Os preços até a semana `r strftime(today, format = "%V de %Y")`, deflacionados pelo IGP-DI, são comparados com a média de cada semana entre 2017 e 2021, mínimo e máximo. Os preços deflacionados de 2022 e de 2023 também são apresentados para comparação de 2024 com os dois anos anteriores.
 
-O preço médio de uva sem semente branca embalada, na semana `r strftime(today, format = "%V")`, foi R\$ 14,67, variando entre R\$15,60 e R\$13,00. Este valor é maior do que a média histórica deflacionada encontrada na semana `r strftime(today, format = "%V")`, que é R\$ 12,90, mais alto do que o preço de 2022 (R\$13,71) e que o preço de 2023 (R\$12,06). Em relação a semana `r strftime(last, format = "%V")`, houve um aumento de 2,59% nos preços.
+O preço médio de uva sem semente branca embalada, na semana `r strftime(today, format = "%V")`, foi R\$ 14,67, variando entre R\$15,60 e R\$13,00. Este valor é maior do que a média histórica deflacionada encontrada na semana `r strftime(today, format = "%V")`, que é R\$ 12,89, mais alto do que o preço de 2022 (R\$13,71) e que o preço de 2023 (R\$12,06). Em relação a semana `r strftime(last, format = "%V")`, houve um aumento de 2,59% nos preços.
 
-No caso da uva sem semente negra embalada (embalagem do produtor + resfriamento), na semana `r strftime(today, format = "%V")` o preço médio foi de R\$ 13,98, variando entre R\$ 15,00 e R\$ 13,00. Em 2022, o preço deflacionado é de R\$ 10,97. Em 2023, o preço é de R\$ 12,09 e a média histórica deflacionada para esta semana é de R\$ 12,22. Em relação à semana `r strftime(last, format = "%V")`, os preços reduziram -3,32%.
+No caso da uva sem semente negra embalada (embalagem do produtor + resfriamento), na semana `r strftime(today, format = "%V")` o preço médio foi de R\$ 13,98, variando entre R\$ 15,00 e R\$ 13,00. Em 2022, o preço deflacionado é de R\$ 10,97. Em 2023, o preço é de R\$ 12,09 e a média histórica deflacionada para esta semana é de R\$ 12,02. Em relação à semana `r strftime(last, format = "%V")`, os preços reduziram -3,32%.
 
-Para a uva sem semente negra, o preço médio na semana `r strftime(today, format = "%V")` é R\$9,27, variando entre R\$9,80 e R\$8,50. Isto significa um aumento de 0,22% em relação a semana anterior. Este valor é maior do que a média histórica deflacionada da semana (R\$7,30), maior do que a média de 2022 (R\$6,73) e que o preço de 2023 deflacionado (R\$7,54).
+Para a uva sem semente negra, o preço médio na semana `r strftime(today, format = "%V")` é R\$9,27, variando entre R\$9,80 e R\$8,50. Isto significa um aumento de 0,22% em relação a semana anterior. Este valor é maior do que a média histórica deflacionada da semana (R\$7,24), maior do que a média de 2022 (R\$6,73) e que o preço de 2023 deflacionado (R\$7,54).
 
 <br>
 
@@ -263,17 +263,17 @@ Fonte: Observatório de Mercado de Uva da Embrapa
 ## EVOLUÇÃO DOS PREÇOS DE UVA BRANCA SEM SEMENTE EMBALADA AO PRODUTOR DO VALE SÃO FRANCISCO
 
 ::: panel-tabset
-### GRÁFICO CONSIDERANDO A MÉDIA 2017 A 2021
+### GRÁFICO
 
 ```{r branca3, results='', fig.cap=''}
 #Analise das comparações entre as médias
-preco_arra_2021 <- window(preco_arra, end=c(2021,52))
-seas21<-seasplot(preco_arra_2021, trend=F, outplot = F)
-medias21 <- colMeans(seas21$season)
+preco_arra_2023 <- window(preco_arra, end=c(2023,52))
+seas23 <- seasplot(preco_arra_2023, trend=F, outplot = F)
+medias23 <- colMeans(seas23$season)
 
 preco_arra_2022 <- window(preco_arra, end=c(2022,52))
 
-preco_arra_2023 <- window(preco_arra, end=c(2023,52))
+#preco_arra_2023 <- window(preco_arra, end=c(2023,52))
 #seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
 #medias21 <- colMeans(seas21$season)
 
@@ -286,18 +286,18 @@ for(i in 1:sem_ano){
   
 
 #Como só se tem até a semana 52
-medias21 <- medias21[1:52]
+medias23 <- medias23[1:52]
 #medias21 <- medias21[1:52]
 
 matrix = matrix(NA, nrow=52, ncol=2)
 
 for(i in 1:52){
-  matrix[i,1] = min(seas21$season[,i])
-  matrix[i,2] = max(seas21$season[,i])
+  matrix[i,1] = min(seas23$season[,i])
+  matrix[i,2] = max(seas23$season[,i])
 }
 
 time <- seq(1:52)
-table <- data.frame(time, matrix[,1], round(medias21,2), matrix[,2], round(tail(preco_arra_2022,52),2),
+table <- data.frame(time, matrix[,1], round(medias23,2), matrix[,2], round(tail(preco_arra_2022,52),2),
                     round(tail(preco_arra_2023,52),2), preco_arra_2024[,1])
 colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2022', 'Ano 2023', 
                     'Ano 2024')
@@ -506,13 +506,13 @@ Fonte: Observatório de Mercado de Uva da Embrapa
 
 ```{r negra3, results='', fig.cap=''}
 #Analise das comparações entre as médias
-preco_vitoria_2021 <- window(preco_vitoria, end=c(2021,52))
-seas21 <- seasplot(preco_vitoria_2021, trend=F, outplot = F)
-medias21 <- colMeans(seas21$season)
+preco_vitoria_2023 <- window(preco_vitoria, end=c(2023,52))
+seas23 <- seasplot(preco_vitoria_2023, trend=F, outplot = F)
+medias23 <- colMeans(seas23$season)
 
 preco_vitoria_2022 <- window(preco_vitoria, end=c(2022,52))
 
-preco_vitoria_2023 <- window(preco_vitoria, end=c(2023,52))
+#preco_vitoria_2023 <- window(preco_vitoria, end=c(2023,52))
 #seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
 #medias21 <- colMeans(seas21$season)
 
@@ -524,18 +524,18 @@ for(i in 1:sem_ano){
 }
   
 #Como só se tem até a semana 52
-medias21 <- medias21[1:52]
+medias23 <- medias23[1:52]
 #medias21 <- medias21[1:52]
 
 matrix = matrix(NA, nrow=52, ncol=2)
 
 for(i in 1:52){
-  matrix[i,1] = min(seas21$season[,i])
-  matrix[i,2] = max(seas21$season[,i])
+  matrix[i,1] = min(seas23$season[,i])
+  matrix[i,2] = max(seas23$season[,i])
 }
 
 time <- seq(1:52)
-table <- data.frame(time, matrix[,1], round(medias21,2), matrix[,2], round(tail(preco_vitoria_2022,52),2),
+table <- data.frame(time, matrix[,1], round(medias23,2), matrix[,2], round(tail(preco_vitoria_2022,52),2),
                     round(tail(preco_vitoria_2023,52),2), preco_vitoria_2024[,1])
 colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2022', 'Ano 2023', 
                     'Ano 2024')
@@ -747,13 +747,13 @@ Fonte: Observatório de Mercado de Uva da Embrapa
 
 ```{r negrase3, results='', fig.cap=''}
 #Analise das comparações entre as médias
-preco_vitoriase_2021 <- window(preco_vitoriase, end=c(2021,52))
-seas21 <- seasplot(preco_vitoriase_2021, trend=F, outplot = F)
-medias21 <- colMeans(seas21$season)
+preco_vitoriase_2023 <- window(preco_vitoriase, end=c(2023,52))
+seas23 <- seasplot(preco_vitoriase_2023, trend=F, outplot = F)
+medias23 <- colMeans(seas23$season)
 
 preco_vitoriase_2022 <- window(preco_vitoriase, end=c(2022,52))
 
-preco_vitoriase_2023 <- window(preco_vitoriase, end=c(2023,52))
+#preco_vitoriase_2023 <- window(preco_vitoriase, end=c(2023,52))
 #seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
 #medias21 <- colMeans(seas21$season)
 
@@ -766,18 +766,18 @@ for(i in 1:sem_ano){
   
 
 #Como só se tem até a semana 52
-medias21 <- medias21[1:52]
+medias23 <- medias23[1:52]
 #medias21 <- medias21[1:52]
 
 matrix = matrix(NA, nrow=52, ncol=2)
 
 for(i in 1:52){
-  matrix[i,1] = min(seas21$season[,i])
-  matrix[i,2] = max(seas21$season[,i])
+  matrix[i,1] = min(seas23$season[,i])
+  matrix[i,2] = max(seas23$season[,i])
 }
 
 time <- seq(1:52)
-table <- data.frame(time, matrix[,1], round(medias21,2), matrix[,2], round(tail(preco_vitoriase_2022,52),2),
+table <- data.frame(time, matrix[,1], round(medias23,2), matrix[,2], round(tail(preco_vitoriase_2022,52),2),
                     round(tail(preco_vitoriase_2023,52),2), preco_vitoriase_2024[,1])
 colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2022', 'Ano 2023', 'Ano 2024')
 tablea <- table[,-c(5:7)]
