@@ -61,9 +61,9 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-last <- as.Date("2024-01-19")
-data <- as.Date("2024-01-26")
-sem_ano <- 04 #ajustar semanalmente
+last <- as.Date("2024-02-02")
+data <- as.Date("2024-02-09")
+sem_ano <- 06 #ajustar semanalmente
 # Linhas que precisam de ajuste: 71, 104, 107
 ```
 
@@ -521,13 +521,13 @@ sazonal_graph <- tibble(cbind(semanas, sazonalidade))
 
 #Parte 3
 #Analise das comparações entre as médias
-preco_arra_2021 <- window(preco_arra, end=c(2021,52))
-seas21 <- seasplot(preco_arra_2021, trend=F, outplot = F)
-medias21 <- colMeans(seas21$season)
+preco_arra_2023 <- window(preco_arra, end=c(2023,52))
+seas23 <- seasplot(preco_arra_2023, trend=F, outplot = F)
+medias23 <- colMeans(seas23$season)
 
 preco_arra_2022 <- window(preco_arra, end=c(2022,52))
 
-preco_arra_2023 <- window(preco_arra, end=c(2023,52))
+#preco_arra_2023 <- window(preco_arra, end=c(2023,52))
 #seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
 #medias21 <- colMeans(seas21$season)
 
@@ -540,18 +540,18 @@ for(i in 1:sem_ano){
   
 
 #Como só se tem até a semana 52
-medias21 <- medias21[1:52]
+medias23 <- medias23[1:52]
 #medias21 <- medias21[1:52]
 
 matrix = matrix(NA, nrow=52, ncol=2)
 
 for(i in 1:52){
-  matrix[i,1] = min(seas21$season[,i])
-  matrix[i,2] = max(seas21$season[,i])
+  matrix[i,1] = min(seas23$season[,i])
+  matrix[i,2] = max(seas23$season[,i])
 }
 
 time <- seq(1:52)
-table <- data.frame(time, matrix[,1], round(medias21,2), matrix[,2], round(tail(preco_arra_2022,52),2),
+table <- data.frame(time, matrix[,1], round(medias23,2), matrix[,2], round(tail(preco_arra_2022,52),2),
                     round(tail(preco_arra_2023,52),2), preco_arra_2024[,1])
 colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2022', 'Ano 2023', 
                     'Ano 2024')
@@ -591,14 +591,14 @@ num <- tail(preco_arra,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
 #  color = "tomato",
-  icon= "fa-arrow-down")
+  icon= "fa-arrow-up")
 #arrow-trend-down
 #darkmagenta
 ```
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2023
 ``` {r}
-num <- 10.68
+num <- 12.06
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -606,7 +606,7 @@ valueBox(
 
 ### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2022
 ``` {r}
-num <- 12.78
+num <- 13.71
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -772,12 +772,12 @@ num <- tail(preco_vitoria,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
 #  color = "green",
-  icon= "fa-arrow-up")
+  icon= "fa-arrow-down")
 ```
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2023
 ``` {r}
-num <- 10.24
+num <- 12.09
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -785,7 +785,7 @@ valueBox(
 
 ### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2022
 ``` {r}
-num <- 10.25
+num <- 10.97
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -799,13 +799,13 @@ Row
 ```{r negra_setup}
 
 #Analise das comparações entre as médias
-preco_vitoria_2021 <- window(preco_vitoria, end=c(2021,52))
-seas21 <- seasplot(preco_vitoria_2021, trend=F, outplot = F)
-medias21 <- colMeans(seas21$season)
+preco_vitoria_2023 <- window(preco_vitoria, end=c(2023,52))
+seas23 <- seasplot(preco_vitoria_2023, trend=F, outplot = F)
+medias23 <- colMeans(seas23$season)
 
 preco_vitoria_2022 <- window(preco_vitoria, end=c(2022,52))
 
-preco_vitoria_2023 <- window(preco_vitoria, end=c(2023,52))
+#preco_vitoria_2023 <- window(preco_vitoria, end=c(2023,52))
 #seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
 #medias21 <- colMeans(seas21$season)
 
@@ -818,17 +818,17 @@ for(i in 1:sem_ano){
   
 #Como só se tem até a semana 52
 #medias20 <- medias20[1:52]
-medias21 <- medias21[1:52]
+medias23 <- medias23[1:52]
 
 matrix = matrix(NA, nrow=52, ncol=2)
 
 for(i in 1:52){
-  matrix[i,1] = min(seas21$season[,i])
-  matrix[i,2] = max(seas21$season[,i])
+  matrix[i,1] = min(seas23$season[,i])
+  matrix[i,2] = max(seas23$season[,i])
 }
 
 time <- seq(1:52)
-table <- data.frame(time, matrix[,1], round(medias21,2), matrix[,2], round(tail(preco_vitoria_2022,52),2),
+table <- data.frame(time, matrix[,1], round(medias23,2), matrix[,2], round(tail(preco_vitoria_2022,52),2),
                     round(tail(preco_vitoria_2023,52),2), preco_vitoria_2024[,1])
 colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2022', 'Ano 2023', 
                     'Ano 2024')
@@ -1013,12 +1013,12 @@ num <- tail(preco_vitoriase,1)
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
 #  color = "green",
-  icon= "fa-arrow-down")
+  icon= "fa-arrow-up")
 ```
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2023
 ``` {r}
-num <- 6.28
+num <- 7.54
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1026,7 +1026,7 @@ valueBox(
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2022
 ``` {r}
-num <- 6.16
+num <- 6.73
 valueBox(
   value = paste0( "R$", format(num, decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1040,13 +1040,13 @@ Row
 ```{r negrase_setup}
 
 #Analise das comparações entre as médias
-preco_vitoriase_2021 <- window(preco_vitoriase, end=c(2021,52))
-seas21 <- seasplot(preco_vitoriase_2021, trend=F, outplot = F)
-medias21 <- colMeans(seas21$season)
+preco_vitoriase_2023 <- window(preco_vitoriase, end=c(2023,52))
+seas23 <- seasplot(preco_vitoriase_2023, trend=F, outplot = F)
+medias23 <- colMeans(seas23$season)
 
 preco_vitoriase_2022 <- window(preco_vitoriase, end=c(2022,52))
 
-preco_vitoriase_2023 <- window(preco_vitoriase, end=c(2023,52))
+#preco_vitoriase_2023 <- window(preco_vitoriase, end=c(2023,52))
 #seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
 #medias21 <- colMeans(seas21$season)
 
@@ -1060,17 +1060,17 @@ for(i in 1:sem_ano){
 
 #Como só se tem até a semana 52
 #medias20 <- medias20[1:52]
-medias21 <- medias21[1:52]
+medias23 <- medias23[1:52]
 
 matrix = matrix(NA, nrow=52, ncol=2)
 
 for(i in 1:52){
-  matrix[i,1] = min(seas21$season[,i])
-  matrix[i,2] = max(seas21$season[,i])
+  matrix[i,1] = min(seas23$season[,i])
+  matrix[i,2] = max(seas23$season[,i])
 }
 
 time <- seq(1:52)
-table <- data.frame(time, matrix[,1], round(medias21,2), matrix[,2], round(tail(preco_vitoriase_2022,52),2),
+table <- data.frame(time, matrix[,1], round(medias23,2), matrix[,2], round(tail(preco_vitoriase_2022,52),2),
                     round(tail(preco_vitoriase_2023,52),2), preco_vitoriase_2024[,1])
 colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2022', 'Ano 2023', 'Ano 2024')
 
