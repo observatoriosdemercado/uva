@@ -709,7 +709,7 @@ ggplotly(g10) %>%
   layout(legend = list(
                       orientation = "h", 
                       x=0.4, 
-                      y=-0.2,
+                      y=-0.35,
                       title=''))
 ```
 Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa
@@ -781,7 +781,7 @@ Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa
 
 :::
 
-# 6. Unidade da Federação da uva exportada do Brasil: `r strftime(atual, format = "%B")` de 2023. 
+# 6. Unidade da Federação da uva exportada do Brasil: `r strftime(atual, format = "%B")` de 2024. 
 
 ::: panel-tabset
 ## GRÁFICO
