@@ -38,7 +38,7 @@ atual <-  as.Date("2024-03-01")
 
 <hr>
 
-# ANÁLISE DOS EMPREGOS GERADOS NA MANGICULTURA EM `r toupper(strftime(atual, format = "%B DE %Y"))`
+# ANÁLISE DOS EMPREGOS GERADOS NA VITICULTURA EM `r toupper(strftime(atual, format = "%B DE %Y"))`
 
 Os dados utilizados nesta análise são mensais e disponibilizados pelo CAGED (Cadastro Geral de Empregados e Desempregados) até o mês de `r strftime(atual, format = "%B de %Y")`. As variáveis são saldo de empregos, empregos por gênero, contratados por idade e por escolaridade para a cultura da uva. Considera-se o conjunto de municípios da Bahia (Casa Nova, Curaçá, Juazeiro, Sento Sé, Sobradinho, etc.) e Pernambuco (Belém do S. Francisco, Lagoa Grande, Orocó, Petrolina, etc.) que formam o Vale do Submédio São Francisco.
 
