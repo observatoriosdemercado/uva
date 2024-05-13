@@ -1,21 +1,22 @@
 ---
-title: "DASHBOARD MERCADO DE MANGA"
+title: "DASHBOARD MERCADO DE UVA"
 #author: "João Ricardo Lima"
 output: 
   flexdashboard::flex_dashboard:
     logo: "https://raw.githubusercontent.com/observatoriosdemercado/manga/main/branca_peq.png"
     favicon: "https://www.embrapa.br/portal-embrapa-theme/images/marca-embrapa-colorida.png"
     navbar:
-      - {title: "Apoio, Metodologia e Fontes dos Dados", href: "https://observatoriosdemercado.github.io/manga/fonte/", align: right}
+      - {title: "Apoio, Metodologia e Fontes dos Dados", href: "https://observatoriosdemercado.github.io/uva/fonte/", align: right}
     orientation: rows
+    #css: styles.css
     vertical_layout: fill #sem barra de rolagem e scroll com barra
     theme: 
       version: 4
       bootswatch: bootstrap
       navbar-bg: "#183b8c"
-      fg:        "#183b8c"
       bg:        "#ffffff"
-#runtime: shiny    
+      fg:        "#183b8c"
+#runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
@@ -39,10 +40,17 @@ library(tseries)
 library(quantmod)
 library(kableExtra)# complex tables
 library(lmtest)
+library(dygraphs)
 library(plotly)
-#library(rmarkdown)
+library(DT)
+library(lubridate)
+library(rmarkdown)
 library(bslib)
-#library(shiny)
+library(shiny)
+library(magrittr)# pipe operations
+library(readxl)
+
+checkX13()
 
 knitr::opts_chunk$set(
   echo       = FALSE,
@@ -53,9 +61,9 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-data <- as.Date("2024-05-10") #ajustar semanalmente
+last <- as.Date("2024-05-03")
+data <- as.Date("2024-05-10")
 sem_ano <- 19 #ajustar semanalmente
-
 # Linhas que precisam de ajuste: 71, 104, 107
 ```
 
@@ -64,8 +72,1610 @@ BRASIL {data-navmenu="DADOS GERAIS"}
 
 ```{r database5}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_manga')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_manga')
+#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+
+options(digits=4)
+#today <- as.Date("2023-01-01")
+date <- seq(as.Date('2022-01-01'),to=as.Date('2022-12-01'),by='1 month')
+date2 <- seq(as.Date('2022-01-01'),to=as.Date('2022-12-01'),by='1 month')
+
+#Entrando dados no R
+dados <- read_excel("uva_ibge2022.xlsx", col_names = TRUE)
+dados$produtividade <- round(dados$produtividade,0)
+
+#Cores para os gráficos
+
+mycolor1 <- "gold"
+mycolor2 <- "darkgreen"
+mycolor3 <- "blue"
+mycolor4 <- "red"
+```
+
+Row {data-height=125}
+-----------------------------------------------------------------------
+
+### Área Plantada com Uva no Brasil em 2022 
+``` {r}
+num <- 29.568 
+valueBox(
+  value = paste0(num, " Hectares"),
+#  color = "lightblue3",
+  icon= "fa-pen")
+```
+
+### Produtividade média da Uva no Brasil em 2022 
+``` {r}
+num <- 24
+valueBox(
+  value = paste0( num, " Toneladas/Hectare"),
+#  color = "lightblue3",
+  icon= "fa-pen")
+```
+
+### Volume com Uva produzida no Brasil em 2022 
+``` {r}
+num <- 715.8
+valueBox(
+  value = paste0(format(num, decimal.mark =  ","), " Mil Toneladas" ),
+#  color = "lightblue3",
+  icon= "fa-pen")
+```
+
+### VBP com Uva produzida no Brasil em 2022 
+``` {r}
+num <- 3.3
+valueBox(
+  value = paste0(format(num, decimal.mark =  ","), " Bilhões de Reais" ),
+#  color = "lightblue3",
+  icon= "fa-pen")
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Evolução da Area com uva no Brasil: 2013:2022 {.no-title}
+
+```{r ibge1}
+g1 <- dados %>% 
+  filter(abrangencia=='brasil') %>% 
+  ggplot() + #estetica vai valer para todos os geom's
+  geom_col(aes(x=ano, y=area, fill="Area uva (Hectares)"), lwd=1)+
+  scale_fill_manual(values=mycolor1)+
+  labs(y= "Hectares", x= "Anos", title='Evolução da Area com Uva no Brasil: 2013-2022',
+       caption = "Fonte: IBGE (2023)") +
+  scale_y_continuous(limits=c(0, 30000), n.breaks = 6, expand = expansion(add=c(0,0.5)))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
+        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
+        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
+        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=14),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g1) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.35, 
+                      y=-0.20,
+                      title=''))
+```
+
+### Evolução do Volume com uva no Brasil: 2013-2022 {.no-title}
+
+```{r ibge2}
+g2 <- dados %>% 
+  filter(abrangencia=='brasil') %>% 
+  ggplot() + #estetica vai valer para todos os geom's
+  geom_col(aes(x=ano, y=quantidade/1000, fill="Volume (Mil Toneladas)"), lwd=1)+
+  scale_fill_manual(values=mycolor2)+
+  labs(y= "Mil Toneladas", x= "Anos", title='Evolução do Volume de Uva no Brasil: 2013-2022',
+       caption = "Fonte: IBGE (2023)") +
+  scale_y_continuous(limits=c(0, 900), n.breaks = 6, expand = expansion(add=c(0,0.5)))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
+        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
+        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
+        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=14),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g2) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.35, 
+                      y=-0.20,
+                      title=''))
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Evolução da Produtividade com uva no Brasil: 2013-2022 {.no-title}
+
+```{r ibge3}
+g3 <- dados %>% 
+  filter(abrangencia=='brasil') %>% 
+  ggplot() + #estetica vai valer para todos os geom's
+  geom_col(aes(x=ano, y=produtividade, fill="Produtividade (Toneladas/Hectares)"), lwd=1)+
+  scale_fill_manual(values=mycolor3)+
+  labs(y= "Produtividade (Ton/Ha)", x= "Anos", title='Evolução da Produtividade da Uva no Brasil: 2013-2022',
+       caption = "Fonte: IBGE (2023)") +
+  scale_y_continuous(limits=c(0, 30), n.breaks = 5, expand = expansion(add=c(0,0.5)))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
+        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
+        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
+        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=14),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g3) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.35, 
+                      y=-0.20,
+                      title=''))
+```
+
+### Evolução do Valor Bruto da Produção com uva no Brasil: 2013-2022  {.no-title}
+
+```{r ibge4}
+g4 <- dados %>% 
+  filter(abrangencia=='brasil') %>% 
+  ggplot() + #estetica vai valer para todos os geom's
+  geom_col(aes(x=ano, y=vbp/1000, fill="Valor Bruto Produção (Milhões R$)"), lwd=1)+
+  scale_fill_manual(values=mycolor4)+
+  labs(y= "VBP (Milhões R$)", x= "Anos", title='Evolução do Valor Bruto da Produção da Uva no Brasil: 2013-2022',
+       caption = "Fonte: IBGE (2023)") +
+  scale_y_continuous(limits=c(0, 3400), n.breaks = 5, expand = expansion(add=c(0,0.5)))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
+        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
+        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
+        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=14),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g4) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.35, 
+                      y=-0.20,
+                      title=''))
+```
+
+
+VALE DO S. FRANCISCO {data-navmenu="DADOS GERAIS"}
+======================================================================
+
+Row {data-height=125}
+-----------------------------------------------------------------------
+
+### Área Plantada com Uva no Vale S. Francisco em 2022 
+``` {r}
+num <- 11.114 
+valueBox(
+  value = paste0(num, " Hectares"),
+#  color = "lightblue3",
+  icon= "fa-pen")
+```
+
+### Produtividade média da Uva no Vale S. Francisco em 2022 
+``` {r}
+num <- 36
+valueBox(
+  value = paste0( num, " Toneladas/Hectare"),
+#  color = "lightblue3",
+  icon= "fa-pen")
+```
+
+### Volume com Uva produzida no Vale S. Francisco em 2022 
+``` {r}
+num <- 396.7
+valueBox(
+  value = paste0(format(num, decimal.mark =  ","), " Mil Toneladas" ),
+#  color = "lightblue3",
+  icon= "fa-pen")
+```
+
+### VBP com Uva produzida no Vale S. Francisco em 2022 
+``` {r}
+num <- 1.95
+valueBox(
+  value = paste0(format(num, decimal.mark =  ","), " Bilhões de Reais" ),
+#  color = "lightblue3",
+  icon= "fa-pen")
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Evolução da Area com uva no Vale do São Francisco: 2013:2022 {.no-title}
+
+```{r ibge1b}
+g1 <- ggplot(data=dados) +  #estetica vai valer para todos os geom's
+  geom_col(aes(x=ano, y=area, fill="Area uva (Hectares)"), lwd=1)+
+  scale_fill_manual(values=mycolor1)+
+  labs(y= "Hectares", x= "Anos", title='Evolução da Area com Uva no Vale do São Francisco: 2013-2022',
+       caption = "Fonte: IBGE (2023)") +
+  scale_y_continuous(limits=c(0, 12000), n.breaks = 6, expand = expansion(add=c(0,0.5)))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
+        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
+        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
+        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=14),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g1) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.35, 
+                      y=-0.20,
+                      title=''))
+```
+
+### Evolução do Volume com uva no Vale do São Francisco: 2013-2022 {.no-title}
+
+```{r ibge2b}
+g2 <- ggplot(data=dados) +  #estetica vai valer para todos os geom's
+  geom_col(aes(x=ano, y=quantidade/1000, fill="Volume (Mil Toneladas)"), lwd=1)+
+  scale_fill_manual(values=mycolor2)+
+  labs(y= "Mil Toneladas", x= "Anos", title='Evolução do Volume de Uva no Vale do São Francisco: 2013-2022',
+       caption = "Fonte: IBGE (2023)") +
+  scale_y_continuous(limits=c(0, 520), n.breaks = 6, expand = expansion(add=c(0,0.5)))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
+        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
+        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
+        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=14),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g2) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.35, 
+                      y=-0.20,
+                      title=''))
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Evolução da Produtividade com uva no Vale do São Francisco: 2013-2022 {.no-title}
+
+```{r ibge3b}
+g3 <- ggplot(data=dados) +  #estetica vai valer para todos os geom's
+  geom_col(aes(x=ano, y=produtividade, fill="Produtividade (Toneladas/Hectares)"), lwd=1)+
+  scale_fill_manual(values=mycolor3)+
+  labs(y= "Produtividade (Ton/Ha)", x= "Anos", title='Evolução da Produtividade da Uva no Vale do São Francisco: 2013-2022',
+       caption = "IBGE (2023)") +
+  scale_y_continuous(limits=c(0, 52), n.breaks = 5, expand = expansion(add=c(0,0.5)))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
+        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
+        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
+        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=14),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g3) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.35, 
+                      y=-0.20,
+                      title=''))
+```
+
+### Evolução do Valor Bruto da Produção com uva no Vale do São Francisco: 2013-2022  {.no-title}
+
+```{r ibge4b}
+g4 <- ggplot(data=dados) +  #estetica vai valer para todos os geom's
+  geom_col(aes(x=ano, y=vbp/1000, fill="Valor Bruto Produção (Milhões R$)"), lwd=1)+
+  scale_fill_manual(values=mycolor4)+
+  labs(y= "VBP (Milhões R$)", x= "Anos", title='Evolução do Valor Bruto da Produção da Uva no Vale do São Francisco: 2013-2022',
+       caption = "IBGE (2023)") +
+  scale_y_continuous(limits=c(0, 2000), n.breaks = 5, expand = expansion(add=c(0,0.5)))+
+  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
+        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
+        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
+        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=14),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g4) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.35, 
+                      y=-0.20,
+                      title=''))
+```
+
+BRANCA SEEDLESS EMBALADA {data-navmenu="PREÇOS AO PRODUTOR"}
+======================================================================
+
+``` {r database1}
+#Direcionado o R para o Diretorio a ser trabalhado
+#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_Uva')
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+
+options(digits=4)
+
+#Entrando dados no R Branca Arra-15
+dados1 <- read.csv2('dados_uva_arra_semana.csv', header=T, sep=";", dec=".")
+#dados <- dados[,-c(9:10)] #retirar as ultimas colunas
+colnames(dados1)[1]<-'produto'
+
+
+#Entrando dados no R Vitoria com Embalagem
+dados2 <- read.csv2('dados_uva_vitoria_semana.csv', header=T, sep=";", dec=".")
+#dados <- dados[,-c(9:10)] #retirar as ultimas colunas
+colnames(dados2)[1]<-'produto'
+
+
+#Entrando dados no R Vitoria sem Embalagem
+dados3 <- read.csv2('dados_uva_vitoriaSE_semana.csv', header=T, sep=";", dec=".")
+#dados <- dados[,-c(9:10)] #retirar as ultimas colunas
+colnames(dados3)[1]<-'produto'
+
+
+#organização das bases para Uva Branca e Vitoria Embalada
+
+#Entrando dados no R - Deflator
+igpdi <- read.csv2('igpdi_uva.csv', 
+                   header=T, sep=";",
+                   dec=".")
+colnames(igpdi)[1]<-'ano'
+
+#Juntar tudo em um unico tibble
+dados <- full_join(dados1, dados2) %>% full_join(igpdi)
+
+#Resolver os Missing
+dados <-na_kalman(dados)
+
+#Deflacionar a série de precos
+dados$preco_def <- dados[,4]*(tail(dados[,5],1)/dados[,5])
+
+#Criando uma variável com as datas semanais
+dados$date <- seq(as.Date('2017-01-07'),to=data,by='1 week')
+
+#Passar para um Tibble
+dados <- tibble(dados)
+
+#Ajustando como uma série temporal
+dados <- dados %>% 
+  select(c(date, produto, preco_def, ano))
+
+#organização da base para Vitoria Sem Embalagem
+
+igpdi2 <- igpdi %>% filter(ano >= '2019')
+
+#Juntar tudo em um unico tibble
+dadosv <- full_join(dados3, igpdi2)
+
+#Resolver os Missing
+dadosv <-na_kalman(dadosv)
+
+#Deflacionar a série de precos
+dadosv$preco_def <- dadosv[,4]*(tail(dadosv[,5],1)/dadosv[,5])
+
+#Criando uma variável com as datas semanais
+dadosv$date <- seq(as.Date('2019-01-07'),to=data,by='1 week')
+
+#Passar para um Tibble
+dadosv <- tibble(dadosv)
+
+#Ajustando como uma série temporal
+dadosv <- dadosv %>% 
+  select(c(date, produto, preco_def, ano))
+
+#Geração das tendencias
+
+arra <- dados%>% filter(produto=="arra_15")
+vitoria <- dados %>% filter(produto=="vitoria")
+vitoriase <- dadosv
+
+preco_arra <- ts(arra[,3], start=c(2017,1), freq=52)
+sazonal_arra <- cmav(preco_arra, outplot = F)
+
+preco_vitoria <- ts(vitoria[,3], start=c(2017,1), freq=52)
+sazonal_vitoria <- cmav(preco_vitoria, outplot = F)
+
+preco_vitoriase <- ts(vitoriase[,3], start=c(2019,1), freq=52)
+sazonal_vitoriase <- cmav(preco_vitoriase, outplot = F)
+
+# Parte 2
+#Decompor a Série
+decompa<-decompose(preco_arra, type = 'multiplicative')
+
+sazonalidade <- decompa$figure
+semanas <- seq(1:52)
+sazonal_graph <- tibble(cbind(semanas, sazonalidade))
+
+#Parte 3
+#Analise das comparações entre as médias
+preco_arra_2023 <- window(preco_arra, end=c(2023,52))
+seas23 <- seasplot(preco_arra_2023, trend=F, outplot = F)
+medias23 <- colMeans(seas23$season)
+
+preco_arra_2022 <- window(preco_arra, end=c(2022,52))
+
+#preco_arra_2023 <- window(preco_arra, end=c(2023,52))
+#seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
+#medias21 <- colMeans(seas21$season)
+
+preco_arra_24 <- as.matrix(tail(arra$preco_def,sem_ano))   
+preco_arra_2024 <- matrix(NA, nrow=52, ncol=1)
+
+for(i in 1:sem_ano){
+  preco_arra_2024[i,1] = preco_arra_24[i,1]
+}
+  
+
+#Como só se tem até a semana 52
+medias23 <- medias23[1:52]
+#medias21 <- medias21[1:52]
+
+matrix = matrix(NA, nrow=52, ncol=2)
+
+for(i in 1:52){
+  matrix[i,1] = min(seas23$season[,i])
+  matrix[i,2] = max(seas23$season[,i])
+}
+
+time <- seq(1:52)
+table <- data.frame(time, matrix[,1], round(medias23,2), matrix[,2], round(tail(preco_arra_2022,52),2),
+                    round(tail(preco_arra_2023,52),2), preco_arra_2024[,1])
+colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2022', 'Ano 2023', 
+                    'Ano 2024')
+tablea <- table[,-c(5:7)]
+tableb <- table[,-c(2,3,4)]
+
+tablea2 <- melt(tablea, id.var='Semanas')
+tableb2 <- melt(tableb, id.var='Semanas')
+mycolors <- c("dodgerblue2", "gold", "darkmagenta")
+
+#Parte 4
+
+preco_arra_23 <- arra %>% filter(ano=='2023')
+preco_arra_2023 <- as.matrix(preco_arra_23$preco_def)
+variacao_23 <- (preco_arra_2023/lag(preco_arra_2023, 1) - 1)*100
+
+variacao_24 <- (preco_arra_2024/lag(preco_arra_2024, 1) - 1)*100
+
+semanas <- seq(1:52)
+variacao <- data.frame(semanas, variacao_23[,1], variacao_24[,1])
+colnames(variacao) = c('Semanas', 'Ano 2023', 'Ano 2024')
+
+variacao <- melt(variacao, id.var='Semanas')
+
+mycolors2 <- c("orange", "lightblue3")
+
+# Customizar tema interativamente em tempo real (ver mensagens no console)
+#bslib::bs_themer()
+```
+
+Row {data-height=125}
+-----------------------------------------------------------------------
+
+### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2024 
+``` {r}
+num <- tail(preco_arra,1)
+valueBox(
+  value = paste0( "R$", format(num, decimal.mark =  ",")),
+#  color = "tomato",
+  icon= "fa-arrow-up")
+#arrow-trend-down
+#darkmagenta
+```
+
+### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2023
+``` {r}
+num <- 11.00
+valueBox(
+  value = paste0( "R$", format(num, decimal.mark =  ",")),
+  icon= "fa-pen")
+```
+
+### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2022
+``` {r}
+num <- 9.29
+valueBox(
+  value = paste0( "R$", format(num, decimal.mark =  ",")),
+  icon= "fa-pen")
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Mínimo, Máximo, Media e preços de 2021 a 2024 de Uva Branca Embalada {.no-title}
+```{r palmer3, results='', fig.cap=''}
+
+g1 <- ggplot()+
+  geom_col(data=tableb2, aes(x=Semanas, y=value, fill=variable), size=2, width = 0.7,
+           position = "dodge")+
+  scale_fill_manual(values=mycolors)+
+    geom_line(data=tablea2, aes(x=Semanas, y=value, colour=variable), linetype = "solid",
+            size = 1)+
+  scale_colour_manual(values = c("red", "chocolate", "darkgreen")) +
+  scale_y_continuous(limits = c(0, 18), n.breaks = 10, labels = number_format(accuracy = 0.01,
+                                                       decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 2))+
+  labs(y= "Preço R$", x= "Semanas de cada Ano", title='Mínimo, Máximo, Média e preços de Uva Branca Embalada',
+       caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_classic()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
+        axis.title.y = element_text(size=8, face = "bold"),
+        axis.title.x = element_text(size=8, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=8)) # Definindo posição da legenda
+
+ggplotly(g1) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.15, 
+                      y=-0.35,
+                      title=''))
+```
+
+### Variação Semanal em 2024 e 2023 de Uva Branca Embalada {.no-title}
+
+```{r palmer 5, results='', fig.cap=''}
+
+g2 <- ggplot()+
+  geom_col(data=variacao, aes(x=Semanas, y=value, fill=variable), size=2, 
+           width = 0.9, position = "dodge")+
+  scale_fill_manual(values=mycolors2)+
+  scale_y_continuous(labels = number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 2))+
+  labs(y= "Variação Percentual", x= "Semanas do Ano", title='Variação Semanal de preços de Uva Branca Embalada',
+       caption = "Fonte: Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
+        axis.title.y = element_text(size=8, face = "bold"),
+        axis.title.x = element_text(size=8, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=8)) # Definindo posição da legenda
+
+ggplotly(g2) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.4, 
+                      y=-0.25,
+                      title=''))
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Preço e Tendência de Uva Branca Embalada {.no-title}
+
+```{r branca2, results='', fig.cap=''}
+#Gráfico com Ggplot2
+
+g3 <- ggplot(data=arra, aes(x=date)) +  #estetica vai valer para todos os geom's
+  geom_line(aes(y=preco_def, colour="PREÇO"), lwd=0.5)+
+  geom_line(aes(y=sazonal_arra, colour="TENDÊNCIA"), lwd=1)+
+  scale_colour_manual("", 
+                      breaks = c("PREÇO", "TENDÊNCIA"),
+                      values = c("black", "tomato")) +
+  labs(y= "Preço R$", x= "Semanas de cada Ano", title='Evolução dos preços ao produtor e Tendência Uva Branca Embalada',
+       caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa") +
+  scale_y_continuous(limits=c(0,18), n.breaks = 10, expand = expansion(add=c(0,0.5)), 
+                     labels=number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_date(date_breaks = "1 year",
+               labels = date_format("%Y"))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
+        axis.title.x = element_text(size=8, face = "bold", margin = margin(b=10)),
+        axis.title.y = element_text(size=8, face = "bold", margin = margin(l=10)),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = c(2,1),
+        legend.justification = c(1.2, 1.2),
+        legend.text=element_text(size=8)) # Definindo posição da legenda
+
+ggplotly(g3) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.35, 
+                      y=-0.25,
+                      title=''))
+```
+
+### Sazonalidade de Uva Branca Embalada {.no-title}
+
+```{r branca3, results='', fig.cap='', fig.align='center'}
+#Decompor a Série
+
+decompa<-decompose(preco_arra, type = 'multiplicative')
+
+sazonalidade <- decompa$figure
+semanas <- seq(1:52)
+sazonal_graph <- tibble(cbind(semanas, sazonalidade))
+
+
+g4 <- ggplot(data=sazonal_graph)+
+  geom_line(aes(x=semanas, y=sazonalidade), color="darkmagenta", size=1.2)+
+  scale_y_continuous(limits=c(0,1.5), n.breaks = 5, expand = expansion(add=c(0,0.5)), 
+                     labels=number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 2))+
+  labs(y= "", x= "Semanas de cada Ano", title='Sazonalidade do preço de Uva Branca Embalada',
+       caption = "Fonte: Observatório de Mercado de Uva da Embrapa")+
+  theme_classic()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
+        axis.title.y = element_text(size=8, face = "bold"),
+        axis.title.x = element_text(size=8, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=8)) # Definindo posição da legenda
+
+ggplotly(g4) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.05, 
+                      y=-0.25,
+                      title=''))
+```
+
+NEGRA SEEDLESS EMBALADA {data-navmenu="PREÇOS AO PRODUTOR"}
+======================================================================
+
+Row {data-height=125}
+-----------------------------------------------------------------------
+
+### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2024 
+``` {r}
+num <- tail(preco_vitoria,1)
+valueBox(
+  value = paste0( "R$", format(num, decimal.mark =  ",")),
+#  color = "green",
+  icon= "fa-arrow-down")
+```
+
+### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2023
+``` {r}
+num <- 6.70
+valueBox(
+  value = paste0( "R$", format(num, decimal.mark =  ",")),
+  icon= "fa-pen")
+```
+
+### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2022
+``` {r}
+num <- 5.87
+valueBox(
+  value = paste0( "R$", format(num, decimal.mark =  ",")),
+  icon= "fa-pen")
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Mínimo, Máximo, Media e preços de 2020 a 2022 de Uva Negra Embalada {.no-title}
+
+```{r negra_setup}
+
+#Analise das comparações entre as médias
+preco_vitoria_2023 <- window(preco_vitoria, end=c(2023,52))
+seas23 <- seasplot(preco_vitoria_2023, trend=F, outplot = F)
+medias23 <- colMeans(seas23$season)
+
+preco_vitoria_2022 <- window(preco_vitoria, end=c(2022,52))
+
+#preco_vitoria_2023 <- window(preco_vitoria, end=c(2023,52))
+#seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
+#medias21 <- colMeans(seas21$season)
+
+preco_vitoria_24 <- as.matrix(tail(vitoria$preco_def,sem_ano))  
+preco_vitoria_2024 <- matrix(NA, nrow=52, ncol=1)
+
+for(i in 1:sem_ano){
+  preco_vitoria_2024[i,1] = preco_vitoria_24[i,1]
+}
+  
+#Como só se tem até a semana 52
+#medias20 <- medias20[1:52]
+medias23 <- medias23[1:52]
+
+matrix = matrix(NA, nrow=52, ncol=2)
+
+for(i in 1:52){
+  matrix[i,1] = min(seas23$season[,i])
+  matrix[i,2] = max(seas23$season[,i])
+}
+
+time <- seq(1:52)
+table <- data.frame(time, matrix[,1], round(medias23,2), matrix[,2], round(tail(preco_vitoria_2022,52),2),
+                    round(tail(preco_vitoria_2023,52),2), preco_vitoria_2024[,1])
+colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2022', 'Ano 2023', 
+                    'Ano 2024')
+tablea <- table[,-c(5:7)]
+tableb <- table[,-c(2,3,4)]
+
+tablea2 <- melt(tablea, id.var='Semanas')
+tableb2 <- melt(tableb, id.var='Semanas')
+mycolors <- c("dodgerblue2", "gold", "darkmagenta")
+```
+
+```{r negra1, results='', fig.cap='', fig.width=8, fig.height=4, fig.align='center'}
+
+g5 <- ggplot()+
+  geom_col(data=tableb2, aes(x=Semanas, y=value, fill=variable), size=2, width = 0.7,
+           position = "dodge")+
+  scale_fill_manual(values=mycolors)+
+    geom_line(data=tablea2, aes(x=Semanas, y=value, colour=variable), linetype = "solid",
+            size = 1)+
+  scale_colour_manual(values = c("red", "chocolate", "darkgreen")) +
+  scale_y_continuous(limits = c(0, 20), n.breaks = 10, labels = number_format(accuracy = 0.01,
+                                                       decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 2))+
+  labs(y= "Preço R$", x= "Semanas de cada Ano", title='Mínimo, Máximo, Média e preços de Uva Negra Embalada',
+       caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_classic()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
+        axis.title.y = element_text(size=8, face = "bold"),
+        axis.title.x = element_text(size=8, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=8)) # Definindo posição da legenda
+
+ggplotly(g5) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.15, 
+                      y=-0.35,
+                      title=''))
+```
+
+### Variação Semanal em 2023 e 2024 de Uva Negra Embalada {.no-title}
+
+```{r negra2, results='', fig.cap=''}
+
+#Parte 4
+
+preco_vitoria_23 <- vitoria %>% filter(ano=='2023')
+preco_vitoria_2023 <- as.matrix(preco_vitoria_23$preco_def)
+variacao_23 <- (preco_vitoria_2023/lag(preco_vitoria_2023, 1) - 1)*100
+
+variacao_24 <- (preco_vitoria_2024/lag(preco_vitoria_2024, 1) - 1)*100
+
+semanas <- seq(1:52)
+variacao <- data.frame(semanas, variacao_23[,1], variacao_24[,1])
+colnames(variacao) = c('Semanas', 'Ano 2023', 'Ano 2024')
+
+variacao <- melt(variacao, id.var='Semanas')
+
+mycolors2 <- c("orange", "lightblue3")
+
+
+g6 <- ggplot()+
+  geom_col(data=variacao, aes(x=Semanas, y=value, fill=variable), size=2, 
+           width = 0.9, position = "dodge")+
+  scale_fill_manual(values=mycolors2)+
+  scale_y_continuous(labels = number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 2))+
+  labs(y= "Variação Percentual", x= "Semanas do Ano", title='Variação Semanal de preços de Uva Negra Embalada',
+       caption = "Fonte: Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
+        axis.title.y = element_text(size=8, face = "bold"),
+        axis.title.x = element_text(size=8, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=8)) # Definindo posição da legenda
+
+ggplotly(g6) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.4, 
+                      y=-0.25,
+                      title=''))
+```
+
+
+Row
+-----------------------------------------------------------------------
+
+### Preço e Tendência de Uva Negra Embalada {.no-title}
+
+```{r negra3, results='', fig.cap=''}
+#Gráfico com Ggplot2
+
+g7 <- ggplot(data=vitoria, aes(x=date)) +  #estetica vai valer para todos os geom's
+  geom_line(aes(y=preco_def, colour="PREÇO"), lwd=0.5)+
+  geom_line(aes(y=sazonal_vitoria, colour="TENDÊNCIA"), lwd=1)+
+  scale_colour_manual("", 
+                      breaks = c("PREÇO", "TENDÊNCIA"),
+                      values = c("black", "tomato")) +
+  labs(y= "Preço R$", x= "Semanas de cada Ano", title='Evolução dos preços ao produtor e Tendência Uva Negra Embalada',
+       caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa") +
+  scale_y_continuous(limits=c(0,20), n.breaks = 10, expand = expansion(add=c(0,0.5)), 
+                     labels=number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_date(date_breaks = "1 year",
+               labels = date_format("%Y"))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
+        axis.title.x = element_text(size=8, face = "bold", margin = margin(b=10)),
+        axis.title.y = element_text(size=8, face = "bold", margin = margin(l=10)),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = c(2,1),
+        legend.justification = c(1.2, 1.2),
+        legend.text=element_text(size=8)) # Definindo posição da legenda
+
+ggplotly(g7) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.35, 
+                      y=-0.25,
+                      title=''))
+```
+
+### Sazonalidade de Uva Negra Embalada {.no-title}
+
+```{r negra4, results='', fig.cap='', fig.align='center'}
+#Decompor a Série
+decompa<-decompose(preco_vitoria, type = 'multiplicative')
+
+sazonalidade <- decompa$figure
+semanas <- seq(1:52)
+sazonal_graph <- tibble(cbind(semanas, sazonalidade))
+
+
+g8 <- ggplot(data=sazonal_graph)+
+  geom_line(aes(x=semanas, y=sazonalidade), color="darkmagenta", size=1.2)+
+  scale_y_continuous(limits=c(0,1.5), n.breaks = 5, expand = expansion(add=c(0,0.5)), 
+                     labels=number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 2))+
+  labs(y= "", x= "Semanas de cada Ano", title='Sazonalidade do preço de Uva Negra Embalada',
+       caption = "Fonte: Observatório de Mercado de Uva da Embrapa")+
+  theme_classic()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
+        axis.title.y = element_text(size=8, face = "bold"),
+        axis.title.x = element_text(size=8, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=8)) # Definindo posição da legenda
+
+ggplotly(g8) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.05, 
+                      y=-0.25,
+                      title=''))
+```
+
+NEGRA SEEDLESS {data-navmenu="PREÇOS AO PRODUTOR"}
+======================================================================
+
+Row {data-height=125}
+-----------------------------------------------------------------------
+
+### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2024 
+``` {r}
+num <- tail(preco_vitoriase,1)
+valueBox(
+  value = paste0( "R$", format(num, decimal.mark =  ",")),
+#  color = "green",
+  icon= "fa-arrow-down")
+```
+
+### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2023
+``` {r}
+num <- 3.75
+valueBox(
+  value = paste0( "R$", format(num, decimal.mark =  ",")),
+  icon= "fa-pen")
+```
+
+### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2022
+``` {r}
+num <- 2.65
+valueBox(
+  value = paste0( "R$", format(num, decimal.mark =  ",")),
+  icon= "fa-pen")
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Mínimo, Máximo, Media e preços de 2021 a 2024 de Uva Negra {.no-title}
+
+```{r negrase_setup}
+
+#Analise das comparações entre as médias
+preco_vitoriase_2023 <- window(preco_vitoriase, end=c(2023,52))
+seas23 <- seasplot(preco_vitoriase_2023, trend=F, outplot = F)
+medias23 <- colMeans(seas23$season)
+
+preco_vitoriase_2022 <- window(preco_vitoriase, end=c(2022,52))
+
+#preco_vitoriase_2023 <- window(preco_vitoriase, end=c(2023,52))
+#seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
+#medias21 <- colMeans(seas21$season)
+
+preco_vitoriase_24 <- as.matrix(tail(vitoriase$preco_def,sem_ano)) #ajustar toda semana
+preco_vitoriase_2024 <- matrix(NA, nrow=52, ncol=1)
+
+for(i in 1:sem_ano){
+  preco_vitoriase_2024[i,1] = preco_vitoriase_24[i,1]
+}
+  
+
+#Como só se tem até a semana 52
+#medias20 <- medias20[1:52]
+medias23 <- medias23[1:52]
+
+matrix = matrix(NA, nrow=52, ncol=2)
+
+for(i in 1:52){
+  matrix[i,1] = min(seas23$season[,i])
+  matrix[i,2] = max(seas23$season[,i])
+}
+
+time <- seq(1:52)
+table <- data.frame(time, matrix[,1], round(medias23,2), matrix[,2], round(tail(preco_vitoriase_2022,52),2),
+                    round(tail(preco_vitoriase_2023,52),2), preco_vitoriase_2024[,1])
+colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2022', 'Ano 2023', 'Ano 2024')
+
+tablea <- table[,-c(5:7)]
+tableb <- table[,-c(2,3,4)]
+
+tablea2 <- melt(tablea, id.var='Semanas')
+tableb2 <- melt(tableb, id.var='Semanas')
+mycolors <- c("dodgerblue2", "gold", "darkmagenta")
+```
+
+```{r negrase1, results='', fig.cap='', fig.align='center'}
+
+g9 <- ggplot()+
+  geom_col(data=tableb2, aes(x=Semanas, y=value, fill=variable), size=2, width = 0.7,
+           position = "dodge")+
+  scale_fill_manual(values=mycolors)+
+    geom_line(data=tablea2, aes(x=Semanas, y=value, colour=variable), linetype = "solid",
+            size = 1)+
+  scale_colour_manual(values = c("red", "chocolate", "darkgreen")) +
+  scale_y_continuous(limits = c(0, 12), n.breaks = 10, labels = number_format(accuracy = 0.01,
+                                                       decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 2))+
+  labs(y= "Preço R$", x= "Semanas de cada Ano", title='Mínimo, Máximo, Média e preços de Uva Negra',
+       caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_classic()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
+        axis.title.y = element_text(size=8, face = "bold"),
+        axis.title.x = element_text(size=8, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=8)) # Definindo posição da legenda
+
+ggplotly(g9) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.15, 
+                      y=-0.35,
+                      title=''))
+```
+
+### Variação Semanal em 2024 e 2023 de Uva Negra {.no-title}
+
+```{r negrase2, results='', fig.cap=''}
+
+#Parte 4
+
+preco_vitoriase_23 <- vitoriase %>% filter(ano=='2023')
+preco_vitoriase_2023 <- as.matrix(preco_vitoriase_23$preco_def)
+variacao_23 <- (preco_vitoriase_2023/lag(preco_vitoriase_2023, 1) - 1)*100
+
+variacao_24 <- (preco_vitoriase_2024/lag(preco_vitoriase_2024, 1) - 1)*100
+
+semanas <- seq(1:52)
+variacao <- data.frame(semanas, variacao_23[,1], variacao_24[,1])
+colnames(variacao) = c('Semanas', 'Ano 2023', 'Ano 2024')
+
+variacao <- melt(variacao, id.var='Semanas')
+
+mycolors2 <- c("orange", "lightblue3")
+
+
+g10 <- ggplot()+
+  geom_col(data=variacao, aes(x=Semanas, y=value, fill=variable), size=2, 
+           width = 0.9, position = "dodge")+
+  scale_fill_manual(values=mycolors2)+
+  scale_y_continuous(labels = number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 2))+
+  labs(y= "Variação Percentual", x= "Semanas do Ano", title='Variação Semanal de preços de Uva Negra ao produtor',
+       caption = "Fonte: Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
+        axis.title.y = element_text(size=8, face = "bold"),
+        axis.title.x = element_text(size=8, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=8)) # Definindo posição da legenda
+
+ggplotly(g10) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.4, 
+                      y=-0.25,
+                      title=''))
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Preço e Tendência de Uva Negra {.no-title}
+
+```{r negrase3, results='', fig.cap=''}
+#Gráfico com Ggplot2
+
+g11 <- ggplot(data=vitoriase, aes(x=date)) +  #estetica vai valer para todos os geom's
+  geom_line(aes(y=preco_def, colour="PREÇO"), lwd=0.5)+
+  geom_line(aes(y=sazonal_vitoriase, colour="TENDÊNCIA"), lwd=1)+
+  scale_colour_manual("", 
+                      breaks = c("PREÇO", "TENDÊNCIA"),
+                      values = c("black", "tomato")) +
+  labs(y= "Preço R$", x= "Semanas de cada Ano", title='Evolução dos preços ao produtor e Tendência Uva Negra',
+       caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa") +
+  scale_y_continuous(limits=c(0,12), n.breaks = 10, expand = expansion(add=c(0,0.5)), 
+                     labels=number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_date(date_breaks = "1 year",
+               labels = date_format("%Y"))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
+        axis.title.x = element_text(size=8, face = "bold", margin = margin(b=10)),
+        axis.title.y = element_text(size=8, face = "bold", margin = margin(l=10)),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = c(2,1),
+        legend.justification = c(1.2, 1.2),
+        legend.text=element_text(size=8)) # Definindo posição da legenda
+
+ggplotly(g11) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.35, 
+                      y=-0.25,
+                      title=''))
+```
+
+### Sazonalidade de Uva Negra {.no-title}
+
+```{r negrase4, results='', fig.cap='', fig.align='center'}
+#Decompor a Série
+
+#Decompor a Série
+decompa<-decompose(preco_vitoriase, type = 'multiplicative')
+
+sazonalidade <- decompa$figure
+semanas <- seq(1:52)
+sazonal_graph <- tibble(cbind(semanas, sazonalidade))
+
+
+g12 <- ggplot(data=sazonal_graph)+
+  geom_line(aes(x=semanas, y=sazonalidade), color="darkmagenta", size=1.2)+
+  scale_y_continuous(limits=c(0,1.5), n.breaks = 5, expand = expansion(add=c(0,0.5)), 
+                     labels=number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 2))+
+  labs(y= "", x= "Semanas de cada Ano", title='Sazonalidade do preço de Uva Negra',
+       caption = "Fonte: Observatório de Mercado de Uva da Embrapa")+
+  theme_classic()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
+        axis.title.y = element_text(size=8, face = "bold"),
+        axis.title.x = element_text(size=8, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=8),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=8)) # Definindo posição da legenda
+
+ggplotly(g12) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.05, 
+                      y=-0.25,
+                      title=''))
+```
+
+EXPORTAÇÕES
+======================================================================
+
+```{r tratamento_base}
+#Direcionado o R para o Diretorio a ser trabalhado
+#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+
+#Inicio do Script
+#Pacotes a serem utilizados 
+library(mFilter)
+library(forecast)
+library(tsutils)
+library(seasonal)
+library(ggplot2)
+library(uroot)
+library(tseries)
+library(ggthemes)
+library(dplyr)
+library(quantmod)
+library(scales)
+library(kableExtra)# complex tables
+library(lmtest)
+library(FinTS)
+library(rbcb)
+library(plotly)
+library(DT)
+library(magrittr)
+library(rmarkdown)
+library(reshape2)
+library(rbcb)
+library(tidyverse)
+
+checkX13()
+
+options(digits=4)
+
+library(lubridate)
+anterior <- as.Date("2024-03-01")
+atual <-  as.Date("2024-04-01")
+#today <- as.Date("2022-02-11")
+mes <- 4
+
+#Entrando dados no R
+dados1 <- read.csv2('exportacoes_2016_2024.csv', header=T, sep=";", dec = ".")
+dados1 <- dados1/1000
+dados1[,1] <- seq(2016, 2024, by = 1)
+colnames(dados1) = c('Ano', 'Valor', "Toneladas")
+dados1 <- tibble(dados1)
+
+#Entrando dados no R
+dados2 <- read.csv2('total_exporta_uva_br.csv', header=T, sep=";", dec = ".")
+#dados <- dados[,-c(9:10)] #retirar as ultimas colunas
+colnames(dados2)[1]<-'ano'
+
+#Entrando dados no R
+dados3 <- read.csv2('destinos_2024.csv', header=T, sep=";", dec = ".")
+colnames(dados3) = c('Paises', "Participacao")
+
+#Entrando dados no R
+dados4 <- read.csv2('via_2024.csv', header=T, sep=";", dec = ".")
+colnames(dados4) = c('Vias', "Participacao")
+
+#Entrando dados no R
+dados5 <- read.csv2('uf_2024.csv', header=T, sep=";" , dec = ".")
+colnames(dados5) = c('UF', "Participacao")
+
+# Entrando dados no R
+dados7 <- read.csv2('importacao.csv', header=T, sep=";" , dec = ".")
+dados7 <- dados7[,-c(1,2)]
+colnames(dados7) = c('Chile', 'Argentina', 'Peru')
+
+#Ajusta para Valor
+#Analise de Serie Temporal
+exporta_uva_valor <- dados2[,3]
+exporta_uva_valor<-exporta_uva_valor/1000
+exporta_uva_valor <- ts(exporta_uva_valor, start=c(2016,1), freq=12)
+
+#Tendencia
+trend_valor <- cmav(exporta_uva_valor, outplot=F)
+date <- seq(as.Date('2016-01-01'),to=atual,by='1 month') 
+trend_valor <- tibble(date, trend_valor)
+
+#Sazonalidade
+decompa<-decompose(exporta_uva_valor, type = 'multiplicative')
+sazonal_valor <- decompa$figure
+#meses <- seq(1:12)
+meses <- seq(as.Date("2024/1/1"), by = "month", length.out = 12) 
+sazonal_graph <- tibble(meses, sazonal_valor)
+
+#Comparações com os anos e entre as médias/max/min
+
+exporta_uva_valor_2023 <- window(exporta_uva_valor, end=c(2023,12))
+seas23 <- seasplot(exporta_uva_valor_2023, trend=F, outplot = F)
+medias23 <- colMeans(seas23$season)
+
+#exporta_uva_valor_2021 <- window(exporta_uva_valor, end=c(2021,12))
+
+exporta_uva_valor_2022 <- window(exporta_uva_valor, end=c(2022,12))
+#medias21 <- colMeans(seas21$season)
+
+exporta_uva_valor_24 <- as.matrix(tail(exporta_uva_valor,mes)) 
+exporta_uva_valor_2024 <- matrix(NA, nrow=12, ncol=1)
+
+for(i in 1:mes){
+  exporta_uva_valor_2024[i,1] = exporta_uva_valor_24[i,1]
+}
+  
+#Como só se tem até a semana 12
+medias23 <- medias23[1:12]
+
+matrix = matrix(NA, nrow=12, ncol=2)
+
+for(i in 1:12){
+  matrix[i,1] = min(seas23$season[,i])
+  matrix[i,2] = max(seas23$season[,i])
+}
+
+#time <- c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", #"Dezembro")
+#time <-seq(1:12)
+table <- data.frame(meses, matrix[,1], round(medias23,3), matrix[,2], round(tail(exporta_uva_valor_2022,12),3),
+                    round(tail(exporta_uva_valor_2023,12),3), exporta_uva_valor_2024[,1])
+colnames(table) = c('Meses', 'Mínimo', 'Média', 'Máximo', '2022', '2023', 
+                    '2024')
+
+tablea <- table[,-c(5:7)]
+tableb <- table[,-c(2,3,4)]
+
+tablea2 <- melt(tablea, id.var='Meses')
+tableb2 <- melt(tableb, id.var='Meses')
+mycolors <- c("lightblue3", "gray44", "gold")
+
+#Ajusta para Volume
+#Analise de Serie Temporal
+exporta_uva_volume <- dados2[,4]
+exporta_uva_volume<-exporta_uva_volume/1000  #passando de quilo para tonelada
+
+#Ajuste para a variação Mensal do Volume
+
+variacao_volume_22 <-  dados2 %>% filter(ano=='2022')
+variacao_volume_23 <-  dados2 %>% filter(ano=='2023')
+variacao_volume_24 <-  dados2 %>% filter(ano=='2024')
+
+variacao_volume_22 <-  variacao_volume_22[,4]/1000
+variacao_volume_23 <-  variacao_volume_23[,4]/1000
+variacao_volume_24 <-  variacao_volume_24[,4]/1000
+
+#Setando como uma série temporal
+exporta_uva_volume <- ts(exporta_uva_volume, start=c(2016,1), freq=12)
+
+#Tendencia
+trend_volume <- cmav(exporta_uva_volume, outplot=F)
+trend_volume <- tibble(date, trend_volume)
+
+#Sazonalidade
+decompa<-decompose(exporta_uva_volume, type = 'multiplicative')
+sazonal_volume <- decompa$figure
+sazonal_graph_volume <- tibble(meses, sazonal_volume)
+
+#Comparações com os anos e entre as médias/max/min
+
+exporta_uva_volume_2023 <- window(exporta_uva_volume, end=c(2023,12))
+seas23_vol <- seasplot(exporta_uva_volume_2023, trend=F, outplot = F)
+medias23_vol <- colMeans(seas23_vol$season)
+
+#exporta_uva_volume_2021 <- window(exporta_uva_volume, end=c(2021,12))
+
+exporta_uva_volume_2022 <- window(exporta_uva_volume, end=c(2022,12))
+
+exporta_uva_volume_24 <- as.matrix(tail(exporta_uva_volume,mes)) #ajustar mensalmente
+exporta_uva_volume_2024 <- matrix(NA, nrow=12, ncol=1)
+
+for(i in 1:mes){
+  exporta_uva_volume_2024[i,1] = exporta_uva_volume_24[i,1]
+}
+  
+#Como só se tem até a semana 12
+medias23_vol <- medias23_vol[1:12]
+
+matrix_vol = matrix(NA, nrow=12, ncol=2)
+
+for(i in 1:12){
+  matrix_vol[i,1] = min(seas23_vol$season[,i])
+  matrix_vol[i,2] = max(seas23_vol$season[,i])
+}
+
+#time <- c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", #"Dezembro")
+#time <-seq(1:12)
+table_volume <- data.frame(meses, round(matrix_vol[,1],0), round(medias23_vol,0), round(matrix_vol[,2],0), round(tail(exporta_uva_volume_2022,12),0),
+round(tail(exporta_uva_volume_2023,12),0), round(exporta_uva_volume_2024[,1],0))
+colnames(table_volume) = c('Meses', 'Mínimo', 'Média', 'Máximo', '2022', '2023', 
+                    '2024')
+
+tablea_vol <- table_volume[,-c(5:7)]
+tableb_vol <- table_volume[,-c(2,3,4)]
+
+tablea2_vol <- melt(tablea_vol, id.var='Meses')
+tableb2_vol <- melt(tableb_vol, id.var='Meses')
+
+
+#Variação Mensal 2021
+
+variacao_volume_2022 <- as.matrix(variacao_volume_22)
+variacao_volume_2023 <- as.matrix(variacao_volume_23)
+variacao_volume_2024 <- matrix(NA, nrow=12, ncol=1)
+variacao_volume_24 <- as.matrix(variacao_volume_24)
+
+for(i in 1:mes){
+  variacao_volume_2024[i,1] = variacao_volume_24[i,1]
+}
+
+variacao_23 <- ((variacao_volume_2023/variacao_volume_2022) - 1)*100
+variacao_24 <- ((variacao_volume_2024/variacao_volume_2023) - 1)*100
+
+variacao <- data.frame(meses, variacao_23, variacao_24)
+colnames(variacao) = c('Meses', 'Variação 2023 e 2022', 'Variação 2024 e 2023')
+
+variacaom <- melt(variacao, id.var='Meses')
+
+mycolors2 <- c("orange", "lightblue3")
+
+#Dados de Importação
+importacao <- tibble(date, dados7)
+importacao <- melt(importacao, id.var='date')
+```
+
+Row {data-height=125}
+-----------------------------------------------------------------------
+
+### Volume Exportação em `r strftime(atual, format = "%B de %Y")` 
+``` {r d1}
+num <- tail(exporta_uva_volume,1)
+valueBox(
+  value = paste0(format(num, decimal.mark =  "."), " Toneladas"),
+#  color = "green",
+  icon= "fa-arrow-up")
+```
+
+### Volume Exportação em `r strftime(atual, format = "%B")` de 2023 
+``` {r d2}
+num <- 3694
+valueBox(
+  value = paste0(num, " Toneladas"),
+  icon= "fa-pen")
+```
+
+### Volume Exportação em `r strftime(atual, format = "%B")` de 2022 
+``` {r d3}
+num <- 2447
+valueBox(
+  value = paste0(num, " Toneladas"),
+  icon= "fa-pen")
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Receita de Exportação e Volume Exportado de Uva: 2016 a 2024 {.no-title}
+
+```{r exporta1, fig.width=8, fig.height=4, fig.align='center'}
+
+#Gráfico com Ggplot2
+
+mycolor1 <- "gold"
+mycolor2 <- "red"
+
+g1 <- ggplot(data=dados1) +  #estetica vai valer para todos os geom's
+  geom_col(aes(x=Ano, y=Toneladas, fill="Toneladas"), lwd=1)+
+    scale_fill_manual(values=mycolor1)+
+  geom_line(aes(x=Ano, y=Valor, colour="Mil de Dólares"), size=2)+
+  scale_colour_manual(values=mycolor2)+
+  labs(y= "US$ Mil / Ton", x= "Anos", title='Receita de Exportação e Volume Exportado de Uva: 2016 a 2024',
+       caption = "") +
+  scale_y_continuous(limits=c(0, 185000), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_x_continuous(breaks = seq(2016, 2024, by = 1))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
+        axis.title.x = element_text(size=8, face = "bold", margin = margin(b=10)),
+        axis.title.y = element_text(size=8, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=9)) # Definindo posição da legenda
+
+ggplotly(g1) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.25, 
+                      y=-0.25,
+                      title=''))
+```
+
+### Principais Destinos da Uva Exportada em Janeiro de 2024 {.no-title}
+
+```{r exporta15, fig.width=7, fig.height=4, fig.align='center'}
+
+#Gráfico com Ggplot2
+
+mycolor1 <- "gold"
+
+g10 <- ggplot(data=dados3) +  #estetica vai valer para todos os geom's
+  geom_col(aes(x = reorder(Paises, -Participacao), y= Participacao, fill="% do Total"), lwd=1)+
+    scale_fill_manual(values=mycolor1) +
+  labs(y= "% do Volume Total Exportados", x= "Países", title='Principais Destinos da Uva',
+       caption = "")+
+  scale_y_continuous(limits=c(0, 80), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=45, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
+        axis.title.x = element_text(size=8, face = "bold", margin = margin(b=10)),
+        axis.title.y = element_text(size=8, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=9)) # Definindo posição da legenda
+
+ggplotly(g10) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.4, 
+                      y=-0.25,
+                      title=''))
+```
+
+### Principais vias de exportação da uva do Brasil: Janeiro de 2024. {.no-title}
+
+```{r exporta17}
+
+#Gráfico com Ggplot2
+
+g11 <- ggplot(data=dados4) +  #estetica vai valer para todos os geom's
+  geom_col(aes(x = reorder(Vias, -Participacao), y= Participacao, fill="% do Total"), lwd=1)+
+    scale_fill_manual(values=mycolor1) +
+  labs(y= "% de Exportação", x= "Vias", title='Principais vias de exportação',
+       caption = "")+
+  scale_y_continuous(limits=c(0, 100), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
+        axis.title.x = element_text(size=8, face = "bold", margin = margin(b=10)),
+        axis.title.y = element_text(size=8, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=9)) # Definindo posição da legenda
+
+ggplotly(g11) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.4, 
+                      y=-0.25,
+                      title=''))
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Volume das Exportações de Uva do Brasil: Janeiro de 2024 em comparação com as informações entre 2016-2023 {.no-title}
+
+```{r exporta9, fig.width=10, fig.height=4, fig.align='center'}
+g7 <- ggplot()+
+  geom_col(data=tableb2_vol, aes(x=Meses, y=value, fill=variable), lwd=1,
+           position = "dodge")+
+  scale_fill_manual(values=mycolors)+
+  geom_line(data=tablea2_vol, aes(x=Meses, y=value, colour=variable), linetype = "solid",
+            size = 1)+
+    scale_colour_manual(values = c("red", "chocolate", "darkgreen")) +
+    scale_y_continuous(limits = c(0, 30000), n.breaks = 10)+
+    scale_x_date(date_breaks = "1 month",
+               labels = date_format("%B"), expand = expansion(add=c(0,0)))+
+  labs(y= "Toneladas", x= "Meses do Ano", title='Exportações de Uva do Brasil: valores e estatísticas mensais.',
+       caption = "")+
+  theme_minimal()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=8, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
+        axis.title.x = element_text(size=8, face = "bold", margin = margin(b=20)),
+        axis.title.y = element_text(size=8, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=9)) # Definindo posição da legenda
+
+ggplotly(g7) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.1, 
+                      y=1,
+                      title=''))
+```
+
+### Importação de Uva pelo Brasil: 2016-2022. {.no-title}
+
+``` {r importa1}
+mycolors3 <- c("orange", "lightblue3", "red")
+
+g13 <- ggplot()+
+geom_col(data=importacao, aes(x=date, y=value, fill=variable), lwd=1, position = "dodge")+
+  scale_fill_manual(values=mycolors3)+
+    scale_x_date(date_breaks = "6 months",
+               labels = date_format("%b-%y"))+
+  labs(y= "Volume (Toneladas)", x= "Meses do Ano", title='Importações de Uva do Brasil: valores e estatísticas mensais.',
+       caption = "Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=8, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
+        axis.title.x = element_text(size=8, face = "bold", margin = margin(b=20)),
+        axis.title.y = element_text(size=8, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=9)) # Definindo posição da legenda
+
+ggplotly(g13) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.35, 
+                      y=-0.25,
+                      title=''))
+```
+
+VOLUME CEASAS {data-navmenu="MERCADO INTERNO"}
+======================================================================
+
+```{r database4}
+#Direcionado o R para o Diretorio a ser trabalhado
+#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados
@@ -88,402 +1698,19 @@ library(magrittr)# pipe operations
 library(readxl)
 library(reshape2)
 library(plotly)
-#library(rmarkdown)
-library(bslib)
-library(gridExtra)# multiple grid-based plots on a page
-library(patchwork)
+library(DT)
 
 checkX13()
 
 options(digits=4)
-#today <- as.Date("2022-01-01")
-date <- seq(as.Date('2022-01-01'),to=as.Date('2022-12-01'),by='1 month')
 
-#Entrando dados no R
-dados <- read_excel("manga_ibge2022.xlsx", col_names = TRUE)
-dados$produtividade <- round(dados$produtividade,0)
-
-#Gráfico com Ggplot2 Palmer
-
-mycolor1 <- "gold"
-mycolor2 <- "darkgreen"
-mycolor3 <- "blue"
-mycolor4 <- "red"
-```
-
-Row {data-height=125}
------------------------------------------------------------------------
-
-### Área Plantada com Manga no Brasil em 2022 
-``` {r}
-num <- 78.3 
-valueBox(
-  value = paste0(num, " Mil Hectares"),
-#  color = "lightblue3",
-  icon= "fa-pen")
-```
-
-### Produtividade média da Manga no Brasil em 2022 
-``` {r}
-num <- 20
-valueBox(
-  value = paste0( num, " Toneladas/Hectare"),
-#  color = "lightblue3",
-  icon= "fa-pen")
-```
-
-### Volume com Manga produzida no Brasil em 2022 
-``` {r}
-num <- 1.55
-valueBox(
-  value = paste0(format(num, decimal.mark =  ","), " Milhões de Toneladas" ),
-#  color = "lightblue3",
-  icon= "fa-pen")
-```
-
-### Valor Produção com Manga produzida no Brasil em 2022 
-``` {r}
-num <- 2.07
-valueBox(
-  value = paste0(format(num, decimal.mark =  ","), " Bilhões de Reais" ),
-#  color = "lightblue3",
-  icon= "fa-pen")
-```
-
-Row
------------------------------------------------------------------------
-
-### Area Plantada com Manga - Brasil {.no-title}
-
-```{r ibge1}
-g1 <- dados %>% 
-  filter(abrangencia=='brasil') %>% 
-  ggplot() +  #estetica vai valer para todos os geom's
-  geom_col(aes(x=ano, y=area, fill="Area Manga (Hectares)"), lwd=1)+
-  scale_fill_manual(values=mycolor1)+
-  labs(y= "Hectares", x= "Anos", title='Evolução da Área com Manga no Brasil: 2013-2022',
-       caption = "Fonte: IBGE (2023)") +
-  scale_y_continuous(limits=c(0, 80000), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
-  theme_classic()+ #Definindo tema
-  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
-        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
-        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
-        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
-        plot.title = element_text(hjust = 0.5, size=14),
-        plot.caption = element_text(hjust = 0, size=8),
-        legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=12))
-
-ggplotly(g1) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.35, 
-                      y=-0.3,
-                      title=''))
-```
-
-### Volume Produzido de Manga -  Brasil {.no-title}
-
-```{r ibge2}
-g2 <- dados %>% 
-  filter(abrangencia=='brasil') %>% 
-  ggplot() +  #estetica vai valer para todos os geom's
-  geom_col(aes(x=ano, y=quantidade/1000, fill="Volume (Mil Toneladas)"), lwd=1)+
-  scale_fill_manual(values=mycolor2)+
-  labs(y= "Mil Toneladas", x= "Anos", title='Evolução do Volume com Manga no Brasil: 2013-2022',
-       caption = "Fonte: IBGE (2023)") +
-  scale_y_continuous(limits=c(0, 1600), n.breaks = 6, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
-  theme_classic()+ #Definindo tema
-  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
-        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
-        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
-        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
-        plot.title = element_text(hjust = 0.5, size=14),
-        plot.caption = element_text(hjust = 0, size=8),
-        legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=12)) # Definindo posição da legenda
-
-ggplotly(g2) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.35, 
-                      y=-0.3,
-                      title=''))
-```
-
-Row
------------------------------------------------------------------------
-
-### Produtividade da Manga - Brasil {.no-title}
-
-```{r ibge3}
-g3 <- dados %>% 
-  filter(abrangencia=='brasil') %>% 
-  ggplot() +  #estetica vai valer para todos os geom's
-  geom_col(aes(x=ano, y=produtividade, fill="Produtividade (Toneladas/Hectares)"), lwd=1)+
-  scale_fill_manual(values=mycolor3)+
-  labs(y= "Produtividade (Ton/Ha)", x= "Anos", title='Evolução da Produtividade com Manga no Brasil: 2013-2022',
-       caption = "IBGE (2023)") +
-  scale_y_continuous(limits=c(0, 25), n.breaks = 5, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
-  theme_classic()+ #Definindo tema
-  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
-        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
-        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
-        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
-        plot.title = element_text(hjust = 0.5, size=14),
-        plot.caption = element_text(hjust = 0, size=8),
-        legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=12)) # Definindo posição da legenda
-
-ggplotly(g3) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.35, 
-                      y=-0.3,
-                      title=''))
-```
-
-### Valor Bruto da Produção com Manga -  Brasil {.no-title}
-
-```{r ibge4}
-g4 <- dados %>% 
-  filter(abrangencia=='brasil') %>% 
-  ggplot() +  #estetica vai valer para todos os geom's
-  geom_col(aes(x=ano, y=vbp/1000, fill="Valor Bruto Produção (Milhões R$)"), lwd=1)+
-  scale_fill_manual(values=mycolor4)+
-labs(y= "VBP (Milhões R$)", x= "Anos", title='Evolução do Valor Bruto da Produção com Manga no Brasil: 2013-2022',
-       caption = "IBGE (2023)") +
-  scale_y_continuous(limits=c(0, 2100), n.breaks = 8, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
-  theme_classic()+ #Definindo tema
-  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
-        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
-        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
-        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
-        plot.title = element_text(hjust = 0.5, size=14),
-        plot.caption = element_text(hjust = 0, size=8),
-        legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=12)) # Definindo posição da legenda
-
-ggplotly(g4) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.35, 
-                      y=-0.3,
-                      title=''))
-```
-
-VALE DO S. FRANCISCO {data-navmenu="DADOS GERAIS"}
-======================================================================
-
-Row {data-height=125}
------------------------------------------------------------------------
-
-### Área Plantada com Manga no Vale S. Francisco em 2022 
-``` {r}
-num <- 36.3 
-valueBox(
-  value = paste0(num, " Mil Hectares"),
-#  color = "lightblue3",
-  icon= "fa-pen")
-```
-
-### Produtividade média da Manga no Vale S. Francisco em 2022 
-``` {r}
-num <- 27
-valueBox(
-  value = paste0( num, " Toneladas/Hectare"),
-#  color = "lightblue3",
-  icon= "fa-pen")
-```
-
-### Volume com Manga produzida no Vale S. Francisco em 2022 
-``` {r}
-num <- 976.1
-valueBox(
-  value = paste0(format(num, decimal.mark =  ","), " Mil Toneladas" ),
-#  color = "lightblue3",
-  icon= "fa-pen")
-```
-
-### Valor Produção com Manga produzida no Brasil em 2022 
-``` {r}
-num <- 1.23
-valueBox(
-  value = paste0(format(num, decimal.mark =  ","), " Bilhões de Reais" ),
-#  color = "lightblue3",
-  icon= "fa-pen")
-```
-
-Row
------------------------------------------------------------------------
-
-### Area Plantada com Manga - V. S. Francisco {.no-title}
-
-```{r ibge1b}
-g1 <- dados %>% 
-  filter(abrangencia=='vale') %>% 
-  ggplot() + #estetica vai valer para todos os geom's
-  geom_col(aes(x=ano, y=area, fill="Área Manga (Hectares)"), lwd=1)+
-  scale_fill_manual(values=mycolor1)+
-  labs(y= "Hectares", x= "Anos", title='Evolução da Area com Manga no Vale do São Francisco: 2013-2022',
-       caption = "Fonte: IBGE (2023)") +
-  scale_y_continuous(limits=c(0, 40000), n.breaks = 8, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
-  theme_classic()+ #Definindo tema
-  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
-        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
-        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
-        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
-        plot.title = element_text(hjust = 0.5, size=14),
-        plot.caption = element_text(hjust = 0, size=8),
-        legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=12))
-
-ggplotly(g1) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.35, 
-                      y=-0.3,
-                      title=''))
-```
-
-### Volume Produzido de Manga -  V. S. Francisco {.no-title}
-
-```{r ibge2b}
-g2 <- dados %>% 
-  filter(abrangencia=='vale') %>% 
-  ggplot() + #estetica vai valer para todos os geom's
-  geom_col(aes(x=ano, y=quantidade/1000, fill="Volume (Mil Toneladas)"), lwd=1)+
-  scale_fill_manual(values=mycolor2)+
-  labs(y= "Mil Toneladas", x= "Anos", title='Evolução do Volume com Manga no Vale do São Francisco: 2013-2022',
-       caption = "Fonte: IBGE (2023)") +
-  scale_y_continuous(limits=c(0, 1000), n.breaks = 6, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
-  theme_classic()+ #Definindo tema
-  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
-        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
-        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
-        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
-        plot.title = element_text(hjust = 0.5, size=14),
-        plot.caption = element_text(hjust = 0, size=8),
-        legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=12)) # Definindo posição da legenda
-
-ggplotly(g2) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.35, 
-                      y=-0.3,
-                      title=''))
-```
-
-Row
------------------------------------------------------------------------
-
-### Produtividade da Manga -  V. S. Francisco {.no-title}
-
-```{r ibge3b}
-g3 <- dados %>% 
-  filter(abrangencia=='vale') %>% 
-  ggplot() + #estetica vai valer para todos os geom's
-  geom_col(aes(x=ano, y=produtividade, fill="Produtividade (Toneladas/Hectares)"), lwd=1)+
-  scale_fill_manual(values=mycolor3)+
-  labs(y= "Produtividade (Ton/Ha)", x= "Anos", title='Evolução da Produtividade com Manga no Vale do São Francisco: 2013-2022',
-       caption = "IBGE (2023)") +
-  scale_y_continuous(limits=c(0, 32), n.breaks = 6, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
-  theme_classic()+ #Definindo tema
-  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
-        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
-        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
-        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
-        plot.title = element_text(hjust = 0.5, size=14),
-        plot.caption = element_text(hjust = 0, size=8),
-        legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=12)) # Definindo posição da legenda
-
-ggplotly(g3) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.35, 
-                      y=-0.3,
-                      title=''))
-```
-
-### Valor Bruto da Produção com Manga -  V. S. Francisco {.no-title}
-
-```{r ibge4b}
-g4 <- dados %>% 
-  filter(abrangencia=='vale') %>% 
-  ggplot() + #estetica vai valer para todos os geom's
-  geom_col(aes(x=ano, y=vbp/1000, fill="Valor Bruto Produção (Milhões R$)"), lwd=1)+
-  scale_fill_manual(values=mycolor4)+
-  labs(y= "VBP (Milhões R$)", x= "Anos", title='Evolução do Valor Bruto da Produção com Manga no Vale do São Francisco: 2013-2022',
-       caption = "IBGE (2023)") +
-  scale_y_continuous(limits=c(0, 1300), n.breaks = 5, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2013, 2022, by = 1))+
-  theme_classic()+ #Definindo tema
-  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=5)),
-        axis.text.y=element_text(hjust=1, size=12, margin = margin(l=20)),
-        axis.title.x = element_text(size=12, face = "bold", margin = margin(b=0)),
-        axis.title.y = element_text(size=12, face = "bold", margin = margin(l=20)),
-        plot.title = element_text(hjust = 0.5, size=14),
-        plot.caption = element_text(hjust = 0, size=8),
-        legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=12)) # Definindo posição da legenda
-
-ggplotly(g4) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.35, 
-                      y=-0.3,
-                      title=''))
-```
-
-VOLUME CEASAS {data-navmenu="MERCADO INTERNO"}
-======================================================================
-
-```{r database4}
-#Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_manga')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_manga')
-
-#Inicio do Script
-#Pacotes a serem utilizados
-library(flexdashboard)
-library(foreign)
-library(mFilter)
-library(forecast)
-library(dplyr)
-library(tsutils)
-library(xts)
-library(ggthemes)
-library(FinTS)
-library(scales)
-library(ggplot2)
-library(reshape)
-library(reshape2)
-library(imputeTS)
-library(seasonal)
-library(uroot)
-library(tseries)
-library(quantmod)
-library(kableExtra)# complex tables
-library(lmtest)
-library(plotly)
-#library(rmarkdown)
-library(bslib)
-library(readxl)
-
-checkX13()
+atual <-  as.Date("2022-09-01")
 
 mycolors <- c("lightblue3", "gray44", "gold")
 mycolors2 <- c("lightblue3", "orange")
 mycolors3 <- c("blue", "orange")
+
+#Dados de uva por estados
 
 #Entrando dados no R
 dados1 <- read_excel('ceagesp_total.xlsx', col_names = TRUE)
@@ -494,33 +1721,33 @@ dados2 <- read_excel('ceagesp_variedades.xlsx', col_names = TRUE)
 dados2m <- melt(dados2, id.var='Anos')
 
 #Entrando dados no R
-manga_mespeba <- read_excel('ceagesp_tempo.xlsx', col_names = TRUE)
+uva_mespeba <- read_excel('ceagesp_tempo.xlsx', col_names = TRUE)
 
-data <- as.Date("2022-07-01") #ajustar semanalmente
-manga_mespeba$date <- seq(as.Date('2012-01-01'),to=data,by='1 month') 
+data <- as.Date("2022-09-01") #ajustar semanalmente
+uva_mespeba$date <- seq(as.Date('2012-01-01'),to=data,by='1 month') 
 
 #Tendencia PEBA
-manga_mespeba2 <- ts(manga_mespeba$toneladas, start = c(2012,1), freq=12)
-trend_peba <- cmav(manga_mespeba2, outplot=F)
+uva_mespeba2 <- ts(uva_mespeba$toneladas, start = c(2012,1), freq=12)
+trend_peba <- cmav(uva_mespeba2, outplot=F)
 
 #Comparações com os anos e entre as médias/max/min
 
 meses <- seq(as.Date("2021/1/1"), by = "month", length.out = 12)
 
-peba_2019 <- window(manga_mespeba2, end=c(2019,12))
+peba_2019 <- window(uva_mespeba2, end=c(2019,12))
 seaspeba_19<-seasplot(peba_2019, trend=F, outplot = F)
 mediaspeba_19 <- colMeans(seaspeba_19$season)
 
-peba_2020 <- window(manga_mespeba2, end=c(2020,12))
+peba_2020 <- window(uva_mespeba2, end=c(2020,12))
 
-peba_2021 <- window(manga_mespeba2, end=c(2021,12))
+peba_2021 <- window(uva_mespeba2, end=c(2021,12))
 #seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
 #medias21 <- colMeans(seas21$season)
 
-peba_22 <- as.matrix(tail(manga_mespeba2,7)) #ajustar mensalmente
+peba_22 <- as.matrix(tail(uva_mespeba2,9)) #ajustar mensalmente
 peba_2022 <- matrix(NA, nrow=12, ncol=1)
 
-mes<-7
+mes<-9
 
 for(i in 1:mes){
   peba_2022[i,1] = peba_22[i,1]
@@ -555,41 +1782,44 @@ tablepeba_b2 <- melt(tablepeba_b, id.var='Meses')
 Row {data-height=125}
 -----------------------------------------------------------------------
 
-### Volume Comercializado (CEAGESP) de Mangas em 2021 
+### Volume Comercializado (CEASAS) em `r strftime(atual, format = "%B")` de 2022 
 ``` {r v1}
-num <- 98
+num <- tail(uva_mespeba2,1)
 valueBox(
-  value = paste0(num, " Mil Toneladas"),
+  value = paste0(round(num,1), " Toneladas"),
 #  color = "tomato",
   icon= "fa-arrow-down")
 ```
 
-### Volume Comercializado (CEAGESP) de Manga Palmer de 2021 
+### Volume Comercializado (CEASAS) em `r strftime(atual, format = "%B")` de 2021 
 ``` {r v2}
-num <- 47.8
+num <- 5046.2
 valueBox(
-  value = paste0(format(num, decimal.mark =  ","), " Mil Toneladas"),
+  value = paste0(num, " Toneladas"),
   icon= "fa-pen")
 ```
 
-### Volume Comercializado (CEAGESP) de Manga Tommy de 2021 
+### Volume Comercializado (CEASAS) em `r strftime(atual, format = "%B")` de 2020 
 ``` {r v3}
-num <- 40.3
+num <- 4261.9
 valueBox(
-  value = paste0(format(num, decimal.mark =  ","), " Mil Toneladas"),
+  value = paste0(num, " Toneladas"),
   icon= "fa-pen")
 ```
 
 Row
 -----------------------------------------------------------------------
 
-### Volume total comercializado de manga: 2017 a 2022 {.no-title}
+### Volume total comercializado de uva: 2017 a 2022 {.no-title}
+
 ```{r mi1}
+## Gráfico Total de uvas e uvas PE+BA
+
 g1 <- ggplot()+
-  geom_col(data=dados1m, aes(x=Anos, y=value, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors2)+
+  geom_col(data=dados1m, aes(x=Anos, y=value, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors)+
    scale_x_continuous(breaks = seq(2012, 2022, by = 1))+
-  labs(y= "Toneladas", x= "Brasil e PE+BA", title='Volume total comercializado de manga (CEAGESP): 2012 a 2022',
-  caption = "Fonte: CEAGESP reprocessado pelo Observatório de Mercado de Manga da Embrapa")+
+  labs(y= "Toneladas", x= "Anos", title='Volume total comercializado de Uva (CEAGESP): 2012 a 2022',
+  caption = "Fonte: CEAGESP reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
   theme_minimal()+
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=10)),
         axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=10)),
@@ -605,25 +1835,25 @@ g1 <- ggplot()+
 ggplotly(g1) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.38, 
+                      x=0.30, 
                       y=-0.19,
                       title=''))
 ```
 
-### Tendência do Volume comercializado de manga {.no-title}
+### Tendência do Volume comercializado de uva {.no-title}
 
 ```{r mi3}
 #Gráfico com Ggplot2 - Tendencia
 
-g3 <- ggplot(data=manga_mespeba, aes(x=date)) +  #estetica vai valer para todos os geom's
+g3 <- ggplot(data=uva_mespeba, aes(x=date)) +  #estetica vai valer para todos os geom's
   geom_line(aes(y=toneladas, colour="TONELADAS"), lwd=0.5)+
   geom_line(aes(y=trend_peba, colour="TENDÊNCIA"), lwd=1)+
   scale_colour_manual("",
                       breaks = c("TONELADAS", "TENDÊNCIA"),
                       values = c("black", "tomato"))  +
-  labs(y= "Quantidade (T)", x= "Meses do Ano", title='Tendência do Volume comercializado de manga (CEAGESP)',
-       caption = "Fonte: CONAB reprocessado pelo Observatório de Mercado de Manga da Embrapa")+
-  scale_y_continuous(limits=c(0,17000), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  labs(y= "Quantidade (T)", x= "Meses do Ano", title='Tendência do Volume comercializado de Uva (CEAGESP)',
+       caption = "Fonte: CEAGESP reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  scale_y_continuous(limits=c(0,4500), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   scale_x_date(date_breaks = "1 year",
                labels = date_format("%Y"))+
   theme_classic()+ #Definindo tema
@@ -647,10 +1877,11 @@ ggplotly(g3) %>%
 Row
 -----------------------------------------------------------------------
 
-### Estatísticas sobre a Evolução da Oferta de manga {.no-title}
 
-```{r mi5, results='', fig.cap='', fig.width=7, fig.height=5, fig.align='center'}
-#Evolução da Oferta Mensal de Manga PEBA nos CEASAS do Brasil
+### Sazonalidade do Volume comercializado de uva {.no-title}
+
+```{r mi4}
+#Evolução da Oferta Mensal de Uva PEBA no CEAGESP do Brasil
 
 g5 <- ggplot()+
   geom_col(data=tablepeba_b2, aes(x=Meses, y=value, fill=variable), lwd=1,
@@ -659,10 +1890,10 @@ g5 <- ggplot()+
   geom_line(data=tablepeba_a2, aes(x=Meses, y=value, colour=variable), linetype = "solid",
             size = 1)+
   scale_colour_manual(values = c("red", "chocolate", "darkgreen")) +
-  scale_y_continuous(limits = c(0, 15000), n.breaks = 10)+
+  scale_y_continuous(limits = c(0, 4500), n.breaks = 10)+
   scale_x_date(date_breaks = "1 month",
                labels = date_format("%B"))+
-  labs(y= "Toneladas", x= "Meses do Ano", title='Estatísticas sobre a Evolução da Oferta de manga (CEAGESP)',
+  labs(y= "Toneladas", x= "Meses do Ano", title='Estatísticas sobre a Evolução da Oferta de Uva (CEAGESP)',
        caption = "")+
   theme_minimal()+
   theme(axis.text.x=element_text(angle=35, hjust=0.5, size=8, margin = margin(b=20)),
@@ -684,14 +1915,15 @@ ggplotly(g5) %>%
                       title=''))
 ```
 
-### Volume total comercializado de manga variedades: 2017 a 2022 {.no-title}
+
+### Variação do Volume comercializado de uva: 2017 a 2022 {.no-title}
 
 ```{r mi2}
 g1 <- ggplot()+
   geom_col(data=dados2m, aes(x=Anos, y=value, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors3)+
-   scale_x_continuous(breaks = seq(2012, 2022, by = 1))+
-  labs(y= "Toneladas", x= "Variedades Palmer e Tommy Atkins", title='Volume total por variedade de manga (CEAGESP): 2012 a 2022',
-  caption = "Fonte: CEAGESP reprocessado pelo Observatório de Mercado de Manga da Embrapa")+
+   scale_x_continuous(breaks = seq(2018, 2022, by = 1))+
+  labs(y= "Toneladas", x= "Variedades Vitória e Branca Sem Semente", title='Volume total por variedade de Uva (CEAGESP): 2018 a 2022',
+  caption = "Fonte: CEAGESP reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
   theme_minimal()+
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=10)),
         axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=10)),
@@ -712,15 +1944,16 @@ ggplotly(g1) %>%
                       title=''))
 ```
 
-CONSUMO MANGA {data-navmenu="MERCADO INTERNO"}
+
+CONSUMO UVA {data-navmenu="MERCADO INTERNO"}
 ======================================================================
 
 Row {data-height=125}
 -----------------------------------------------------------------------
 
-### per capita com manga em 2018 no Brasil  
+### per capita com uva em 2018 no Brasil  
 ``` {r cons1}
-num <- 1.188
+num <- 0.668
 valueBox(
   value = paste0(format(num, decimal.mark =  ","), " Kg de Consumo"),
 #  color = "green",
@@ -729,17 +1962,17 @@ valueBox(
 
 ### na região Sul, a maior consumidora em 2018  
 ``` {r cons2}
-num <- 1.440
+num <- 0.933
 valueBox(
   value = paste0(format(num, decimal.mark =  ","), " Kg de Consumo"),
 #  color = "green",
   icon= "fa-arrow-up")
 ```
 
-### de consumo de manga no Centro-Oeste em 2018 
+### de consumo de uva no Nordeste em 2018 
 ``` {r cons3}
 
-num <- 73.35
+num <- 13.38
 valueBox(
   value = paste0(format(num, decimal.mark =  ","), " % de Crescimento"),
 #  color = "green",
@@ -749,12 +1982,12 @@ valueBox(
 Row
 -----------------------------------------------------------------------
 
-### Evolução do consumo de manga {.no-title}
+### Evolução do consumo de uva {.no-title}
 
-```{r consumo_manga1}
+```{r consumo_uva1}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_manga')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_manga')
+#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -777,8 +2010,8 @@ dados1m <- melt(dados1, id.var='Região')
 
 g1 <- ggplot()+
   geom_col(data=dados1m, aes(x=Região, y=value, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors2)+
-  labs(y= "Consumo (kg) per capita anual", x= "Brasil e Regiões", title='Evolução da  aquisição domiciliar per capita anual de manga no Brasil e regiões',
-  caption = "Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Manga da Embrapa")+
+  labs(y= "Consumo (kg) per capita anual", x= "Brasil e Regiões", title='Evolução da  aquisição domiciliar per capita anual de uva no Brasil e regiões',
+  caption = "Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
   theme_minimal()+
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=10)),
         axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=10)),
@@ -799,9 +2032,9 @@ ggplotly(g1) %>%
                       title=''))
 ```
 
-### Evolução da variação do consumo de manga {.no-title}
+### Evolução da variação do consumo de uva {.no-title}
 
-```{r consumo_manga2}
+```{r consumo_uva2}
 consumo_var <- dados1[,-2]
 variacao <- ((consumo_var[,3]-consumo_var[,2])/consumo_var[,2])*100
 consumo_vara<-cbind(consumo_var, round(variacao,2))
@@ -811,8 +2044,8 @@ colnames(consumo_var) = c('regiao', 'variacao')
 mycolor1 <- "orange"
 
 g2<- ggplot(data=consumo_var) +  #estetica vai valer para todos os geom's
-  geom_col(aes(x = regiao, y=round(variacao,2), fill="Variação no Consumo de Manga (%) per capita anual"), lwd=1)+
-  scale_fill_manual(values=mycolor1)+labs(y= "Variação no Consumo de Manga (%)", x= "Estados", title='Variação na aquisição domiciliar per capita anual de manga no Brasil e regiões entre 2008 e 2018',
+  geom_col(aes(x = regiao, y=round(variacao,2), fill="Variação no Consumo de Uva (%) per capita anual"), lwd=1)+
+  scale_fill_manual(values=mycolor1)+labs(y= "Variação no Consumo de Uva (%)", x= "Estados", title='Variação na aquisição domiciliar per capita anual de uva no Brasil e regiões entre 2008 e 2018',
        caption = "")+
   theme_minimal()+
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=10)),
@@ -837,12 +2070,12 @@ ggplotly(g2) %>%
 Row
 -----------------------------------------------------------------------
 
-### Evolução da variação do consumo de manga {.no-title}
+### Evolução da variação do consumo de uva {.no-title}
 
-```{r consumo_manga3}
+```{r consumo_uva3}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_manga')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_manga')
+#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -860,7 +2093,7 @@ mycolor1 <- "gold"
 dados2 <- read_excel('consumo_estados.xlsx', col_names = TRUE)
 
 g3 <- ggplot(data=dados2) +  #estetica vai valer para todos os geom's
-  geom_col(aes(x = reorder(regiao, -consumo), y= consumo, fill="Consumo (kg) per capita anual"), lwd=1)+scale_fill_manual(values=mycolor1)+labs(y= "Consumo (kg) per capita anual", x= "Estados", title='Aquisição domiciliar per capita anual de manga por estados - 2018',
+  geom_col(aes(x = reorder(regiao, -consumo), y= consumo, fill="Consumo (kg) per capita anual"), lwd=1)+scale_fill_manual(values=mycolor1)+labs(y= "Consumo (kg) per capita anual", x= "Estados", title='Aquisição domiciliar per capita anual de uva por estados - 2018',
        caption = "")+
   theme_minimal()+
   theme(axis.text.x=element_text(angle=35, hjust=0.5, size=8.5, margin = margin(b=10)),
@@ -882,12 +2115,12 @@ ggplotly(g3) %>%
                       title=''))
 ```
 
-### Evolução da variação do consumo de manga {.no-title}
+### Evolução da variação do consumo de uva {.no-title}
 
-```{r consumo_manga4}
+```{r consumo_uva4}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_manga')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_manga')
+#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -900,17 +2133,13 @@ library(readxl)
 mycolors2 <- c("orange", "lightblue3", "darkblue", "gold", "red", "darkgreen")
 
 #Entrando dados no R
-#dados3 <- read_excel('consrenda_brasil.xlsx', col_names = TRUE)
-dados3 <- read.csv2('consrenda_brasil.csv', header=T, sep=";", dec=".", stringsAsFactors = TRUE)
-dados3$classes <- factor(dados3$classes, levels = c("Até 1.908 Reais", "Mais de 1.908 a 2.862 Reais", "Mais de 2.862 a 5.724 Reais",
-                                                    "Mais de 5.724 a 9.540 Reais", "Mais de 9.540 a 14.310 Reais", "Mais de 14.310 Reais"))
-#dados3$classes <- as.factor(dados3$classes)  
+dados3 <- read_excel('consrenda_brasil.xlsx', col_names = TRUE)
 dados3m <- melt(dados3, id.var='classes')
 
 g4 <- ggplot()+
   geom_col(data=dados3m, aes(x=variable, y=value, fill=classes), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors2)+
-  labs(y= "Consumo (kg) per capita anual", x= "Brasil e Regiões", title='Aquisição domiciliar per capita anual de manga por faixas de renda - 2018',
-  caption = "Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Manga da Embrapa")+
+  labs(y= "Consumo (kg) per capita anual", x= "Brasil e Regiões", title='Aquisição domiciliar per capita anual de uva por faixas de renda - 2018',
+  caption = "Fonte: POF/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
   theme_minimal()+
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=10)),
         axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=10)),
@@ -921,7 +2150,7 @@ g4 <- ggplot()+
         plot.title = element_text(hjust = 0.5, size=10),
         plot.caption = element_text(hjust = 0, size=10),
         legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=10)) # Definindo posição da legenda
+        legend.text=element_text(size=12)) # Definindo posição da legenda
 
 ggplotly(g4) %>%
   layout(legend = list(
@@ -931,7 +2160,7 @@ ggplotly(g4) %>%
                       title=''))
 ```
 
-MERCADO TRABALHO {data-navmenu="MERCADO INTERNO"}
+EMPREGO
 ======================================================================
 
 ```{r database6}
@@ -940,8 +2169,6 @@ MERCADO TRABALHO {data-navmenu="MERCADO INTERNO"}
 setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
 
 atual <-  as.Date("2024-03-01")
-#today <- as.Date("2022-02-11")
-
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -960,12 +2187,12 @@ dados1a$mes <- strftime(dados1a$date, format="%b")
 saldo_23 <- dados1a %>% filter(ano=='2023')
 
 saldo_23 <- saldo_23 %>%
-  select(c(ano, mes, Saldo_Manga))
+  select(c(ano, mes, Saldo_uva))
 
 saldo_24 <- dados1a %>% filter(ano=='2024')
 
 saldo_24 <- saldo_24 %>%
-  select(c(ano, mes, Saldo_Manga))
+  select(c(ano, mes, Saldo_uva))
 
 saldom <- rbind(saldo_23, saldo_24)
 saldom$mes <- factor(saldom$mes,levels = c("Jan", "Fev", "Mar", "Abr", "Mai", 
@@ -974,9 +2201,11 @@ saldom$mes <- factor(saldom$mes,levels = c("Jan", "Fev", "Mar", "Abr", "Mai",
 
 #Entrando com o restante dos dados
 
+#Entrando com o restante dos dados
+
 load("marco_24_caged.RData")
 
-#dados_02_vsf$sexo <- lapply(dados_02_vsf$sexo, factor)
+#dados_03_vsf$sexo <- lapply(dados_03_vsf$sexo, factor)
 
 dados_03_vsf$sexo[dados_03_vsf$sexo == 1] <- 0
 dados_03_vsf$sexo[dados_03_vsf$sexo == 3] <- 1
@@ -994,9 +2223,9 @@ dados_03_vsf_negativos <-dados_03_vsf%>% filter(saldo_movim=="-1")
 secao_positivos <-dados_03_vsf_positivos%>% filter(secao=="A")
 secao_negativos <-dados_03_vsf_negativos%>% filter(secao=="A")
 
-#Mantendo apenas a manga
-subclasse_positivos <-dados_03_vsf_positivos%>% filter(subclasse=="133410")
-subclasse_negativos <-dados_03_vsf_negativos%>% filter(subclasse=="133410")
+#Mantendo apenas a uva
+subclasse_positivos <-dados_03_vsf_positivos%>% filter(subclasse=="132600")
+subclasse_negativos <-dados_03_vsf_negativos%>% filter(subclasse=="132600")
 
 subclasse_positivos <- mutate(subclasse_positivos,
                 grau_instrucao = factor(grau_instrucao, levels = 1:13, 
@@ -1014,6 +2243,8 @@ subclasse_positivos <- mutate(subclasse_positivos,
                                                    "Pós-Graduação completa",
                                                    "Não Identificado")))
 
+subclasse_positivos <- na.omit(subclasse_positivos)
+
 # Ajustando a variavel salario
 subclasse_positivos$salario <- as.numeric(sub(',', '.', subclasse_positivos$salario, fixed = TRUE))
 
@@ -1023,37 +2254,37 @@ subclasse_positivos$salario <- as.integer(subclasse_positivos$salario)
 Row {data-height=125}
 -----------------------------------------------------------------------
 
-### pela mangicultura em `r strftime(atual, format = "%B")` de 2024 
+### pela viticultura em `r strftime(atual, format = "%B")` de 2024 
 ``` {r emp1}
-num <- 955
+num <- 2.803
 valueBox(
   value = paste0(num, " Contratados"),
 #  color = "green",
   icon= "fa-arrow-up")
 ```
 
-### pela mangicultura em `r strftime(atual, format = "%B")` de 2024 
+### pela viticultura em `r strftime(atual, format = "%B")` de 2024 
 ``` {r emp2}
-num <- 707
+num <- 2.508
 valueBox(
   value = paste0(num, " Demitidos"),
 #  color = "tomato",
   icon= "fa-arrow-down")
 ```
 
-### Saldo Gerado pela mangicultura em `r strftime(atual, format = "%B")` de 2024 
+### Saldo Gerado pela viticultura em `r strftime(atual, format = "%B")` de 2024
 ``` {r emp3}
-num <- 248
+num <- 295
 valueBox(
   value = paste0(num, " Empregos"),
-#  color = "tomato",
+#  color = "green",
   icon= "fa-pen")
 ```
 
 Row
 -----------------------------------------------------------------------
 
-### Evolução do saldo de Empregos gerados na manga {.no-title}
+### Evolução do saldo de Empregos gerados na viticultura {.no-title}
 
 ```{r emp4}
 #Gráfico com Ggplot2
@@ -1062,13 +2293,13 @@ mycolor1 <- "gold"
 mycolors2 <- c("orange", "lightblue3")
 
 g1 <- ggplot() +  #estetica vai valer para todos os geom's
-  geom_col(data=saldom, aes(x=mes, y=Saldo_Manga, fill=ano), size=2, width = 0.9, position = "dodge")+
+  geom_col(data=saldom, aes(x=mes, y=Saldo_uva, fill=ano), size=2, width = 0.9, position = "dodge")+
     scale_fill_manual(values=mycolors2)+
-    labs(y= "Saldo de Emprego (unidade)", x= "Meses do Ano", title='Saldo mensal de Empregos na Mangicultura: 2023 e 2024',
+    labs(y= "Saldo de Emprego (unidade)", x= "Meses do Ano", title='Saldo mensal de Empregos na Viticultura: 2023 e 2024',
        caption = "")+
-    scale_y_continuous(limits=c(-1500, 1300), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    scale_y_continuous(limits=c(-2100, 1600), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_minimal()+ #Definindo tema
-  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
+  theme(axis.text.x=element_text(angle=30, hjust=0.5, size=10, margin = margin(b=20)),
         axis.text.y=element_text(hjust=1, size=10, margin = margin(l=20)),
         axis.title.x = element_text(size=10, face = "bold", margin = margin(b=20)),
         axis.title.y = element_text(size=10, face = "bold", margin = margin(l=20)),
@@ -1082,19 +2313,19 @@ g1 <- ggplot() +  #estetica vai valer para todos os geom's
 ggplotly(g1) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.45, 
+                      x=0.35, 
                       y=-0.25,
                       title=''))
 ```
 
-### Empregos gerados na manga por gênero {.no-title}
+### Empregos gerados na uva por gênero {.no-title}
 
 ``` {r emp5}
 ### Histograma
 
 g2 <- ggplot(data = subclasse_positivos, aes(x = sexo, y = ..count..)) +
   geom_bar(fill='steelblue')+
-    labs(y= "Contratados Manga - VSF", x= "Gênero", title='Distribuição dos empregos gerados por gênero',
+    labs(y= "Contratados Uva - VSF", x= "Gênero", title='Distribuição dos empregos gerados por gênero',
        caption = "")+
   theme_minimal()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
@@ -1114,15 +2345,15 @@ ggplotly(g2)
 Row
 -----------------------------------------------------------------------
 
-### Empregos gerados na manga por idade {.no-title}
+### Empregos gerados na uva por idade {.no-title}
 
 ``` {r emp6}
 ### Histograma
 
 g3 <- ggplot(data=subclasse_positivos, aes(x=idade))+
   geom_histogram(binwidth=3, fill="#69b3a2", color="#e9ecef", alpha=0.9)+
-    scale_x_continuous(limits=c(18, 65), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
-    labs(y= "Contratados Manga - VSF", x= "Idades", title='Distribuição dos empregos gerados por idade',
+  scale_x_continuous(limits=c(17, 67), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    labs(y= "Contratados Uva - VSF", x= "Idades", title='Distribuição dos empregos gerados por idade',
        caption = "")+
   theme_minimal() +
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
@@ -1140,15 +2371,15 @@ ggplotly(g3)
 ``` 
 
 
-### Empregos gerados na manga por grau de instrução {.no-title}
+### Empregos gerados na uva por grau de instrução {.no-title}
 
 ``` {r emp7}
 ### Histograma
 
 g4 <- ggplot(data = subclasse_positivos, aes(x = grau_instrucao, y = ..count..)) +
   geom_bar(fill='#1e4971')+
-    scale_y_continuous(limits=c(0, 500), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
-labs(y= "Contratados Manga - VSF", x= "Grau de Instrução", title='Grau de Instrução dos empregos gerados',
+    scale_y_continuous(limits=c(0, 1100), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+labs(y= "Contratados Uva - VSF", x= "Grau de Instrução", title='Grau de Instrução dos empregos gerados',
        caption = "")+
   theme_minimal() +
   theme(axis.text.x=element_text(angle=30, hjust=1, size=10, margin = margin(b=20)),
@@ -1165,592 +2396,3 @@ labs(y= "Contratados Manga - VSF", x= "Grau de Instrução", title='Grau de Inst
 ggplotly(g4)
 ```
 
-PALMER {data-navmenu="PREÇOS AO PRODUTOR"}
-======================================================================
-
-``` {r database1}
-#Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_manga')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_manga')
-
-data <- as.Date("2024-05-10") #ajustar semanalmente
-
-#Entrando dados no R
-dados <- read.csv2('dados_manga_palmer_semana.csv', header=T, sep=";", dec=".")
-#dados <- dados[,-c(9:10)] #retirar as ultimas colunas
-colnames(dados)[1]<-'produto'
-
-#Entrando dados no R - Deflator
-igpdi <- read.csv2('igpdi.csv', 
-                   header=T, sep=";",
-                   dec=".")
-
-dados_comb<-cbind(dados, igpdi)
-
-teste<-dados_comb[,4]-dados_comb[,7]
-
-dadosp<-dados_comb[,-c(1,2,6,7)]
-
-#Deflacionar a serie de manga
-dadosp$preco_def <- dadosp[,3]*(tail(dadosp[,4],1)/dadosp[,4])
-#dadosp<-dadosp[,-2]
-
-#Criando uma variável com as datas semanais
-dadosp$date <- seq(as.Date('2012-01-14'),to=data,by='1 week') 
-dadosp$date[dadosp$date == "2016-01-02"] <- "2015-12-31" #ajustando algumas datas
-dadosp$date[dadosp$date == "2015-01-03"] <- "2014-12-31"
-dadosp$date[dadosp$date == "2014-01-04"] <- "2013-12-31"
-dadosp$date[dadosp$date == "2013-01-05"] <- "2012-12-31"
-dadosp$date[dadosp$date == "2022-01-01"] <- "2022-01-03"
-dadosp$date[dadosp$date == "2022-12-31"] <- "2023-01-01"
-
-#Analise de Serie Temporal
-preco_palmer <- dadosp[,5]
-preco_palmer <- ts(preco_palmer, start=c(2012,1), freq=52)
-#preco_palmer <- window(preco_palmer, end=c(2021,52))
-
-# Parte 2
-#Decompor a série
-decompa<-decompose(preco_palmer, type = 'multiplicative')
-
-#Tendecia
-trend_palmer <- cmav(preco_palmer, outplot=F)
-
-#Sazonalidade
-sazonalidade <- decompa$figure
-semanas <- seq(1:52)
-sazonal_graph <- tibble(cbind(semanas, sazonalidade))
-
-#Parte 3
-#Analise das comparações entre as médias
-
-preco_palmer_2023 <- window(preco_palmer, end=c(2023,52))
-seas23 <-seasplot(preco_palmer_2023, trend=F, outplot = F)
-medias23 <- colMeans(seas23$season)
-
-preco_palmer_2022 <- window(preco_palmer, end=c(2022,52))
-
-#preco_palmer_2023 <- window(preco_palmer, end=c(2023,52))
-#seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
-#medias21 <- colMeans(seas21$season)
-
-preco_palmer_24 <- as.matrix(tail(dadosp$preco_def,sem_ano)) 
-preco_palmer_2024 <- matrix(NA, nrow=52, ncol=1)
-
-for(i in 1:sem_ano){
-  preco_palmer_2024[i,1] = preco_palmer_24[i,1]
-}
-  
-
-#Como só se tem até a semana 52
-medias23 <- medias23[1:52]
-#medias21 <- medias21[1:52]
-
-matrix = matrix(NA, nrow=52, ncol=2)
-
-for(i in 1:52){
-  matrix[i,1] = min(seas23$season[,i])
-  matrix[i,2] = max(seas23$season[,i])
-}
-
-time <- seq(1:52)
-table <- data.frame(time, matrix[,1], round(medias23,2), matrix[,2], round(tail(preco_palmer_2022,52),2),
-                    round(tail(preco_palmer_2023,52),2), preco_palmer_2024[,1])
-colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2022', 'Ano 2023', 
-                    'Ano 2024')
-
-tablea <- table[,-c(5:7)]
-tableb <- table[,-c(2,3,4)]
-
-tablea2 <- melt(tablea, id.var='Semanas')
-tableb2 <- melt(tableb, id.var='Semanas')
-mycolors <- c("lightblue3", "gray44", "gold")
-
-table_db <- data.frame(matrix[,1], round(medias23,2), matrix[,2], round(tail(preco_palmer_2022,52),2),
-                    round(tail(preco_palmer_2023,52),2), preco_palmer_2024[,1])
-colnames(table_db) = c('Mínimo', 'Média', 'Máximo', '2022', '2023', '2024')
-
-#Parte 4
-
-preco_palmer_23 <- dadosp %>% filter(ano=='2023')
-preco_palmer_2023 <- as.matrix(preco_palmer_23$preco_def)
-variacao_23 <- (preco_palmer_2023/lag(preco_palmer_2023, 1) - 1)*100
-
-variacao_24 <- (preco_palmer_2024/lag(preco_palmer_2024, 1) - 1)*100
-
-semanas <- seq(1:52)
-variacao <- data.frame(semanas, variacao_23[,1], variacao_24[,1])
-colnames(variacao) = c('Semanas', 'Ano 2023', 'Ano 2024')
-
-#Ajuste para a Tabela da Variação
-variacaot <- variacao[,-1]
-colnames(variacaot) = c('Variação em 2023', 'Variação em 2024')
-
-variacao <- melt(variacao, id.var='Semanas')
-
-mycolors2 <- c("orange", "lightblue3")
-
-# Customizar tema interativamente em tempo real (ver mensagens no console)
-#bslib::bs_themer()
-
-```
-
-Row {data-height=125}
------------------------------------------------------------------------
-
-### Preço de Palmer na Semana `r strftime(data, format = "%V")` de 2024 
-``` {r}
-num <- tail(preco_palmer,1)
-valueBox(
-  value = paste0( "R$", format(num, decimal.mark =  ",")),
-#  color = "tomato",
-  icon= "fa-arrow-up")
-```
-
-### Preço de Palmer na Semana `r strftime(data, format = "%V")` de 2023
-``` {r}
-num <- 2.48
-valueBox(
-  value = paste0( "R$", format(round(num,2), decimal.mark =  ",")),
-#  color = "#edc40c",
-  icon= "fa-pen")
-```
-
-### Preço de Palmer na Semana `r strftime(data, format = "%V")` de 2022
-``` {r}
-num <- 2.30
-valueBox(
-  value = paste0( "R$", format(num, decimal.mark =  ",")),
-#  color = "#edc40c",
-  icon= "fa-pen")
-```
-
-Row
------------------------------------------------------------------------
-
-### Mínimo, Máximo, Media e Preços de Palmer {.no-title}
-
-```{r palmer3, results='', fig.cap='', fig.width=6, fig.height=4, fig.align='center'}
-
-g1 <- ggplot()+
-  geom_col(data=tableb2, aes(x=Semanas, y=value, fill=variable), size=2, width = 0.7,
-           position = "dodge")+
-  scale_fill_manual(values=mycolors)+
-    geom_line(data=tablea2, aes(x=Semanas, y=value, colour=variable), linetype = "solid",
-            size = 1)+
-  scale_colour_manual(values = c("red", "chocolate", "darkgreen")) +
-  scale_y_continuous(limits = c(0, 8), n.breaks = 8, labels = number_format(accuracy = 0.01,
-                                                       decimal.mark = ","))+
-  scale_x_continuous(breaks = seq(1, 52, by = 1))+
-  labs(y= "Preço Palmer (R$)", x= "Semanas de cada Ano", title='Mínimo, Máximo, Média e preços de 2022 a 2024 de Manga Palmer ao produtor',
-       caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Manga da Embrapa")+
-  theme_minimal()+
-  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
-        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
-        axis.title.y = element_text(size=8, face = "bold"),
-        axis.title.x = element_text(size=8, face = "bold"),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.caption = element_text(hjust = 0, size=8),
-        plot.title = element_text(hjust = 0.5, size=12, face=""),
-        legend.position = "right", legend.title = element_blank(),
-        legend.text=element_text(size=8)) # Definindo posição da legenda
-
-ggplotly(g1) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.20, 
-                      y=-0.3,
-                      title=''))
-```
-
-### Variação Semanal do Preços {.no-title}
-
-```{r palmer5, results='', fig.cap='', fig.width=5, fig.height=4}
-
-g2 <- ggplot()+
-  geom_col(data=variacao, aes(x=Semanas, y=value, fill=variable), size=2, width = 0.9, position = "dodge")+
-  scale_fill_manual(values=mycolors2)+
-  scale_y_continuous(labels = number_format(accuracy = 0.01, decimal.mark = ","))+
-  scale_x_continuous(breaks = seq(1, 52, by = 2))+
-  labs(y= "Variação Percentual", x= "Semanas do Ano", title='Variação Semanal de preços de Manga Palmer ao produtor',
-       caption = "Fonte: Observatório de Mercado de Manga da Embrapa")+
-  theme_minimal()+
-   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
-        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
-        axis.title.y = element_text(size=8, face = "bold"),
-        axis.title.x = element_text(size=8, face = "bold"),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.caption = element_text(hjust = 0, size=8),
-        plot.title = element_text(hjust = 0.5, size=12, face=""),
-        legend.position = "right", legend.title = element_blank(),
-        legend.text=element_text(size=8)) # Definindo posição da legenda
-
-ggplotly(g2) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.35, 
-                      y=-0.2,
-                      title=''))
-```
-
-Row
------------------------------------------------------------------------
-
-### Preço e Tendência de Palmer {.no-title}
-
-```{r palmer1, results='', fig.cap='', fig.width=6, fig.height=4}
-#Gráfico com Ggplot2
-
-g3 <- ggplot(data=dadosp, aes(x=date)) +  #estetica vai valer para todos os geom's
-  geom_line(aes(y=preco_def, colour="PREÇO"), lwd=0.5)+
-  geom_line(aes(y=trend_palmer, colour="TENDÊNCIA"), lwd=1)+
-  scale_colour_manual("", 
-                      breaks = c("PREÇO", "TENDÊNCIA"),
-                      values = c("black", "tomato")) +
-  labs(y= "Preço Palmer (R$)", x= "Semanas de cada Ano", title='Evolução dos preços ao produtor e Tendência Manga Palmer',
-       caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Manga da Embrapa") +
-  scale_y_continuous(limits=c(0,8), n.breaks = 9, expand = expansion(add=c(0,0.5)), 
-                     labels=number_format(accuracy = 0.01, decimal.mark = ","))+
-  scale_x_date(date_breaks = "6 months",
-               labels = date_format("%b-%Y"))+
-  theme_classic()+ #Definindo tema
-  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=8, margin = margin(b=10)),
-        axis.text.y=element_text(hjust=1, size=8, margin = margin(l=10)),
-        axis.title.x = element_text(size=8, face = "bold", margin = margin(b=10)),
-        axis.title.y = element_text(size=8, face = "bold", margin = margin(l=10)),
-        plot.title = element_text(hjust = 0.5, size=12),
-        plot.caption = element_text(hjust = 0, size=8),
-        legend.position = c(2,1),
-        legend.justification = c(1.2, 1.2),
-        legend.text=element_text(size=8)) # Definindo posição da legenda
-
-ggplotly(g3) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.35, 
-                      y=-0.30,
-                      title=''))
-```
-
-### Sazonalidade de Palmer {.no-title}
-
-```{r palmer2, results='', fig.cap='', fig.width=5, fig.height=4, fig.align='center'}
-#Decompor a Série
-
-g4 <- ggplot(data=sazonal_graph)+
-  geom_line(aes(x=semanas, y=sazonalidade), color="cornflowerblue", size=1.2)+
-  scale_y_continuous(limits=c(0,1.8), n.breaks = 5, expand = expansion(add=c(0,0.5)), 
-                     labels=number_format(accuracy = 0.01, decimal.mark = ","))+
-  scale_x_continuous(breaks = seq(1, 52, by = 2))+
-  labs(y= "", x= "Semanas de cada Ano", title='Sazonalidade do preço de Manga Palmer',
-       caption = "Fonte: Observatório de Mercado de Manga da Embrapa")+
-  theme_classic()+
-  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
-        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
-        axis.title.y = element_text(size=8, face = "bold"),
-        axis.title.x = element_text(size=8, face = "bold"),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.title = element_text(hjust = 0.5, size=12),
-        plot.caption = element_text(hjust = 0, size=8),
-        legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=8)) # Definindo posição da legenda
-
-ggplotly(g4) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.25, 
-                      y=-0.2,
-                      title=''))
-```
-
-TOMMY {data-navmenu="PREÇOS AO PRODUTOR"}
-======================================================================
-
-``` {r database2}
-#Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_manga')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_manga')
-
-#Entrando dados no R
-dados <- read.csv2('dados_manga_tommy_semana.csv', header=T, sep=";", dec=".")
-#dados <- dados[,-c(9:10)] #retirar as ultimas colunas
-colnames(dados)[1]<-'produto'
-
-#Entrando dados no R - Deflator
-igpdi <- read.csv2('igpdi.csv', 
-                   header=T, sep=";",
-                   dec=".")
-
-dados_comb<-cbind(dados, igpdi)
-
-teste<-dados_comb[,4]-dados_comb[,7]
-
-dadosp<-dados_comb[,-c(1,2,6,7)]
-
-#Deflacionar a serie de manga
-dadosp$preco_def <- dadosp[,3]*(tail(dadosp[,4],1)/dadosp[,4])
-#dadosp<-dadosp[,-2]
-
-#Criando uma variável com as datas semanais
-dadosp$date <- seq(as.Date('2012-01-14'),to=data,by='1 week') 
-dadosp$date[dadosp$date == "2016-01-02"] <- "2015-12-31" #ajustando algumas datas
-dadosp$date[dadosp$date == "2015-01-03"] <- "2014-12-31"
-dadosp$date[dadosp$date == "2014-01-04"] <- "2013-12-31"
-dadosp$date[dadosp$date == "2013-01-05"] <- "2012-12-31"
-dadosp$date[dadosp$date == "2022-12-31"] <- "2023-01-01"
-
-#Analise de Serie Temporal
-preco_tommy <- dadosp[,5]
-preco_tommy <- ts(preco_tommy, start=c(2012,1), freq=52)
-#preco_tommy <- window(preco_tommy, end=c(2021,52))
-
-# Parte 2
-#Decompor a série
-decompa<-decompose(preco_tommy, type = 'multiplicative')
-
-#Tendencia
-trend_tommy <-cmav(preco_tommy, outplot=F)
-
-#Sazonalidade
-sazonalidade <- decompa$figure
-semanas <- seq(1:52)
-sazonal_graph <- tibble(cbind(semanas, sazonalidade))
-
-#Parte 3
-#Analise das comparações entre as médias
-preco_tommy_2023 <- window(preco_tommy, end=c(2023,52))
-seas23 <- seasplot(preco_tommy_2023, trend=F, outplot = F)
-medias23 <- colMeans(seas23$season)
-
-preco_tommy_2022 <- window(preco_tommy, end=c(2022,52))
-
-#preco_tommy_2023 <- window(preco_tommy, end=c(2023,52))
-#seas21<-seasplot(preco_tommy_2021, trend=F, outplot = F)
-#medias21 <- colMeans(seas21$season)
-
-preco_tommy_24 <- as.matrix(tail(dadosp$preco_def,sem_ano)) 
-preco_tommy_2024 <- matrix(NA, nrow=52, ncol=1)
-
-for(i in 1:sem_ano){
-  preco_tommy_2024[i,1] = preco_tommy_24[i,1]
-}
-
-#Como só se tem até a semana 52
-#medias20 <- medias20[1:52]
-medias23 <- medias23[1:52]
-
-matrix = matrix(NA, nrow=52, ncol=2)
-
-for(i in 1:52){
-  matrix[i,1] = min(seas23$season[,i])
-  matrix[i,2] = max(seas23$season[,i])
-}
-
-time <- seq(1:52)
-table <- data.frame(time, matrix[,1], round(medias23,2), matrix[,2], round(tail(preco_tommy_2022,52),2),
-                    round(tail(preco_tommy_2023,52),2), preco_tommy_2024[,1])
-colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2022', 'Ano 2023', 
-                    'Ano 2024')
-
-tablea <- table[,-c(5:7)]
-tableb <- table[,-c(2,3,4)]
-
-tablea2 <- melt(tablea, id.var='Semanas')
-tableb2 <- melt(tableb, id.var='Semanas')
-mycolors <- c("lightblue3", "gray44", "gold")
-
-table_db <- data.frame(time, matrix[,1], round(medias23,2), matrix[,2], round(tail(preco_tommy_2022,52),2),
-                    round(tail(preco_tommy_2023,52),2), preco_tommy_2024[,1])
-colnames(table_db) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2022', 'Ano 2023', 
-                    'Ano 2024')
-
-#Parte 4
-
-preco_tommy_23 <- dadosp %>% filter(ano=='2023')
-preco_tommy_2023 <- as.matrix(preco_tommy_23$preco_def)
-variacao_23 <- (preco_tommy_2023/lag(preco_tommy_2023, 1) - 1)*100
-
-variacao_24 <- (preco_tommy_2024/lag(preco_tommy_2024, 1) - 1)*100
-
-semanas <- seq(1:52)
-variacao <- data.frame(semanas, variacao_23[,1], variacao_24[,1])
-colnames(variacao) = c('Semanas', 'Ano 2023', 'Ano 2024')
-
-variacao <- melt(variacao, id.var='Semanas')
-
-mycolors2 <- c("orange", "lightblue3")
-```
-
-Row {data-height=125}
------------------------------------------------------------------------
-
-### Preço de Tommy na Semana `r strftime(data, format = "%V")` de 2024
-``` {r}
-num <- tail(preco_tommy,1)
-valueBox(
-  value = paste0( "R$", format(num, decimal.mark =  ",")),
-#  color = "tomato",
-  icon= "fa-arrow-up")
-```
-
-### Preço de Tommy na Semana `r strftime(data, format = "%V")` de 2023
-``` {r}
-num <- 2.35
-valueBox(
-  value = paste0( "R$", format(num, decimal.mark =  ",")),
-#  color = "#edc40c",
-  icon= "fa-pen")
-```
-
-### Preço de Tommy na Semana `r strftime(data, format = "%V")` de 2022
-``` {r}
-num <- 2.16
-valueBox(
-  value = paste0( "R$", format(num, decimal.mark =  ",")),
-#  color = "#edc40c",
-  icon= "fa-pen")
-```
-
-Row
------------------------------------------------------------------------
-
-###  Mínimo, Máximo, Media e Preços de Tommy {.no-title}
-
-```{r tommy3, results='', fig.cap='', fig.width=6, fig.height=4, fig.align='center'}
-
-g5 <- ggplot()+
-    geom_col(data=tableb2, aes(x=Semanas, y=value, fill=variable), size=2, width = 0.7,
-             position = "dodge")+
-    scale_fill_manual(values=mycolors)+
-    geom_line(data=tablea2, aes(x=Semanas, y=value, colour=variable), linetype = "solid",
-              size = 1)+
-    scale_colour_manual(values = c("red", "chocolate", "darkgreen")) +
-    scale_y_continuous(limits = c(0, 8), n.breaks = 8, labels = number_format(accuracy = 0.01,
-                                                                              decimal.mark = ","))+
-    scale_x_continuous(breaks = seq(1, 52, by = 1))+
-    labs(y= "Preço Tommy (R$)", x= "Semanas de cada Ano", title='Mínimo, Máximo, Média e preços de 2022 a 2024 de Manga Tommy ao produtor',
-         caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Manga da Embrapa")+
-    theme_minimal()+
-    theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
-          axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
-          axis.title.y = element_text(size=8, face = "bold"),
-          axis.title.x = element_text(size=8, face = "bold"),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.caption = element_text(hjust = 0, size=8),
-          plot.title = element_text(hjust = 0.5, size=12, face=""),
-          legend.position = "right", legend.title = element_blank(),
-          legend.text=element_text(size=8)) # Definindo posição da legenda
-
-ggplotly(g5) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.20, 
-                      y=-0.3,
-                      title=''))
-```
-
-### Variação Semanal do Preços {.no-title}
-
-```{r tommy5, results='', fig.cap='', fig.width=5, fig.height=4}
-
-g6 <- ggplot()+
-    geom_col(data=variacao, aes(x=Semanas, y=value, fill=variable), size=2, width = 0.9, position = "dodge")+
-    scale_fill_manual(values=mycolors2)+
-    scale_y_continuous(labels = number_format(accuracy = 0.01, decimal.mark = ","))+
-    scale_x_continuous(breaks = seq(1, 52, by = 2))+
-    labs(y= "Variação Percentual", x= "Semanas do Ano", title='Variação Semanal de preços de Manga Tommy ao produtor',
-         caption = "Fonte: Observatório de Mercado de Manga da Embrapa")+
-    theme_minimal()+
-    theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
-          axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
-          axis.title.y = element_text(size=8, face = "bold"),
-          axis.title.x = element_text(size=8, face = "bold"),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.caption = element_text(hjust = 0, size=8),
-          plot.title = element_text(hjust = 0.5, size=12, face=""),
-          legend.position = "right", legend.title = element_blank(),
-          legend.text=element_text(size=8)) # Definindo posição da legenda
-
-ggplotly(g6) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.35, 
-                      y=-0.2,
-                      title=''))
-```
-
-Row
------------------------------------------------------------------------
-
-### Preço e Tendência de Tommy {.no-title}
-
-```{r tommy1, results='', fig.cap='', fig.width=6, fig.height=4}
-#Gráfico com Ggplot2
-
-g7 <- ggplot(data=dadosp, aes(x=date)) +  #estetica vai valer para todos os geom's
-    geom_line(aes(y=preco_def, colour="PREÇO"), lwd=0.5)+
-    geom_line(aes(y=trend_tommy, colour="TENDÊNCIA"), lwd=1)+
-    scale_colour_manual("", 
-                        breaks = c("PREÇO", "TENDÊNCIA"),
-                        values = c("black", "tomato")) +
-    labs(y= "Preço Tommy (R$)", x= "Semanas de cada Ano", title='Evolução dos preços ao produtor e Tendência Manga Tommy',
-         caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Manga da Embrapa") +
-    scale_y_continuous(limits=c(0,8), n.breaks = 9, expand = expansion(add=c(0,0.5)), 
-                       labels=number_format(accuracy = 0.01, decimal.mark = ","))+
-    scale_x_date(date_breaks = "6 months",
-                 labels = date_format("%b-%Y"))+
-    theme_classic()+ #Definindo tema
-    theme(axis.text.x=element_text(angle=35, hjust=0.5, size=8, margin = margin(b=10)),
-          axis.text.y=element_text(hjust=1, size=8, margin = margin(l=10)),
-          axis.title.x = element_text(size=8, face = "bold", margin = margin(b=10)),
-          axis.title.y = element_text(size=8, face = "bold", margin = margin(l=10)),
-          plot.title = element_text(hjust = 0.5, size=12, face=""),
-          plot.caption = element_text(hjust = 0, size=8),
-          legend.position = c(2,1),
-          legend.justification = c(1.2, 1.2),
-          legend.text=element_text(size=8)) # Definindo posição da legenda
-
-ggplotly(g7) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.35, 
-                      y=-0.30,
-                      title=''))
-```
-
-### Sazonalidade de Tommy {.no-title}
-  
-```{r tommy2, results='', fig.cap='', fig.width=5, fig.height=4, fig.align='center'}
-#Decompor a Série
-
-g8 <- ggplot(data=sazonal_graph)+
-    geom_line(aes(x=semanas, y=sazonalidade), color="cornflowerblue", size=1.2)+
-    scale_y_continuous(limits=c(0,1.8), n.breaks = 5, expand = expansion(add=c(0,0.5)), 
-                       labels=number_format(accuracy = 0.01, decimal.mark = ","))+
-    scale_x_continuous(breaks = seq(1, 52, by = 2))+
-    labs(y= "", x= "Semanas de cada Ano", title='Sazonalidade do preço de Manga Tommy',
-         caption = "Fonte: Observatório de Mercado de Manga da Embrapa")+
-    theme_classic()+
-    theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
-          axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=10)),
-          axis.title.y = element_text(size=8, face = "bold"),
-          axis.title.x = element_text(size=8, face = "bold"),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.caption = element_text(hjust = 0.5, size=8),
-          plot.title = element_text(hjust = 0.5, size=12, face=""),
-          legend.position = "bottom", legend.title = element_blank(),
-          legend.text=element_text(size=8)) # Definindo posição da legenda
-
-ggplotly(g8) %>%
-  layout(legend = list(
-                      orientation = "h", 
-                      x=0.25, 
-                      y=-0.2,
-                      title=''))
-```
