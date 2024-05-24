@@ -49,7 +49,7 @@ O preço médio de uva sem semente branca embalada, na semana `r strftime(today,
 
 No caso da uva sem semente negra embalada (embalagem do produtor + resfriamento), na semana `r strftime(today, format = "%V")` o preço médio foi de R\$ 12,48, variando entre R\$ 15,00 e R\$ 10,80. Em 2022, o preço deflacionado é de R\$ 5,58. Em 2023, o preço é de R\$ 7,10 e a média histórica deflacionada para esta semana é de R\$ 9,33. Em relação à semana `r strftime(last, format = "%V")`, os preços reduziram -8,44%.
 
-Para a uva sem semente negra, o preço médio na semana `r strftime(today, format = "%V")` é R\$7,80, variando entre R\$8,50 e R\$7,00. Isto significa uma queda de -9,62% em relação à semana anterior. Este valor é maior do que a máxima histórica deflacionada da semana (R\$6,78). Em 2022, a média é R\$2,63 e, em 2023, a média deflacionada é R\$3,83. 
+Para a uva sem semente negra, o preço médio na semana `r strftime(today, format = "%V")` é R\$7,80, variando entre R\$8,50 e R\$7,00. Isto significa uma queda de -9,62% em relação à semana anterior. Este valor é maior do que a máxima histórica deflacionada da semana (R\$6,78). Em 2022, a média é R\$2,63 e, em 2023, a média deflacionada é R\$3,88. 
 
 <br>
 
