@@ -1288,10 +1288,11 @@ checkX13()
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2024-05-01")
-atual <-  as.Date("2024-06-01")
+anterior <- as.Date("2024-06-01")
+atual <-  as.Date("2024-07-01")
 #today <- as.Date("2022-02-11")
-mes <- 6
+mes <- 7
+mes_ano <- month(atual)
 
 #Entrando dados no R
 dados1 <- read.csv2('exportacoes_2016_2024.csv', header=T, sep=";", dec = ".")
@@ -1490,7 +1491,7 @@ valueBox(
 
 ### Volume Exportação em `r strftime(atual, format = "%B")` de 2023 
 ``` {r d2}
-num <- 1801
+num <- round(variacao_volume_2023[mes_ano, ],0)
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
@@ -1498,7 +1499,7 @@ valueBox(
 
 ### Volume Exportação em `r strftime(atual, format = "%B")` de 2022 
 ``` {r d3}
-num <- 3013
+num <- round(variacao_volume_2022[mes_ano, ],0)
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
@@ -2174,7 +2175,7 @@ EMPREGO
 #setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_caged')
 setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
 
-atual <-  as.Date("2024-05-01")
+atual <-  as.Date("2024-06-01")
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2183,7 +2184,7 @@ library(scales)
 library(plotly)
 
 #Entrando dados no R
-dados1 <- read.csv2('maio_2024.csv', header=T, sep=";", dec = ".")
+dados1 <- read.csv2('junho_2024.csv', header=T, sep=";", dec = ".")
 colnames(dados1)[1] <- 'date'
 dados1$date <- seq(as.Date('2021-01-01'),to=atual,by='1 month')
 dados1a <- dados1 
@@ -2209,29 +2210,29 @@ saldom$mes <- factor(saldom$mes,levels = c("Jan", "Fev", "Mar", "Abr", "Mai",
 
 #Entrando com o restante dos dados
 
-load("maio_24_caged.RData")
+load("junho_24_caged.RData")
 
 #dados_03_vsf$sexo <- lapply(dados_03_vsf$sexo, factor)
 
-dados_05_vsf$sexo[dados_05_vsf$sexo == 1] <- 0
-dados_05_vsf$sexo[dados_05_vsf$sexo == 3] <- 1
+dados_06_vsf$sexo[dados_06_vsf$sexo == 1] <- 0
+dados_06_vsf$sexo[dados_06_vsf$sexo == 3] <- 1
 
-dados_05_vsf <- mutate(dados_05_vsf,
+dados_06_vsf <- mutate(dados_06_vsf,
                 sexo = factor(sexo, levels = 0:1, labels = c("Masculino", "Feminino")))
 
 # Mantendo apenas 
 
 #Separando as admissoes e as demissoes
-dados_05_vsf_positivos <-dados_05_vsf%>% filter(saldo_movim=="1")
-dados_05_vsf_negativos <-dados_05_vsf%>% filter(saldo_movim=="-1")
+dados_06_vsf_positivos <-dados_06_vsf%>% filter(saldo_movim=="1")
+dados_06_vsf_negativos <-dados_06_vsf%>% filter(saldo_movim=="-1")
 
 #Mantendo apenas o agronegocio
-secao_positivos <-dados_05_vsf_positivos%>% filter(secao=="A")
-secao_negativos <-dados_05_vsf_negativos%>% filter(secao=="A")
+secao_positivos <-dados_06_vsf_positivos%>% filter(secao=="A")
+secao_negativos <-dados_06_vsf_negativos%>% filter(secao=="A")
 
 #Mantendo apenas a uva
-subclasse_positivos <-dados_05_vsf_positivos%>% filter(subclasse=="132600")
-subclasse_negativos <-dados_05_vsf_negativos%>% filter(subclasse=="132600")
+subclasse_positivos <-dados_06_vsf_positivos%>% filter(subclasse=="132600")
+subclasse_negativos <-dados_06_vsf_negativos%>% filter(subclasse=="132600")
 
 subclasse_positivos <- mutate(subclasse_positivos,
                 grau_instrucao = factor(grau_instrucao, levels = 1:13, 
@@ -2262,7 +2263,7 @@ Row {data-height=125}
 
 ### pela viticultura em `r strftime(atual, format = "%B")` de 2024 
 ``` {r emp1}
-num <- 2.019
+num <- tail(dados1$Contratados_Uva,1)
 valueBox(
   value = paste0(num, " Contratados"),
 #  color = "green",
@@ -2271,7 +2272,7 @@ valueBox(
 
 ### pela viticultura em `r strftime(atual, format = "%B")` de 2024 
 ``` {r emp2}
-num <- 2.413
+num <- tail(dados1$Demitidos_Uva,1)
 valueBox(
   value = paste0(num, " Demitidos"),
 #  color = "tomato",
@@ -2280,7 +2281,7 @@ valueBox(
 
 ### Saldo Gerado pela viticultura em `r strftime(atual, format = "%B")` de 2024
 ``` {r emp3}
-num <- -394
+num <- tail(dados1$Saldo_uva,1)
 valueBox(
   value = paste0(num, " Empregos"),
 #  color = "green",
@@ -2384,7 +2385,7 @@ ggplotly(g3)
 
 g4 <- ggplot(data = subclasse_positivos, aes(x = grau_instrucao, y = ..count..)) +
   geom_bar(fill='#1e4971')+
-    scale_y_continuous(limits=c(0, 750), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    scale_y_continuous(limits=c(0, 950), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
 labs(y= "Contratados Uva - VSF", x= "Grau de Instrução", title='Grau de Instrução dos empregos gerados',
        caption = "")+
   theme_minimal() +
