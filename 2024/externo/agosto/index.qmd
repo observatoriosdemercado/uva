@@ -890,7 +890,7 @@ datatable(dados5, option = list(
 Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa
 :::
 
-# 7. Importação de Uva pelo Brasil: 2016-2024.
+# 8. Importação de Uva pelo Brasil: 2016-2024.
 
 ::: panel-tabset
 ## GRÁFICO
@@ -946,7 +946,7 @@ datatable(importacaot, option = list(
 Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa
 :::
 
-# 8. Evolução da Taxa de Câmbio Esperada para Dezembro de 2024
+# 9. Evolução da Taxa de Câmbio Esperada para Dezembro de 2024
 
 ::: panel-tabset
 ## GRÁFICO
