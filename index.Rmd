@@ -61,8 +61,12 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-data <- Sys.Date()
-sem_ano <- isoweek(data)
+#data <- Sys.Date()
+#sem_ano <- isoweek(data)
+
+data <- as.Date('2024-09-05')
+sem_ano <- 36
+
 # Linhas que precisam de ajuste: 71, 104, 107
 ```
 
@@ -1283,15 +1287,15 @@ library(reshape2)
 library(rbcb)
 library(tidyverse)
 
-checkX13()
+#checkX13()
 
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2024-06-01")
-atual <-  as.Date("2024-07-01")
+anterior <- as.Date("2024-07-01")
+atual <-  as.Date("2024-08-01")
 #today <- as.Date("2022-02-11")
-mes <- 7
+mes <- 8
 mes_ano <- month(atual)
 
 #Entrando dados no R
@@ -1321,7 +1325,7 @@ colnames(dados5) = c('UF', "Participacao")
 # Entrando dados no R
 dados7 <- read.csv2('importacao.csv', header=T, sep=";" , dec = ".")
 dados7 <- dados7[,-c(1,2)]
-colnames(dados7) = c('Chile', 'Argentina', 'Peru')
+colnames(dados7) = c('Chile', 'Argentina', 'Peru', 'Egito')
 
 #Ajusta para Valor
 #Analise de Serie Temporal
@@ -1587,7 +1591,7 @@ g11 <- ggplot(data=dados4) +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolor1) +
   labs(y= "% de Exportação", x= "Vias", title='Principais vias de exportação',
        caption = "")+
-  scale_y_continuous(limits=c(0, 95), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_y_continuous(limits=c(0, 90), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
         axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
@@ -1647,7 +1651,7 @@ ggplotly(g7) %>%
 ### Importação de Uva pelo Brasil: 2016-2022. {.no-title}
 
 ``` {r importa1}
-mycolors3 <- c("orange", "lightblue3", "red")
+mycolors3 <- c("orange", "lightblue3", "red", "darkgreen")
 
 g13 <- ggplot()+
 geom_col(data=importacao, aes(x=date, y=value, fill=variable), lwd=1, position = "dodge")+
