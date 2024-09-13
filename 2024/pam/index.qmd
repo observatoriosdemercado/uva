@@ -32,13 +32,13 @@ execute:
 
 ```{r setup, include=FALSE}
 library(lubridate)
-today <- as.Date("2024-01-01")
-date <- seq(as.Date('2024-01-01'),to=as.Date('2024-12-01'),by='1 month')
+today <- as.Date("2023-01-01")
+date <- seq(as.Date('2023-01-01'),to=as.Date('2023-12-01'),by='1 month')
 ```
 
 <hr>
 
-# ATUALIZAÇÃO DA INFORMAÇÕES SOBRE A CULTURA DA UVA COM DADOS DA PAM/IBGE ATÉ 2023.
+# ATUALIZAÇÕES DAS INFORMAÇÕES SOBRE A CULTURA DA UVA COM DADOS DA PAM/IBGE ATÉ 2023.
 
 <hr>
 
@@ -217,8 +217,7 @@ Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
 #Entrando dados no R
 setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
 
-dados3 <- read_excel("area_cidades.xlsx", col_names = TRUE, skip = 4, 
-                     col_types = c('text', rep("numeric", 10)), na = "-")
+dados3 <- read_excel("area_cidades.xlsx", col_names = TRUE, skip = 4, col_types = c('text', rep("numeric", 10)), na = "-")
 colnames(dados3)[1] <- 'cidades'
 dados3 <- dados3[-nrow(dados3),]
 #dados3$"2013"[dados3$cidades == "Belém do São Francisco (PE)"] <- 600
@@ -360,8 +359,7 @@ Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de uva da Embrapa
 setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
 
 #Entrando dados no R
-dados1 <- read_excel("quanti_regioes.xlsx", col_names = TRUE, skip = 4, 
-                     col_types = c('text', rep("numeric", 10)), na = "-")
+dados1 <- read_excel("quanti_regioes.xlsx", col_names = TRUE, skip = 4, col_types = c('text', rep("numeric", 10)), na = "-")
 
 colnames(dados1)[1] <- 'regiao'
 dados1 <- dados1[-nrow(dados1),]
