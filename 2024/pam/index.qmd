@@ -1,0 +1,1205 @@
+---
+title: "OBSERVATÓRIO DO MERCADO DE UVA DA EMBRAPA SEMIÁRIDO"
+author: "João Ricardo F. de Lima"
+date: "today"
+editor: source
+lang: pt
+language: 
+  toc-title-document: '<a href="https://observatoriosdemercado.github.io/manga/" target="_blank"><img src="https://github.com/observatoriosdemercado/manga/blob/main/logo_embrapa.jpg?raw=true" alt="Logotipo Embrapa" width="150"></a>'
+format: 
+  html:
+    toc: true
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+    toc-location: left
+    code-fold: false
+    embed-resources: true
+    page-layout: full
+#    fig-asp: 0.618
+    fig-width: 10
+    fig-height: 8
+#    fig-dpi: 200
+    fig-align: center
+    df-print: paged
+theme:
+  light: flatly
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+```{r setup, include=FALSE}
+library(lubridate)
+today <- as.Date("2024-01-01")
+date <- seq(as.Date('2024-01-01'),to=as.Date('2024-12-01'),by='1 month')
+```
+
+<hr>
+
+# ATUALIZAÇÃO DA INFORMAÇÕES SOBRE A CULTURA DA UVA COM DADOS DA PAM/IBGE ATÉ 2023.
+
+<hr>
+
+Os dados utilizados são da Pesquisa Agrícola Municipal (PAM) do IBGE e relativos ao período de 2014 a 2023, excluindo o estado do Rio Grande do Sul (que possui a maior parte de sua uva para produção de vinho e suco) dado que o interesse aqui é com uva de mesa. Em 2023, a área plantada no Brasil foi de aproximadamente 30 mil hectares (ha). As três regiões que concentram a produção nacional são a Nordeste 13 mil ha, a Sudeste 9,6 mil ha e a Sul (Paraná e Santa Catarina) com 7,1 mil ha. Os estados de Pernambuco (10,3 mil ha), São Paulo (8 mil ha), Santa Catarina (3,8 mil ha), Paraná (3,3 mil ha), Bahia (2,6 mil ha ) e Minas Gerais (1,3 mil ha) são os seis estados que concentram a maior parte da área de uva de mesa no país. O Vale do São Francisco mantém sua trajetória de crescimento de área, saindo de 9 mil ha em 2014 para 12,3 mil ha em 2023, segundo o IBGE (2024), um aumento de 35,93%. Em relação às cidades, três do Vale do São Francisco estão entre as cinco maiores produtoras: Petrolina/PE (7 mil ha), Lagoa Grande/PE (2,44 mil ha) e Juazeiro/BA (1,63 mil ha). 
+
+Em termos de volumes, em 2023, o Brasil colheu cerca de 853 mil toneladas (t), com o Nordeste participando com aproximadamente 67% de todo este volume. Os seis estados com maiores volumes de produção são, respectivamente, Pernambuco (58,2%), São Paulo (17,9%), Bahia (8,5%), Santa Catarina (6,8%), Paraná ( 5,1%) e Minas Gerais (2,4%). Em 2023, o Vale do São Francisco produziu cerca de 554 mil toneladas, um crescimento de 40% em relação ao volume de 2022. 
+
+Sobre a produtividade, em 2023, a média anual da região Nordeste (43,9 t/ha) é maior do que a média nacional (28,4 t/ha). Segundo o IBGE (2024), o estado de Pernambuco possui a maior produtividade média (48,1 t/ha), seguido da Bahia (28,2 t/ha) e São Paulo (18,9 t/ha). O Vale do São Francisco sofreu muito, em 2022, com chuvas que afetaram a produção e a produtividade. Em 2023, contudo, as condições climáticas foram mais favoráveis e a produtividade subiu para 45,1 t/ha, um crescimento de 26,3 em relação ao ano anterior.  
+
+A uva gerou mais de 3,5 bilhões de reais em valor da produção no Brasil, sendo que aproximadamente dois terços deste total, 2,2 bilhões de reais, foi originado no Vale do São Francisco. 
+
+<br>
+
+# 1. ATUALIZAÇÃO DADOS SOBRE ÁREA DA CULTURA DA UVA.
+
+## 1.1 ÁREA NO BRASIL E REGIÕES PRODUTORAS
+
+::: panel-tabset
+### GRÁFICO
+
+```{r ibge_uva1}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+
+#Inicio do Script
+#Pacotes a serem utilizados 
+library(ggplot2)
+library(ggthemes)
+library(dplyr)
+library(tidyverse)
+library(scales)
+library(kableExtra)# complex tables
+library(magrittr)# pipe operations
+library(readxl)
+library(reshape2)
+library(plotly)
+library(DT)
+
+mycolors2 <- c("darkgray", "lightblue3", "orange", "darkblue", "red", "darkgreen", "gold", "#0A6269", "#690F0A", "#6675E6" )
+mycolors3 <- c("darkblue", "orange")
+
+#Entrando dados no R
+#dados1 <- read_excel("area_regioes.xlsx", col_names = TRUE)
+#dados1 <- dados1[c(1,3,4),]
+dados1 <- read_excel("area_regioes.xlsx", col_names = TRUE, skip = 4, col_types = c('text', "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric"), na="-")
+colnames(dados1)[1] <- 'regiao'
+dados1 <- dados1[-nrow(dados1),]
+
+#Brasil sem Rio Grande do Sul
+dados1_BR <- dados1[,-1]
+dados1_BR2 <- dados1_BR[1,]-dados1_BR[7,]
+
+#Região Sul sem Rio Grande do Sul
+dados1_Sul <- dados1_BR[5,]-dados1_BR[7,]
+
+#Brasil e RS novos
+dados1_brrs <- rbind(dados1_BR2, dados1_Sul)
+
+#Voltando com os dados
+dados1_br_no_ne_se <- rbind(dados1_BR2, dados1_BR[c(2:4),])
+dados2_br_no_ne_se <- rbind(dados1_br_no_ne_se, dados1_Sul)
+dados1_f <- rbind(dados2_br_no_ne_se, dados1_BR[6,])
+
+dados1 <- cbind (dados1[c(1:6),1], dados1_f)
+
+dados1m <- melt(dados1, id.var='regiao')
+dados1m_area <- dados1m
+
+g1 <- ggplot()+
+  geom_col(data=dados1m, aes(x=reorder(regiao, -value), y=value/1000, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors2)+
+  labs(y= "Área Plantada de Uva (1000 ha)", x= "Brasil e Regiões", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=12, face = "bold"),
+        axis.title.x = element_text(size=12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "right", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g1) %>%
+  layout(legend = list(
+    orientation = "v",
+    x=1.0,
+    y=0.1,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (HECTARES)**
+
+```{r ibge_uva1a}
+datatable(dados1, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## 1.2 ÁREA NOS PRINCIPAIS ESTADOS PRODUTORES
+
+::: panel-tabset
+### GRÁFICO
+
+```{r ibge_uva2}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+
+#Entrando dados no R
+#dados2 <- read_excel("area_estados.xlsx", col_names = TRUE)
+dados2 <- read_excel("area_estados.xlsx", col_names = TRUE, skip = 4, col_types = c('text', "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric"), na="-")
+colnames(dados2)[1] <- 'estados'
+dados2 <- dados2[-nrow(dados2),]
+dados2 <- na.exclude(dados2)
+dados2 <- arrange(dados2, desc(dados2$"2023"))
+dados2 <- dados2[c(2:7),]
+dados2m <- melt(dados2, id.var='estados')
+
+g2 <- ggplot()+
+  geom_col(data=dados2m, aes(x=reorder(estados, -value), y=value/1000, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors2)+
+  labs(y= "Área Plantada de Uva (1000 ha)", x= "Estados do Brasil", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=12, face = "bold"),
+        axis.title.x = element_text(size=12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "right", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g2) %>%
+  layout(legend = list(
+    orientation = "v",
+    x=1.0,
+    y=0.1,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (HECTARES)**
+
+```{r ibge_uva2a}
+datatable(dados2, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+
+## 1.3 ÁREA NAS PRINCIPAIS CIDADES PRODUTORAS
+
+::: panel-tabset
+### GRÁFICO
+
+```{r ibge_uva3}
+#Direcionado o R para o Diretorio a ser trabalhado
+#Entrando dados no R
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+
+dados3 <- read_excel("area_cidades.xlsx", col_names = TRUE, skip = 4, 
+                     col_types = c('text', rep("numeric", 10)), na = "-")
+colnames(dados3)[1] <- 'cidades'
+dados3 <- dados3[-nrow(dados3),]
+#dados3$"2013"[dados3$cidades == "Belém do São Francisco (PE)"] <- 600
+dados3 <- dados3 |>
+  na.exclude() |>
+  arrange(desc(`2023`)) |>
+  filter(!grepl("\\(RS\\)", cidades))  # Exclude cities from Rio Grande do Sul (RS)
+
+#dados3 <- dados3[c(1,8,9,12,14,20,22,27,28,30,31,33,34,36,37,
+#                   40,43,44,45,46),c(1,11)]
+
+# Select the top 16 rows and remove columns 2 to 10 (unnecessary columns)
+dados3 <- dados3 |>
+  slice_head(n = 16) |>
+  select(-c(2:10))
+
+dados3a <- dados3
+dados3m <- melt(dados3, id.var='cidades')
+dados3m_area <- dados3m
+
+g3 <- ggplot()+
+  geom_col(data=dados3m, aes(x=reorder(cidades, -value), y=value, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors3)+
+  labs(y= "Área Plantada de Uva (ha)", x= "Cidades do Brasil", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=20, hjust=0.5, size=8, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g3) %>%
+  layout(legend = list(
+    orientation = "h",
+    x=0.35,
+    y=-0.35,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (HECTARES)**
+
+```{r ibge_uva3a}
+datatable(dados3, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de uva da Embrapa
+::: 
+
+## 1.4 ÁREA NO VALE DO S. FRANCISCO 
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r ibge_uva4}
+#Direcionado o R para o Diretorio a ser trabalhado
+#Entrando dados no R
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+
+dados4 <- read_excel("area_vale.xlsx", col_names = TRUE, skip = 4, 
+                     col_types = c('text', rep("numeric", 10)), na = "-")
+
+colnames(dados4)[1] <- 'mesorregiao'
+dados4 <- dados4[-nrow(dados4),]
+
+dados4a <- dados4[,-1] %>%
+  summarise_all(sum)
+
+dados4a$mesorregiao <- "Vale do São Francisco"
+dados4a <- dados4a %>% select(mesorregiao, everything())
+dados4m <- melt(dados4a, id.var='mesorregiao')
+dados4m_area <- dados4m
+mycolors4 <- "blue"
+
+g4 <- ggplot()+
+  geom_col(data=dados4m, aes(x=variable, y=value/1000, fill="Area Uva (Hectares)"), lwd=1)+
+  scale_fill_manual(values=mycolors4)+
+  labs(y= "Área Plantada de Uva (mil ha)", x= "Vale do São Francisco", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=12, face = "bold"),
+        axis.title.x = element_text(size=12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g4) %>%
+  layout(legend = list(
+    orientation = "h",
+    x=0.35,
+    y=-0.2,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (HECTARES)**
+
+```{r ibge_uva4a}
+datatable(dados4a, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de uva da Embrapa
+
+::: 
+
+# 2. ATUALIZAÇÃO DADOS SOBRE PRODUÇÃO DA CULTURA DA UVA.
+
+## 2.1 QUANTIDADE NO BRASIL E REGIÕES
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r ibge_uva5}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+
+#Entrando dados no R
+dados1 <- read_excel("quanti_regioes.xlsx", col_names = TRUE, skip = 4, 
+                     col_types = c('text', rep("numeric", 10)), na = "-")
+
+colnames(dados1)[1] <- 'regiao'
+dados1 <- dados1[-nrow(dados1),]
+
+#Brasil sem Rio Grande do Sul
+dados1_BR <- dados1[,-1]
+dados1_BR2 <- dados1_BR[1,]-dados1_BR[7,]
+
+#Região Sul sem Rio Grande do Sul
+dados1_Sul <- dados1_BR[5,]-dados1_BR[7,]
+
+#Brasil e RS novos
+dados1_brrs <- rbind(dados1_BR2, dados1_Sul)
+
+#Voltando com os dados
+dados1_br_no_ne_se <- rbind(dados1_BR2, dados1_BR[c(2:4),])
+dados2_br_no_ne_se <- rbind(dados1_br_no_ne_se, dados1_Sul)
+dados1_f <- rbind(dados2_br_no_ne_se, dados1_BR[6,])
+
+dados1 <- cbind (dados1[c(1:6),1], dados1_f)
+
+dados1m <- melt(dados1, id.var='regiao')
+
+dados1m_quanti <- dados1m
+
+g1 <- ggplot()+
+  geom_col(data=dados1m, aes(x=reorder(regiao, -value), y=value/1000, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors2)+
+  labs(y= "Quantidade Produzida de Uva (Mil t)", x= "Brasil e Regiões", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=12, face = "bold"),
+        axis.title.x = element_text(size=12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "right", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g1) %>%
+  layout(legend = list(
+    orientation = "v",
+    x=1.0,
+    y=0.1,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (TONELADAS)**
+
+```{r ibge_uva5a}
+datatable(dados1, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## 2.2 QUANTIDADE NOS PRINCIPAIS ESTADOS PRODUTORES
+
+::: panel-tabset
+### GRÁFICO
+
+```{r ibge_uva6}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+
+#Entrando dados no R
+#Entrando dados no R
+dados2 <- read_excel("quanti_estados.xlsx", col_names = TRUE, skip = 4, 
+                     col_types = c('text', rep("numeric", 10)), na = "-")
+colnames(dados2)[1] <- 'estados'
+dados2 <- dados2[-nrow(dados2),]
+dados2 <- na.exclude(dados2)
+dados2 <- arrange(dados2, desc(dados2$"2023"))
+dados2 <- dados2[c(2:7),]
+
+g2 <- ggplot()+
+  geom_col(data=dados2m, aes(x=reorder(estados, -value), y=value/1000, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors2)+
+  labs(y= "Quantidade Produzida de Uva (Mil t)", x= "Estados do Brasil", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=12, face = "bold"),
+        axis.title.x = element_text(size=12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "right", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g2) %>%
+  layout(legend = list(
+    orientation = "v",
+    x=1.0,
+    y=0.1,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (TONELADAS)**
+
+```{r ibge_uva6a}
+datatable(dados2, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## 2.3 QUANTIDADE NAS PRINCIPAIS CIDADES PRODUTORAS
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r ibge_uva7}
+#Direcionado o R para o Diretorio a ser trabalhado
+#Entrando dados no R
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+dados3 <- read_excel("quanti_cidades.xlsx", col_names = TRUE, skip = 4, 
+                     col_types = c('text', rep("numeric", 10)), na = "-")
+colnames(dados3)[1] <- 'cidades'
+dados3 <- dados3[-nrow(dados3),]
+#dados3$"2013"[dados3$cidades == "Belém do São Francisco (PE)"] <- 600
+dados3 <- dados3 |>
+  na.exclude() |>
+  arrange(desc(`2023`)) |>
+  filter(!grepl("\\(RS\\)", cidades))  # Exclude cities from Rio Grande do Sul (RS)
+
+# Select the top 16 rows and remove columns 2 to 10 (unnecessary columns)
+dados3 <- dados3 |>
+  slice_head(n = 16) |>
+  select(-c(2:10))
+
+dados3a <- dados3
+dados3m <- melt(dados3, id.var='cidades')
+dados3m_quanti <- dados3m
+
+g3 <- ggplot()+
+  geom_col(data=dados3m, aes(x=reorder(cidades, -value), y=value/1000, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors3)+
+  labs(y= "Quantidade Produzida de Uva (Mil t)", x= "Cidades do Brasil", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=20, hjust=0.5, size=8, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g3) %>%
+  layout(legend = list(
+    orientation = "h",
+    x=0.35,
+    y=-0.35,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (TONELADAS)**
+
+```{r ibge_uva7a}
+datatable(dados3, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## 2.4 QUANTIDADE NO VALE DO S. FRANCISCO 
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r ibge_uva8}
+#Direcionado o R para o Diretorio a ser trabalhado
+#Entrando dados no R
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+
+dados4 <- read_excel("quanti_vale.xlsx", col_names = TRUE, skip = 4, 
+                     col_types = c('text', rep("numeric", 10)), na = "-")
+
+colnames(dados4)[1] <- 'mesorregiao'
+dados4 <- dados4[-nrow(dados4),]
+
+dados4a <- dados4[,-1] %>%
+  summarise_all(sum)
+
+dados4a$mesorregiao <- "Vale do São Francisco"
+dados4a <- dados4a %>% select(mesorregiao, everything())
+dados4m <- melt(dados4a, id.var='mesorregiao')
+dados4m_quanti <- dados4m
+mycolors4 <- "blue"
+
+g4 <- ggplot()+
+  geom_col(data=dados4m, aes(x=variable, y=value/1000, fill="Quantidade Uva (1000 Toneladas)"), lwd=1)+
+  scale_fill_manual(values=mycolors4)+
+  labs(y= "Quantidade Produzida de Uva (Mil t)", x= "Vale do São Francisco", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=12, face = "bold"),
+        axis.title.x = element_text(size=12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g4) %>%
+  layout(legend = list(
+    orientation = "h",
+    x=0.3,
+    y=-0.2,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA**
+
+```{r ibge_uva8a}
+datatable(dados4a, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+:::
+
+# 3. ATUALIZAÇÃO DADOS SOBRE PRODUTIVIDADE DA CULTURA DA UVA.
+
+## 3.1 PRODUTIVIDADE NO BRASIL E PRINCIPAIS REGIÕES PRODUTORAS
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r ibge_uva9}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+
+dados1m <- cbind(dados1m_quanti, dados1m_area$value)
+dados1m$prod <- dados1m$value/dados1m$`dados1m_area$value`
+dados1m <- dados1m[,-c(3:4)]
+colnames(dados1m)[3] <- "value"
+dados1m$value <- round(dados1m$value,1)
+#dados1m$value <- round(dados1m$value/1000,0)
+
+g1 <- ggplot()+
+  geom_col(data=dados1m, aes(x=regiao, y=value, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors2)+
+  labs(y= "Produtividade na Uva (t/ha)", x= "Brasil e Regiões", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=12, face = "bold"),
+        axis.title.x = element_text(size=12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "right", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g1) %>%
+  layout(legend = list(
+    orientation = "v",
+    x=1.0,
+    y=0.1,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (T/HA)**
+
+```{r ibge_uva9a}
+dados1c <- dcast(dados1m, regiao~variable)
+
+datatable(dados1c, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de uva da Embrapa
+
+:::
+
+## 3.2 PRODUTIVIDADE NOS PRINCIPAIS ESTADOS PRODUTORES
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r ibge_uva10}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+
+#Entrando dados no R
+dados2 <- read_excel("produti_estados.xlsx", col_names = TRUE, skip = 4, 
+                     col_types = c('text', rep("numeric", 10)), na = "-")
+
+colnames(dados2)[1] <- 'estados'
+dados2 <- dados2[-nrow(dados2),]
+dados2 <- na.exclude(dados2)
+dados2 <- arrange(dados2, desc(dados2$"2023"))
+dados2 <- dados2[c(1,2,7,10,11,12),]
+
+dados2m <- melt(dados2, id.var='estados')
+
+g2 <- ggplot()+
+  geom_col(data=dados2m, aes(x=reorder(estados, -value), y=value/1000, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors2)+
+  labs(y= "Produtividade da Uva (t/ha)", x= "Estados do Brasil", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "right", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g2) %>%
+  layout(legend = list(
+    orientation = "v",
+    x=1.0,
+    y=0.1,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (T/HA)**
+
+```{r ibge_uva10a}
+dados2t <- dados2[,1]
+dados2 <- round(dados2[,c(2:11)]/1000,1)
+dados2 <- cbind(dados2t, dados2)
+
+datatable(dados2, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de uva da Embrapa
+
+:::
+
+## 3.3 PRODUTIVIDADE NAS PRINCIPAIS CIDADES PRODUTORAS
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r ibge_uva11}
+#Direcionado o R para o Diretorio a ser trabalhado
+#Entrando dados no R
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+
+# Merge data with inner join
+dados3m <- inner_join(dados3m_quanti, dados3m_area, by="cidades")
+dados3m <- dados3m |>
+  filter(variable.x == 2023)
+dados3m$value <- dados3m$value.x/dados3m$value.y
+dados3m$variable <- dados3m$variable.x
+dados3m <- dados3m[,-c(2:5)]
+dados3m$value <- round(dados3m$value,1)
+
+g3 <- ggplot()+
+  geom_col(data=dados3m, aes(x=reorder(cidades, -value), y=value, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors3)+
+  labs(y= "Produtividade na Uva (t/ha)", x= "Cidades do Brasil", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=20, hjust=0.5, size=8, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g3) %>%
+  layout(legend = list(
+    orientation = "h",
+    x=0.35,
+    y=-0.35,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (T/HA)**
+
+```{r ibge_uva11a}
+dados3m_t <- dados3m[,-3]
+dados3m_t <- arrange(dados3m_t, desc(dados3m_t$"value"))
+colnames(dados3m_t)[2] <- 'Produtividade em 2023'
+datatable(dados3m_t, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+::: 
+
+## 3.4 PRODUTIVIDADE NO VALE DO S. FRANCISCO 
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r ibge_uva12}
+#Direcionado o R para o Diretório a ser trabalhado
+#Entrando dados no R
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+
+dados4m <- inner_join(dados4m_quanti, dados4m_area, by="variable")
+dados4m$value <- dados4m$value.x/dados4m$value.y
+dados4m$value <- round(dados4m$value,1)
+dados4m <- dados4m[,-c(3:5)]
+colnames(dados4m)[1] <- "mesorregiao"
+
+g4 <- ggplot()+
+  geom_col(data=dados4m, aes(x=variable, y=value, fill="Produtividade uva"), lwd=1)+
+  scale_fill_manual(values=mycolors4)+
+  labs(y= "Produtividade da Uva (t/ha)", x= "Vale do São Francisco", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=12, face = "bold"),
+        axis.title.x = element_text(size=12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g4) %>%
+  layout(legend = list(
+    orientation = "h",
+    x=0.3,
+    y=-0.2,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (T/HA)**
+
+```{r ibge_uva12a}
+dados4c <- dcast(dados4m, mesorregiao~variable)
+datatable(dados4c, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+:::
+
+# 4. ATUALIZAÇÃO DADOS SOBRE VALOR DA PRODUÇÃO DA CULTURA DA UVA.
+
+## 4.1 VALOR DA PRODUÇÃO NO BRASIL E REGIÕES
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r ibge_uva13}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+
+#Entrando dados no R
+#Entrando dados no R
+#dados1 <- read_excel("valor_regioes.xlsx", col_names = TRUE)
+dados1 <- read_excel("valor_regioes.xlsx", col_names = TRUE, skip = 4, 
+                     col_types = c('text', rep("numeric", 10)), na = "-")
+
+colnames(dados1)[1] <- 'regiao'
+dados1 <- dados1[-nrow(dados1),]
+
+#Brasil sem Rio Grande do Sul
+dados1_BR <- dados1[,-1]
+dados1_BR2 <- dados1_BR[1,]-dados1_BR[7,]
+
+#Região Sul sem Rio Grande do Sul
+dados1_Sul <- dados1_BR[5,]-dados1_BR[7,]
+
+#Brasil e RS novos
+dados1_brrs <- rbind(dados1_BR2, dados1_Sul)
+
+#Voltando com os dados
+dados1_br_no_ne_se <- rbind(dados1_BR2, dados1_BR[c(2:4),])
+dados2_br_no_ne_se <- rbind(dados1_br_no_ne_se, dados1_Sul)
+dados1_f <- rbind(dados2_br_no_ne_se, dados1_BR[6,])
+
+dados1 <- cbind (dados1[c(1:6),1], dados1_f)
+dados1m <- melt(dados1, id.var='regiao')
+dados1m$value <- round(dados1m$value/1000,2)
+
+g1 <- ggplot()+
+  geom_col(data=dados1m, aes(x=reorder(regiao, -value), y=value, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors2)+
+  labs(y= "Valor da Produção (R$ milhões)", x= "Brasil e Regiões", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=12, face = "bold"),
+        axis.title.x = element_text(size=12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "right", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g1) %>%
+  layout(legend = list(
+    orientation = "v",
+    x=1.0,
+    y=0.1,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS (R$ MILHÕES) EM TABELA**
+
+```{r ibge_uva13a}
+dados1t <- dados1[,1]
+dados1 <- round(dados1[,c(2:11)]/1000,1)
+dados1 <- cbind(dados1t, dados1)
+
+dados1 <- dados1 |> 
+  rename(regioes = dados1t)
+
+datatable(dados1, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## 4.2 VALOR DA PRODUÇÃO NOS PRINCIPAIS ESTADOS PRODUTORES
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r ibge_uva14}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+
+#Entrando dados no R
+dados2 <- read_excel("valor_estados.xlsx", col_names = TRUE, skip = 4, 
+                     col_types = c('text', rep("numeric", 10)), na = "-")
+
+colnames(dados2)[1] <- 'estados'
+dados2 <- dados2[-nrow(dados2),]
+dados2 <- na.exclude(dados2)
+dados2 <- arrange(dados2, desc(dados2$"2023"))
+dados2 <- dados2[c(1:6),]
+dados2m <- melt(dados2, id.var='estados')
+
+g2 <- ggplot()+
+  geom_col(data=dados2m, aes(x=reorder(estados, -value), y=value/1000, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors2)+
+  labs(y= "Valor da Produção (R$ milhões)", x= "Estados do Brasil", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "right", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g2) %>%
+  layout(legend = list(
+    orientation = "v",
+    x=1.0,
+    y=0.1,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS (R$ MILHÕES) EM TABELA**
+
+```{r ibge_uva14a}
+
+dados2t <- dados2[,1]
+dados2 <- round(dados2[,c(2:11)]/1000,1)
+dados2 <- cbind(dados2t, dados2)
+
+datatable(dados2, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## 4.3 VALOR DA PRODUÇÃO NAS PRINCIPAIS CIDADES PRODUTORAS
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r ibge_uva15}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+
+#Entrando dados no R
+dados3 <- read_excel("valor_cidades.xlsx", col_names = TRUE, skip = 4, 
+                     col_types = c('text', rep("numeric", 10)), na = "-")
+
+colnames(dados3)[1] <- 'cidades'
+dados3 <- dados3[-nrow(dados3),]
+#dados3$"2013"[dados3$cidades == "Belém do São Francisco (PE)"] <- 13440
+
+dados3 <- dados3 |>
+  na.exclude() |>
+  arrange(desc(`2023`)) |>
+  filter(!grepl("\\(RS\\)", cidades))  # Exclude cities from Rio Grande do Sul (RS)
+
+# Select the top 16 rows and remove columns 2 to 10 (unnecessary columns)
+dados3 <- dados3 |>
+  slice_head(n = 16) |>
+  select(-c(2:10))
+
+dados3a <- dados3
+dados3m <- melt(dados3, id.var='cidades')
+
+g3 <- ggplot()+
+  geom_col(data=dados3m, aes(x=reorder(cidades, -value), y=value/1000, fill=variable), lwd=1, position = "dodge")+ scale_fill_manual(values=mycolors3)+
+  labs(y= "Valor da Produção (R$ milhões)", x= "Cidades do Brasil", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=20, hjust=0.5, size=8, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=8, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g3) %>%
+  layout(legend = list(
+    orientation = "h",
+    x=0.35,
+    y=-0.35,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS (R$ MILHÕES) EM TABELA**
+
+```{r ibge_uva15a}
+
+#dados3t <- dados3[,1]
+#dados3 <- round(dados3[,c(2:11)]/1000,1)
+#dados3 <- cbind(dados3t, dados3)
+
+datatable(dados3, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## 4.4 VALOR DA PRODUÇÃO NO VALE DO S. FRANCISCO 
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r ibge_uva16}
+#Direcionado o R para o Diretório a ser trabalhado
+#Entrando dados no R
+setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva/2024')
+dados4 <- read_excel("valor_vale.xlsx", col_names = TRUE, skip = 4, 
+                     col_types = c('text', rep("numeric", 10)), na = "-")
+
+colnames(dados4)[1] <- 'mesorregiao'
+dados4 <- dados4[-nrow(dados4),]
+
+dados4a <- dados4[,-1] %>%
+  summarise_all(sum)
+
+dados4a$mesorregiao <- "Vale do São Francisco"
+dados4a <- dados4a %>% select(mesorregiao, everything())
+dados4m <- melt(dados4a, id.var='mesorregiao')
+mycolors4 <- "blue"
+
+g4 <- ggplot()+
+  geom_col(data=dados4m, aes(x=variable, y=value/1000, fill="Valor da Produção"), lwd=1)+
+  scale_fill_manual(values=mycolors4)+
+  labs(y= "Valor da Produção (R$ milhões)", x= "Vale do São Francisco", title='',
+       caption = "Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=12, margin = margin(l=20)),
+        axis.title.y = element_text(size=12, face = "bold"),
+        axis.title.x = element_text(size=12, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, size=12),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g4) %>%
+  layout(legend = list(
+    orientation = "h",
+    x=0.4,
+    y=-0.2,
+    title=''))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+
+### TABELA 
+
+**VISUALIZAÇÃO DOS DADOS (R$ MILHÕES) EM TABELA**
+
+```{r ibge_uva16a}
+dados4a_t <- dados4a[,1]
+dados4a <- round(dados4a[,c(2:11)]/1000,1)
+dados4a <- cbind(dados4a_t, dados4a)
+
+datatable(dados4a, option = list(
+  autoWidth = TRUE,
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+
+#kable(round(table,2)) %>%
+#  kable_styling(full_width = T, bootstrap_options = c("striped", "hover", "condensed"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+:::
+
+# INFORMAÇÕES E APOIO
+
+
+
+<center>![](logo_uva.png){width="10cm"}</center>
+
+
+
+<center>João Ricardo F. de Lima</center>
+
+<center>Email Coordenador: joao.ricardo\@embrapa.br</center>
+
+
+
+<center><https://www.embrapa.br/observatorio-da-uva></center>
+
+<center>[Dashboard Mercado de Uva](https://bit.ly/3OgmyKp)</center>
+
+
+
+<center>Telefones:</center>
+
+<center>87-3866-3667</center>
+
+<center>87-99961-5799</center>
+
+
+
+<center>![](apoio1.png){width="7cm"}</center>
