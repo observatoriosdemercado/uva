@@ -42,7 +42,7 @@ atual <-  as.Date("2024-07-01")
 
 Os dados utilizados nesta análise são mensais e disponibilizados pelo CAGED (Cadastro Geral de Empregados e Desempregados) até o mês de `r strftime(atual, format = "%B de %Y")`. As variáveis são estoque de empregos, saldo de empregos, empregos por gênero, contratados por idade e por escolaridade para a cultura da uva. Considera-se o conjunto de municípios da Bahia (Casa Nova, Curaçá, Juazeiro, Sento Sé, Sobradinho, etc.) e Pernambuco (Belém do S. Francisco, Lagoa Grande, Orocó, Petrolina, etc.), que formam o Vale do Submédio São Francisco. No caso do **Estoque**, as informações são para todo o estado da Bahia e de Pernambuco.
 
-Em `r strftime(atual, format = "%B de %Y")`, o Estoque de empregos na cultura da uva é de 29.310 pessoas. No mesmo mês do ano passado, este valor era de 28.963, ou seja, existe um aumento do número de pessoas ocupadas na vitiicultura.
+Em `r strftime(atual, format = "%B de %Y")`, o Estoque de empregos na cultura da uva é de 29.310 pessoas. No mesmo mês do ano passado, este valor era de 28.963, ou seja, existe um aumento do número de pessoas ocupadas na viticultura.
 
 O saldo de empregos na viticultura em `r strftime(atual, format = "%B de %Y")` no Vale do São Francisco é positivo, de 913 pessoas, ou seja, o total de contratações (3.016) foi maior do que o total de demissões (2.103). Em relação ao mesmo mês do ano passado, se tem uma melhora no saldo total (470 em 2023 e 913 em 2024), pois o número de pessoas que conseguiram o emprego foi maior. 
 
