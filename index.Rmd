@@ -61,11 +61,11 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-#data <- Sys.Date()
-#sem_ano <- isoweek(data)
+data <- Sys.Date()
+sem_ano <- isoweek(data)
 
-data <- as.Date('2024-09-13')
-sem_ano <- 37
+#data <- as.Date('2024-09-13')
+#sem_ano <- 37
 
 # Linhas que precisam de ajuste: 71, 104, 107
 ```
