@@ -2179,7 +2179,7 @@ EMPREGO
 #setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_caged')
 setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
 
-atual <-  as.Date("2024-07-01")
+atual <-  as.Date("2024-08-01")
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2188,7 +2188,7 @@ library(scales)
 library(plotly)
 
 #Entrando dados no R
-dados1 <- read.csv2('julho_2024.csv', header=T, sep=";", dec = ".")
+dados1 <- read.csv2('agosto_2024.csv', header=T, sep=";", dec = ".")
 colnames(dados1)[1] <- 'date'
 dados1$date <- seq(as.Date('2021-01-01'),to=atual,by='1 month')
 dados1a <- dados1 
@@ -2214,29 +2214,29 @@ saldom$mes <- factor(saldom$mes,levels = c("Jan", "Fev", "Mar", "Abr", "Mai",
 
 #Entrando com o restante dos dados
 
-load("julho_24_caged.RData")
+load("agosto_24_caged.RData")
 
 #dados_03_vsf$sexo <- lapply(dados_03_vsf$sexo, factor)
 
-dados_07_vsf$sexo[dados_07_vsf$sexo == 1] <- 0
-dados_07_vsf$sexo[dados_07_vsf$sexo == 3] <- 1
+dados_08_vsf$sexo[dados_08_vsf$sexo == 1] <- 0
+dados_08_vsf$sexo[dados_08_vsf$sexo == 3] <- 1
 
-dados_07_vsf <- mutate(dados_07_vsf,
+dados_08_vsf <- mutate(dados_08_vsf,
                 sexo = factor(sexo, levels = 0:1, labels = c("Masculino", "Feminino")))
 
 # Mantendo apenas 
 
 #Separando as admissoes e as demissoes
-dados_07_vsf_positivos <-dados_07_vsf%>% filter(saldo_movim=="1")
-dados_07_vsf_negativos <-dados_07_vsf%>% filter(saldo_movim=="-1")
+dados_08_vsf_positivos <-dados_08_vsf%>% filter(saldo_movim=="1")
+dados_08_vsf_negativos <-dados_08_vsf%>% filter(saldo_movim=="-1")
 
 #Mantendo apenas o agronegocio
-secao_positivos <-dados_07_vsf_positivos%>% filter(secao=="A")
-secao_negativos <-dados_07_vsf_negativos%>% filter(secao=="A")
+secao_positivos <-dados_08_vsf_positivos%>% filter(secao=="A")
+secao_negativos <-dados_08_vsf_negativos%>% filter(secao=="A")
 
 #Mantendo apenas a uva
-subclasse_positivos <-dados_07_vsf_positivos%>% filter(subclasse=="132600")
-subclasse_negativos <-dados_07_vsf_negativos%>% filter(subclasse=="132600")
+subclasse_positivos <-dados_08_vsf_positivos%>% filter(subclasse=="132600")
+subclasse_negativos <-dados_08_vsf_negativos%>% filter(subclasse=="132600")
 
 subclasse_positivos <- mutate(subclasse_positivos,
                 grau_instrucao = factor(grau_instrucao, levels = 1:13, 
