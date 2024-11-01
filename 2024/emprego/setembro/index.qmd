@@ -250,7 +250,7 @@ g1 <- ggplot() +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolors2)+
     labs(y= "Saldo de Emprego", x= "Meses do Ano", title='',
        caption = "")+
-    scale_y_continuous(limits=c(-2100, 1600), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    scale_y_continuous(limits=c(-2100, 1700), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_minimal()+ #Definindo tema
   theme(axis.text.x=element_text(angle=35, hjust=0.5, size=14, margin = margin(b=20)),
         axis.text.y=element_text(hjust=1, size=14, margin = margin(l=20)),
