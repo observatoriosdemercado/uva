@@ -631,7 +631,7 @@ g1 <- ggplot()+
     geom_line(data=tablea2, aes(x=Semanas, y=value, colour=variable), linetype = "solid",
             size = 1)+
   scale_colour_manual(values = c("red", "chocolate", "darkgreen")) +
-  scale_y_continuous(limits = c(0, 19), n.breaks = 10, labels = number_format(accuracy = 0.01,
+  scale_y_continuous(limits = c(0, 20), n.breaks = 10, labels = number_format(accuracy = 0.01,
                                                        decimal.mark = ","))+
   scale_x_continuous(breaks = seq(1, 52, by = 2))+
   labs(y= "Preço R$", x= "Semanas de cada Ano", title='Mínimo, Máximo, Média e preços de Uva Branca Embalada',
@@ -1292,10 +1292,10 @@ library(tidyverse)
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2024-09-01")
-atual <-  as.Date("2024-10-01")
+anterior <- as.Date("2024-10-01")
+atual <-  as.Date("2024-11-01")
 #today <- as.Date("2022-02-11")
-mes <- 10
+mes <- 11
 mes_ano <- month(atual)
 
 #Entrando dados no R
@@ -1591,7 +1591,7 @@ g11 <- ggplot(data=dados4) +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolor1) +
   labs(y= "% de Exportação", x= "Vias", title='Principais vias de exportação',
        caption = "")+
-  scale_y_continuous(limits=c(0, 90), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_y_continuous(limits=c(0, 95), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
         axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
@@ -2179,7 +2179,7 @@ EMPREGO
 #setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_caged')
 setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
 
-atual <-  as.Date("2024-09-01")
+atual <-  as.Date("2024-10-01")
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2188,7 +2188,7 @@ library(scales)
 library(plotly)
 
 #Entrando dados no R
-dados1 <- read.csv2('setembro_2024.csv', header=T, sep=";", dec = ".")
+dados1 <- read.csv2('outubro_2024.csv', header=T, sep=";", dec = ".")
 colnames(dados1)[1] <- 'date'
 dados1$date <- seq(as.Date('2021-01-01'),to=atual,by='1 month')
 dados1a <- dados1 
@@ -2214,29 +2214,29 @@ saldom$mes <- factor(saldom$mes,levels = c("Jan", "Fev", "Mar", "Abr", "Mai",
 
 #Entrando com o restante dos dados
 
-load("setembro_24_caged.RData")
+load("outubro_24_caged.RData")
 
 #dados_03_vsf$sexo <- lapply(dados_03_vsf$sexo, factor)
 
-dados_09_vsf$sexo[dados_09_vsf$sexo == 1] <- 0
-dados_09_vsf$sexo[dados_09_vsf$sexo == 3] <- 1
+dados_10_vsf$sexo[dados_10_vsf$sexo == 1] <- 0
+dados_10_vsf$sexo[dados_10_vsf$sexo == 3] <- 1
 
-dados_09_vsf <- mutate(dados_09_vsf,
+dados_10_vsf <- mutate(dados_10_vsf,
                 sexo = factor(sexo, levels = 0:1, labels = c("Masculino", "Feminino")))
 
 # Mantendo apenas 
 
 #Separando as admissoes e as demissoes
-dados_09_vsf_positivos <-dados_09_vsf%>% filter(saldo_movim=="1")
-dados_09_vsf_negativos <-dados_09_vsf%>% filter(saldo_movim=="-1")
+dados_10_vsf_positivos <-dados_10_vsf%>% filter(saldo_movim=="1")
+dados_10_vsf_negativos <-dados_10_vsf%>% filter(saldo_movim=="-1")
 
 #Mantendo apenas o agronegocio
-secao_positivos <-dados_09_vsf_positivos%>% filter(secao=="A")
-secao_negativos <-dados_09_vsf_negativos%>% filter(secao=="A")
+secao_positivos <-dados_10_vsf_positivos%>% filter(secao=="A")
+secao_negativos <-dados_10_vsf_negativos%>% filter(secao=="A")
 
 #Mantendo apenas a uva
-subclasse_positivos <-dados_09_vsf_positivos%>% filter(subclasse=="132600")
-subclasse_negativos <-dados_09_vsf_negativos%>% filter(subclasse=="132600")
+subclasse_positivos <-dados_10_vsf_positivos%>% filter(subclasse=="132600")
+subclasse_negativos <-dados_10_vsf_negativos%>% filter(subclasse=="132600")
 
 subclasse_positivos <- mutate(subclasse_positivos,
                 grau_instrucao = factor(grau_instrucao, levels = 1:13, 
@@ -2389,7 +2389,7 @@ ggplotly(g3)
 
 g4 <- ggplot(data = subclasse_positivos, aes(x = grau_instrucao, y = ..count..)) +
   geom_bar(fill='#1e4971')+
-    scale_y_continuous(limits=c(0, 1400), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    scale_y_continuous(limits=c(0, 750), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
 labs(y= "Contratados Uva - VSF", x= "Grau de Instrução", title='Grau de Instrução dos empregos gerados',
        caption = "")+
   theme_minimal() +
