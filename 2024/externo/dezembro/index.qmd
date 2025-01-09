@@ -944,65 +944,6 @@ datatable(importacaot, option = list(
 Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa
 :::
 
-# 9. Evolução da Taxa de Câmbio Esperada para Dezembro de 2024
-
-::: panel-tabset
-## GRÁFICO
-
-```{r exporta21}
-
-#dados6 <- dados6 %>%
-#     mutate(dates = floor_date(dates, unit = "week")) %>%
-#     group_by(dates) %>%
-#     summarise(
-#         cambio = mean(cambio))
-#dados6$dates <- dados6$dates + 1
-#dados6$cambio <- round(dados6$cambio,2)
-
-g14 <- ggplot(data=dados6)+
-  geom_line(aes(x=dates, y=cambio), color="blue", linewidth=1.5)+
-    scale_x_date(date_breaks = "1 weeks",
-               labels = date_format("%d-%b"))+
-  labs(y= "Câmbio Esperado para Dezembro/2024", x= "Semanas do Ano", title='',
-       caption = "")+
-  theme_classic()+
-  theme(axis.text.x=element_text(angle=35, hjust=1, size=11, margin = margin(b=20)),
-        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
-        axis.title.y = element_text(size=12, face = "bold"),
-        axis.title.x = element_text(size=14, face = "bold"),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.caption = element_text(hjust = 0, size=14),
-        legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=12)) # Definindo posição da legenda
-
-ggplotly(g14)
-```
-
-Fonte: FOCUS/BCB reprocessado pelo Observatório de Mercado de uva da Embrapa.
-
-## TABELA
-
-**VISUALIZAÇÃO DOS DADOS EM TABELA**
-
-```{r exporta22}
-
-cambiot <- dados6
-data_cambio <-format(as.Date(cambiot$dates),'%d/%m/%Y')
-cambiot <- cambiot[,-1]
-cambiot <- tibble(data_cambio, round(cambiot,2))
-colnames(cambiot) = c('Data', 'Taxa de Câmbio R$/US$')
-
-datatable(cambiot, option = list(
-  autoWidth = TRUE,
-  pageLength = 12,
-  lengthMenu = c(10, 25, 50, 100),
-  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
-```
-
-Fonte: FOCUS/BCB reprocessado pelo Observatório de Mercado de uva da Embrapa
-:::
-
 # INFORMAÇÕES E APOIO
 
 <br> <br>
