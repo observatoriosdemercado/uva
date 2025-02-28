@@ -938,4 +938,4 @@ Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa
 
 <br>
 
-<center>![](apoio1.png){width="7cm"}</center>
+<center>![](apoio2.png){width="9cm"}</center>
