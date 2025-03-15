@@ -61,7 +61,8 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-data <- Sys.Date()
+data <- as.Date('2025-03-14')
+#data <- Sys.Date()
 sem_ano <- isoweek(data)
 
 #data <- as.Date('2025-01-17')
@@ -1293,10 +1294,10 @@ library(tidyverse)
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2024-12-01")
-atual <-  as.Date("2025-01-01")
+anterior <- as.Date("2025-01-01")
+atual <-  as.Date("2025-02-01")
 #today <- as.Date("2022-02-11")
-mes <- 1
+mes <- 2
 mes_ano <- month(atual)
 
 #Entrando dados no R
@@ -1500,7 +1501,7 @@ valueBox(
   icon= "fa-arrow-up")
 ```
 
-### Volume Exportação em `r strftime(atual, format = "%B")` de 2023 
+### Volume Exportação em `r strftime(atual, format = "%B")` de 2024 
 ``` {r d2}
 num <- round(variacao_volume_2024[mes_ano, ],0)
 valueBox(
@@ -1508,7 +1509,7 @@ valueBox(
   icon= "fa-pen")
 ```
 
-### Volume Exportação em `r strftime(atual, format = "%B")` de 2022 
+### Volume Exportação em `r strftime(atual, format = "%B")` de 2023 
 ``` {r d3}
 num <- round(variacao_volume_2023[mes_ano, ],0)
 valueBox(
@@ -2186,7 +2187,7 @@ EMPREGO
 #setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_caged')
 setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
 
-atual <-  as.Date("2024-12-01")
+atual <-  as.Date("2025-01-01")
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2195,55 +2196,87 @@ library(scales)
 library(plotly)
 
 #Entrando dados no R
-dados1 <- read.csv2('dezembro_2024.csv', header=T, sep=";", dec = ".")
+#Entrando dados no R
+dados1 <- read.csv2('janeiro_2025.csv', header=T, sep=";", dec = ".")
 colnames(dados1)[1] <- 'date'
 dados1$date <- seq(as.Date('2021-01-01'),to=atual,by='1 month')
 dados1a <- dados1 
 dados1a$ano <- strftime(dados1a$date, format="%Y") 
-dados1a$mes <- strftime(dados1a$date, format="%b") 
-
-saldo_23 <- dados1a %>% filter(ano=='2023')
-
-saldo_23 <- saldo_23 %>%
-  select(c(ano, mes, Saldo_uva))
+dados1a$mes <- strftime(dados1a$date, format="%B") 
 
 saldo_24 <- dados1a %>% filter(ano=='2024')
 
 saldo_24 <- saldo_24 %>%
   select(c(ano, mes, Saldo_uva))
 
-saldom <- rbind(saldo_23, saldo_24)
-saldom$mes <- factor(saldom$mes,levels = c("Jan", "Fev", "Mar", "Abr", "Mai", 
-                                           "Jun", "Jul", "Ago", "Set", "Out",
-                                           "Nov", "Dez"))
+
+saldo_25 <- dados1a %>% filter(ano=='2025')
+
+saldo_25 <- saldo_25 %>%
+  select(c(ano, mes, Saldo_uva))
+
+saldom <- rbind(saldo_24, saldo_25)
+saldom$mes <- factor(saldom$mes,levels = c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", 
+                                           "Junho", "Julho", "Agosto", "Setembro", "Outubro",
+                                           "Novembro", "Dezembro"))
+
+total_24 <- dados1a %>%
+  select(c(ano, mes, Contratados_Uva, Demitidos_Uva, Saldo_uva))%>% 
+  filter(ano=='2024')
+
+total_24$mes <- factor(total_24$mes,levels = c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", 
+                                           "Junho", "Julho", "Agosto", "Setembro", "Outubro",
+                                           "Novembro", "Dezembro"))
+
+total_25 <- dados1a %>%
+  select(c(ano, mes, Contratados_Uva, Demitidos_Uva, Saldo_uva)) %>% 
+  filter(ano=='2025')
+
+total_25$mes <- factor(total_25$mes,levels = c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro",  "Novembro", "Dezembro"))
+
+totalm <- merge(total_24, total_25, by="mes", all = T)
+#totalm <- inner_join(total_23, total_24, by="mes")
+
+totalm <- totalm %>%
+        select(c(mes,Contratados_Uva.x, Demitidos_Uva.x, Contratados_Uva.y, Demitidos_Uva.y, Saldo_uva.x, Saldo_uva.y))
+
+totalm <- totalm %>%
+  rename("Contratados 2024" = Contratados_Uva.x,
+         "Demitidos 2024" = Demitidos_Uva.x,
+         "Contratados 2025" = Contratados_Uva.y,
+         "Demitidos 2025" = Demitidos_Uva.y,
+         "Saldo 2024" = Saldo_uva.x,
+         "Saldo 2025" = Saldo_uva.y)
 
 #Entrando com o restante dos dados
 
-#Entrando com o restante dos dados
+load("janeiro_25_caged.RData")
 
-load("dezembro_24_caged.RData")
+#dados_08_vsf$sexo <- lapply(dados_08_vsf$sexo, factor)
 
-#dados_03_vsf$sexo <- lapply(dados_03_vsf$sexo, factor)
+dados_01_vsf$sexo[dados_01_vsf$sexo == 1] <- 0
+dados_01_vsf$sexo[dados_01_vsf$sexo == 3] <- 1
 
-dados_12_vsf$sexo[dados_12_vsf$sexo == 1] <- 0
-dados_12_vsf$sexo[dados_12_vsf$sexo == 3] <- 1
-
-dados_12_vsf <- mutate(dados_12_vsf,
+dados_01_vsf <- mutate(dados_01_vsf,
                 sexo = factor(sexo, levels = 0:1, labels = c("Masculino", "Feminino")))
 
 # Mantendo apenas 
 
 #Separando as admissoes e as demissoes
-dados_12_vsf_positivos <-dados_12_vsf%>% filter(saldo_movim=="1")
-dados_12_vsf_negativos <-dados_12_vsf%>% filter(saldo_movim=="-1")
+dados_01_vsf_positivos <-dados_01_vsf%>% filter(saldo_movim=="1")
+dados_01_vsf_negativos <-dados_01_vsf%>% filter(saldo_movim=="-1")
 
 #Mantendo apenas o agronegocio
-secao_positivos <-dados_12_vsf_positivos%>% filter(secao=="A")
-secao_negativos <-dados_12_vsf_negativos%>% filter(secao=="A")
+secao_positivos <-dados_01_vsf_positivos%>% filter(secao=="A")
+secao_negativos <-dados_01_vsf_negativos%>% filter(secao=="A")
 
-#Mantendo apenas a uva
-subclasse_positivos <-dados_12_vsf_positivos%>% filter(subclasse=="132600")
-subclasse_negativos <-dados_12_vsf_negativos%>% filter(subclasse=="132600")
+#Mantendo apenas a manga
+subclasse_positivos <-dados_01_vsf_positivos%>% filter(subclasse=="132600")
+subclasse_negativos <-dados_01_vsf_negativos%>% filter(subclasse=="132600")
+
+#Ajustando o grau de escolaridade
+subclasse_positivos$grau_instrucao[subclasse_positivos$grau_instrucao == 80] <- 12
+subclasse_positivos$grau_instrucao[subclasse_positivos$grau_instrucao == 99] <- 13
 
 subclasse_positivos <- mutate(subclasse_positivos,
                 grau_instrucao = factor(grau_instrucao, levels = 1:13, 
@@ -2272,7 +2305,7 @@ subclasse_positivos$salario <- as.integer(subclasse_positivos$salario)
 Row {data-height=125}
 -----------------------------------------------------------------------
 
-### pela viticultura em `r strftime(atual, format = "%B")` de 2024 
+### pela viticultura em `r strftime(atual, format = "%B")` de 2025 
 ``` {r emp1}
 num <- tail(dados1$Contratados_Uva,1)
 valueBox(
@@ -2281,7 +2314,7 @@ valueBox(
   icon= "fa-arrow-up")
 ```
 
-### pela viticultura em `r strftime(atual, format = "%B")` de 2024 
+### pela viticultura em `r strftime(atual, format = "%B")` de 2025 
 ``` {r emp2}
 num <- tail(dados1$Demitidos_Uva,1)
 valueBox(
@@ -2290,7 +2323,7 @@ valueBox(
   icon= "fa-arrow-down")
 ```
 
-### Saldo Gerado pela viticultura em `r strftime(atual, format = "%B")` de 2024
+### Saldo Gerado pela viticultura em `r strftime(atual, format = "%B")` de 2025
 ``` {r emp3}
 num <- tail(dados1$Saldo_uva,1)
 valueBox(
@@ -2396,7 +2429,7 @@ ggplotly(g3)
 
 g4 <- ggplot(data = subclasse_positivos, aes(x = grau_instrucao, y = ..count..)) +
   geom_bar(fill='#1e4971')+
-    scale_y_continuous(limits=c(0, 750), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    scale_y_continuous(limits=c(0, 1000), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
 labs(y= "Contratados Uva - VSF", x= "Grau de Instrução", title='Grau de Instrução dos empregos gerados',
        caption = "")+
   theme_minimal() +
