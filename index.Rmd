@@ -61,8 +61,8 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-data <- as.Date('2025-04-11')
-#data <- Sys.Date()
+#data <- as.Date('2025-04-11')
+data <- Sys.Date()
 sem_ano <- isoweek(data)
 
 #data <- as.Date('2025-01-17')
