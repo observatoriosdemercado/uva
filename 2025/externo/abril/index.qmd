@@ -279,6 +279,8 @@ Os principais destinos foram a Holanda (41,89%), os Estados Unidos (29,8%) , o R
 
 Os principais estados de origem da uva foram Pernambuco (64,76%) e Bahia (33,48%). Em Abril, cerca de 1,8 mil t de uvas foram importadas do Chile.
 
+A taxa de câmbio esperada pelo mercado para o final do ano de 2025 é de R$5,86 para 1 dólar.
+
 <hr>
 
 # 1. Receita de Exportação e Volume Exportado de Uva: 2016 a 2025
@@ -935,7 +937,7 @@ colnames(importacaot)[1] = 'Data'
 datatable(importacaot, option = list(
   autoWidth = TRUE,
   pageLength = 12,
-  lengthMenu = c(12, 24, 48, 96),
+  lengthMenu = c(12, 24, 48, 96, 108, 120),
   columnDefs = list(list(className = 'dt-center', targets = "_all"))))
 ```
 
