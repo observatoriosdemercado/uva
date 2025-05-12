@@ -798,7 +798,7 @@ library(reshape2)
 dados21 <- read.csv2('urf_uva.csv', header=T, sep=";", dec = ".")
 
 # Set the custom order for 'regiao' using factor
-dados21$URF <- factor(dados21$URF, levels = c("ALF-Fortaleza", "ALF-Salvador", "Aeroporto de GRU", "Porto de Santos", "Porto do Rio de Janeiro", "Outros"))
+dados21$URF <- factor(dados21$URF, levels = c("ALF-Fortaleza", "ALF-Salvador", "Aeroporto de GRU", "ALF-Foz do Iguaçu", "Porto de Santos", "Porto do Rio de Janeiro", "Outros"))
 
 dados21a <- melt(dados21, id.var='URF')
 
