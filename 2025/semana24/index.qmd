@@ -32,8 +32,8 @@ execute:
 
 ```{r setup, include=FALSE}
 library(lubridate)
-today <- Sys.Date()
-#today <- as.Date("2025-01-10")
+#today <- Sys.Date()
+today <- as.Date("2025-06-20")
 last <- today - 7
 sem_ano <- isoweek(today)
 ```
@@ -46,11 +46,11 @@ sem_ano <- isoweek(today)
 
 Os dados utilizados nesta análise são semanais e disponibilizados pelo **CEPEA (Esalq-USP)** englobando o período de 2017 a 2025, de uva sem semente branca e negra embaladas (incluso uva+material de embalagem+resfriamento, FOB-Petrolina), para os produtores do Vale do São Francisco. Também mostra informações sobre a uva negra sem embalagem, com dados semanais de 2019 à 2025. Os preços até a semana `r strftime(today, format = "%V de %Y")`, deflacionados pelo IGP-DI, são comparados com a média de cada semana entre 2017 e 2025, mínimo e máximo. Os preços deflacionados de 2023 e de 2024 também são apresentados para comparação de 2025 com os dois anos anteriores.
 
-O preço médio de uva sem semente branca embalada, na semana `r strftime(today, format = "%V")`, foi R\$ 14,67, variando entre R\$15,00 e R\$13,00. Este valor é maior do que a média histórica deflacionada, que foi R\$ 12,58. Em 2023, o preço foi R\$ 10,39 e, em 2024, R\$ 18,38. Em relação a semana `r strftime(last, format = "%V")`, houve um redução de -7,97% nos preços. 
+O preço médio de uva sem semente branca embalada, na semana `r strftime(today, format = "%V")`, foi R\$ 14,20, variando entre R\$15,00 e R\$13,50. Este valor é maior do que a média histórica deflacionada, que foi R\$ 13,04. Em 2023, o preço foi R\$ 11,53 e, em 2024, R\$ 19,10. Em relação a semana `r strftime(last, format = "%V")`, houve uma redução de -3,20% nos preços. 
 
-No caso da uva sem semente negra embalada (embalagem do produtor + resfriamento), na semana `r strftime(today, format = "%V")` o preço médio foi de R\$ 7,44, variando entre R\$ 8,00 e R\$ 7,00. Em 2023, o preço deflacionado é de R\$ 10,33. Em 2024, o preço é de R\$ 9,31 e a média histórica deflacionada para esta semana é de R\$ 10,17. Em relação à semana `r strftime(last, format = "%V")`, os preços aumentaram 4,49%. 
+No caso da uva sem semente negra embalada (embalagem do produtor + resfriamento), na semana `r strftime(today, format = "%V")` o preço médio foi de R\$ 7,60, variando entre R\$ 8,00 e R\$ 7,00. Em 2023, o preço deflacionado é de R\$ 11,10. Em 2024, o preço é de R\$ 8,65 e a média histórica deflacionada para esta semana é de R\$ 9,95. Em relação à semana `r strftime(last, format = "%V")`, os preços aumentaram 2,15%. 
 
-Para a uva sem semente negra, o preço médio na semana `r strftime(today, format = "%V")` é R\$ 4,14, variando entre R\$ 4,50 e R\$ 3,50, um aumento de 34,42% em relação à semana anterior. O preço médio da semana é menor do que o preço de  2023 (R\$5,44), do que o preço de 2024, R\$ 6,34 e que a média histórica deflacionada semanal (R\$ 5,43).
+Para a uva sem semente negra, o preço médio na semana `r strftime(today, format = "%V")` é R\$ 3,94, variando entre R\$ 4,50 e R\$ 3,50, uma queda de -4,83% em relação à semana anterior. O preço médio da semana é menor do que o preço de  2023 (R\$5,98), do que o preço de 2024, R\$ 6,00 e que a média histórica deflacionada semanal (R\$ 5,72).
 
 <br>
 
