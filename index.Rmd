@@ -2187,7 +2187,7 @@ EMPREGO
 #setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_caged')
 setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
 
-atual <-  as.Date("2025-04-01")
+atual <-  as.Date("2025-05-01")
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2197,7 +2197,7 @@ library(plotly)
 
 #Entrando dados no R
 #Entrando dados no R
-dados1 <- read.csv2('abril_2025.csv', header=T, sep=";", dec = ".")
+dados1 <- read.csv2('maio_2025.csv', header=T, sep=";", dec = ".")
 colnames(dados1)[1] <- 'date'
 dados1$date <- seq(as.Date('2021-01-01'),to=atual,by='1 month')
 dados1a <- dados1 
@@ -2250,29 +2250,29 @@ totalm <- totalm %>%
 
 #Entrando com o restante dos dados
 
-load("abril_25_caged.RData")
+load("maio_25_caged.RData")
 
 #dados_08_vsf$sexo <- lapply(dados_08_vsf$sexo, factor)
 
-dados_04_vsf$sexo[dados_04_vsf$sexo == 1] <- 0
-dados_04_vsf$sexo[dados_04_vsf$sexo == 3] <- 1
+dados_05_vsf$sexo[dados_05_vsf$sexo == 1] <- 0
+dados_05_vsf$sexo[dados_05_vsf$sexo == 3] <- 1
 
-dados_04_vsf <- mutate(dados_04_vsf,
+dados_05_vsf <- mutate(dados_05_vsf,
                 sexo = factor(sexo, levels = 0:1, labels = c("Masculino", "Feminino")))
 
 # Mantendo apenas 
 
 #Separando as admissoes e as demissoes
-dados_04_vsf_positivos <-dados_04_vsf%>% filter(saldo_movim=="1")
-dados_04_vsf_negativos <-dados_04_vsf%>% filter(saldo_movim=="-1")
+dados_05_vsf_positivos <-dados_05_vsf%>% filter(saldo_movim=="1")
+dados_05_vsf_negativos <-dados_05_vsf%>% filter(saldo_movim=="-1")
 
 #Mantendo apenas o agronegocio
-secao_positivos <-dados_04_vsf_positivos%>% filter(secao=="A")
-secao_negativos <-dados_04_vsf_negativos%>% filter(secao=="A")
+secao_positivos <-dados_05_vsf_positivos%>% filter(secao=="A")
+secao_negativos <-dados_05_vsf_negativos%>% filter(secao=="A")
 
 #Mantendo apenas a manga
-subclasse_positivos <-dados_04_vsf_positivos%>% filter(subclasse=="132600")
-subclasse_negativos <-dados_04_vsf_negativos%>% filter(subclasse=="132600")
+subclasse_positivos <-dados_05_vsf_positivos%>% filter(subclasse=="132600")
+subclasse_negativos <-dados_05_vsf_negativos%>% filter(subclasse=="132600")
 
 #Ajustando o grau de escolaridade
 subclasse_positivos$grau_instrucao[subclasse_positivos$grau_instrucao == 80] <- 12
@@ -2403,7 +2403,7 @@ Row
 
 g3 <- ggplot(data=subclasse_positivos, aes(x=idade))+
   geom_histogram(binwidth=3, fill="#69b3a2", color="#e9ecef", alpha=0.9)+
-  scale_x_continuous(limits=c(17, 67), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_x_continuous(limits=c(17, 70), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
     labs(y= "Contratados Uva - VSF", x= "Idades", title='Distribuição dos empregos gerados por idade',
        caption = "")+
   theme_minimal() +
@@ -2429,7 +2429,7 @@ ggplotly(g3)
 
 g4 <- ggplot(data = subclasse_positivos, aes(x = grau_instrucao, y = ..count..)) +
   geom_bar(fill='#1e4971')+
-    scale_y_continuous(limits=c(0, 1100), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    scale_y_continuous(limits=c(0, 1200), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
 labs(y= "Contratados Uva - VSF", x= "Grau de Instrução", title='Grau de Instrução dos empregos gerados',
        caption = "")+
   theme_minimal() +
