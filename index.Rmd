@@ -61,7 +61,7 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-#data <- as.Date('2025-06-20')
+#data <- as.Date('2025-09-05')
 data <- Sys.Date()
 sem_ano <- isoweek(data)
 
@@ -1294,10 +1294,10 @@ library(tidyverse)
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2025-06-01")
-atual <-  as.Date("2025-07-01")
+anterior <- as.Date("2025-07-01")
+atual <-  as.Date("2025-08-01")
 #today <- as.Date("2022-02-11")
-mes <- 7
+mes <- 8
 mes_ano <- month(atual)
 
 #Entrando dados no R
@@ -1569,7 +1569,7 @@ g10 <- ggplot(data=dados3) +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolor1) +
   labs(y= "% do Volume Total Exportados", x= "Países", title='Principais Destinos da Uva',
        caption = "")+
-  scale_y_continuous(limits=c(0, 35), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_y_continuous(limits=c(0, 30), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=45, hjust=0.5, size=8, margin = margin(b=10)),
         axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
@@ -1599,7 +1599,7 @@ g11 <- ggplot(data=dados4) +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolor1) +
   labs(y= "% de Exportação", x= "Vias", title='Principais vias de exportação',
        caption = "")+
-  scale_y_continuous(limits=c(0, 85), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_y_continuous(limits=c(0, 70), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
         axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
@@ -2187,7 +2187,7 @@ EMPREGO
 #setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_caged')
 setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
 
-atual <-  as.Date("2025-06-01")
+atual <-  as.Date("2025-07-01")
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2197,7 +2197,7 @@ library(plotly)
 
 #Entrando dados no R
 #Entrando dados no R
-dados1 <- read.csv2('junho_2025.csv', header=T, sep=";", dec = ".")
+dados1 <- read.csv2('julho_2025.csv', header=T, sep=";", dec = ".")
 colnames(dados1)[1] <- 'date'
 dados1$date <- seq(as.Date('2021-01-01'),to=atual,by='1 month')
 dados1a <- dados1 
@@ -2250,29 +2250,29 @@ totalm <- totalm %>%
 
 #Entrando com o restante dos dados
 
-load("junho_25_caged.RData")
+load("julho_25_caged.RData")
 
 #dados_08_vsf$sexo <- lapply(dados_08_vsf$sexo, factor)
 
-dados_06_vsf$sexo[dados_06_vsf$sexo == 1] <- 0
-dados_06_vsf$sexo[dados_06_vsf$sexo == 3] <- 1
+dados_07_vsf$sexo[dados_07_vsf$sexo == 1] <- 0
+dados_07_vsf$sexo[dados_07_vsf$sexo == 3] <- 1
 
-dados_06_vsf <- mutate(dados_06_vsf,
+dados_07_vsf <- mutate(dados_07_vsf,
                 sexo = factor(sexo, levels = 0:1, labels = c("Masculino", "Feminino")))
 
 # Mantendo apenas 
 
 #Separando as admissoes e as demissoes
-dados_06_vsf_positivos <-dados_06_vsf%>% filter(saldo_movim=="1")
-dados_06_vsf_negativos <-dados_06_vsf%>% filter(saldo_movim=="-1")
+dados_07_vsf_positivos <-dados_07_vsf%>% filter(saldo_movim=="1")
+dados_07_vsf_negativos <-dados_07_vsf%>% filter(saldo_movim=="-1")
 
 #Mantendo apenas o agronegocio
-secao_positivos <-dados_06_vsf_positivos%>% filter(secao=="A")
-secao_negativos <-dados_06_vsf_negativos%>% filter(secao=="A")
+secao_positivos <-dados_07_vsf_positivos%>% filter(secao=="A")
+secao_negativos <-dados_07_vsf_negativos%>% filter(secao=="A")
 
 #Mantendo apenas a manga
-subclasse_positivos <-dados_06_vsf_positivos%>% filter(subclasse=="132600")
-subclasse_negativos <-dados_06_vsf_negativos%>% filter(subclasse=="132600")
+subclasse_positivos <-dados_07_vsf_positivos%>% filter(subclasse=="132600")
+subclasse_negativos <-dados_07_vsf_negativos%>% filter(subclasse=="132600")
 
 #Ajustando o grau de escolaridade
 subclasse_positivos$grau_instrucao[subclasse_positivos$grau_instrucao == 80] <- 12
@@ -2429,7 +2429,7 @@ ggplotly(g3)
 
 g4 <- ggplot(data = subclasse_positivos, aes(x = grau_instrucao, y = ..count..)) +
   geom_bar(fill='#1e4971')+
-    scale_y_continuous(limits=c(0, 1200), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    scale_y_continuous(limits=c(0, 1350), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
 labs(y= "Contratados Uva - VSF", x= "Grau de Instrução", title='Grau de Instrução dos empregos gerados',
        caption = "")+
   theme_minimal() +
