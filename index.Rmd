@@ -1294,10 +1294,10 @@ library(tidyverse)
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2025-07-01")
-atual <-  as.Date("2025-08-01")
+anterior <- as.Date("2025-08-01")
+atual <-  as.Date("2025-09-01")
 #today <- as.Date("2022-02-11")
-mes <- 8
+mes <- 9
 mes_ano <- month(atual)
 
 #Entrando dados no R
