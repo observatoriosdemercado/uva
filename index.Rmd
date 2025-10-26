@@ -3,7 +3,7 @@ title: "DASHBOARD MERCADO DE UVA"
 #author: "João Ricardo Lima"
 output: 
   flexdashboard::flex_dashboard:
-    logo: "https://raw.githubusercontent.com/observatoriosdemercado/manga/main/branca_peq.png"
+    logo: "img/branca_peq.png"
     favicon: "https://www.embrapa.br/portal-embrapa-theme/images/marca-embrapa-colorida.png"
     navbar:
       - {title: "Apoio, Metodologia e Fontes dos Dados", href: "https://observatoriosdemercado.github.io/uva/fonte/", align: right}
@@ -61,8 +61,8 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-#data <- as.Date('2025-09-19')
-data <- Sys.Date()
+data <- as.Date('2025-10-24')
+#data <- Sys.Date()
 sem_ano <- isoweek(data)
 
 #data <- as.Date('2025-08-01')
