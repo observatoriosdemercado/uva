@@ -61,7 +61,7 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-data <- as.Date('2025-10-24')
+data <- as.Date('2025-10-31')
 #data <- Sys.Date()
 sem_ano <- isoweek(data)
 
@@ -77,8 +77,8 @@ BRASIL {data-navmenu="DADOS GERAIS"}
 
 ```{r database5}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 options(digits=4)
 #today <- as.Date("2023-01-01")
@@ -428,8 +428,8 @@ BRANCA SEEDLESS EMBALADA {data-navmenu="PREÇOS AO PRODUTOR"}
 
 ``` {r database1}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_Uva')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_Uva')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 options(digits=4)
 
@@ -1261,8 +1261,8 @@ EXPORTAÇÕES
 
 ```{r tratamento_base}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -1693,8 +1693,8 @@ VOLUME CEASAS {data-navmenu="MERCADO INTERNO"}
 
 ```{r database4}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados
@@ -2005,8 +2005,8 @@ Row
 
 ```{r consumo_uva1}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2093,8 +2093,8 @@ Row
 
 ```{r consumo_uva3}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2138,8 +2138,8 @@ ggplotly(g3) %>%
 
 ```{r consumo_uva4}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_uva')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2184,8 +2184,8 @@ EMPREGO
 
 ```{r database6}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Joao Ricardo Lima/Dropbox/tempecon/dados_caged')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
+setwd('c:/Users/Lenovo/Dropbox/tempecon/dados_caged')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
 
 atual <-  as.Date("2025-08-01")
 
@@ -2204,21 +2204,26 @@ dados1a <- dados1
 dados1a$ano <- strftime(dados1a$date, format="%Y") 
 dados1a$mes <- strftime(dados1a$date, format="%B") 
 
-saldo_24 <- dados1a %>% filter(ano=='2024')
+saldo_24 <- dados1a |> filter(ano == "2024") |> select(ano, mes, Saldo_uva) |> mutate(mes = as.character(mes))
+saldo_25 <- dados1a |> filter(ano == "2025") |> select(ano, mes, Saldo_uva) |> mutate(mes = as.character(mes))
 
-saldo_24 <- saldo_24 %>%
-  select(c(ano, mes, Saldo_uva))
+saldom <- rbind(saldo_24, saldo_25)   # agora não vira NA
+# ou, melhor:
+saldom <- bind_rows(saldo_24, saldo_25)
 
+mes_levels <- c("janeiro","fevereiro","março","abril","maio","junho",
+                "julho","agosto","setembro","outubro","novembro","dezembro")
 
-saldo_25 <- dados1a %>% filter(ano=='2025')
+dados1a <- dados1 |>
+  mutate(
+    ano = format(date, "%Y"),
+    mes = factor(format(date, "%B"), levels = mes_levels, ordered = TRUE)
+  )
 
-saldo_25 <- saldo_25 %>%
-  select(c(ano, mes, Saldo_uva))
+saldo_24 <- dados1a |> filter(ano == "2024") |> select(ano, mes, Saldo_uva)
+saldo_25 <- dados1a |> filter(ano == "2025") |> select(ano, mes, Saldo_uva)
 
-saldom <- rbind(saldo_24, saldo_25)
-saldom$mes <- factor(saldom$mes,levels = c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", 
-                                           "Junho", "Julho", "Agosto", "Setembro", "Outubro",
-                                           "Novembro", "Dezembro"))
+saldom <- rbind(saldo_24, saldo_25)   # funciona porque os levels são idênticos
 
 total_24 <- dados1a %>%
   select(c(ano, mes, Contratados_Uva, Demitidos_Uva, Saldo_uva))%>% 
