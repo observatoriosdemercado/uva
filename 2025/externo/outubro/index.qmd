@@ -273,7 +273,7 @@ O objetivo desta análise foi verificar o comportamento das exportações de uva
 
 Em relação aos volumes, em `r strftime(atual, format = "%B de %Y")` foram de 16.634 toneladas (t). A média histórica (até 2024) para este mês é de 15.586 t. Em `r strftime(atual, format = "%B")` de 2023 foram exportadas 14.983 t e, em `r strftime(atual, format = "%B")` de 2024, foram 17.012 t, ou seja, houve um aumento de 11,02% em relação a 2023 e de -2,22% na comparação com o mesmo período de 2024. No ano, foram exportadas 33,8 mil t, aumento de 27,36% em relação à 2024.
 
-Sobre o mercado norte americano, que impôs tarifas de 50% sobre a uva do Brasil, no ano foram exportadas 2.592 t. Em 2024, no mesmo período, foram 5.504 t. Considerando apenas o mês de outubro, em 2025 foram exportadas 639,5 t de mangas, uma redução de -66,26% na comparação com 2024, onde foram exportadas 1.894,6 t.
+Sobre o mercado norte americano, que impôs tarifas de 50% sobre a uva do Brasil, no ano foram exportadas 2.592 t. Em 2024, no mesmo período, foram 5.504 t. Considerando apenas o mês de outubro, em 2025 foram exportadas 639,5 t de uvas, uma redução de -66,26% na comparação com 2024, onde foram exportadas 1.894,6 t.
 
 Em termos dos valores das exportações, em `r strftime(atual, format = "%B de %Y")` foram cerca de US\$ 42,4 milhões de dólares. A média histórica (até 2024) para este mês é de aproximadamente US\$ 35,5 milhões. Em `r strftime(atual, format = "%B")` de 2023 foram gerados US\$ 39,8 milhões em receitas e, em `r strftime(atual, format = "%B")` de 2024, um total de US\$ 49,1 milhões. No ano, as receitas chegam a US$ 86,3 milhões, aumento de 11,07% em relação à 2024.
 
