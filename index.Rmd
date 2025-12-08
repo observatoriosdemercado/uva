@@ -61,8 +61,8 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-#data <- as.Date('2025-10-31')
-data <- Sys.Date()
+data <- as.Date('2025-12-05')
+#data <- Sys.Date()
 sem_ano <- isoweek(data)
 
 #data <- as.Date('2025-08-01')
@@ -77,8 +77,8 @@ BRASIL {data-navmenu="DADOS GERAIS"}
 
 ```{r database5}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 options(digits=4)
 #today <- as.Date("2023-01-01")
@@ -428,8 +428,8 @@ BRANCA SEEDLESS EMBALADA {data-navmenu="PREÇOS AO PRODUTOR"}
 
 ``` {r database1}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_Uva')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_Uva')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 options(digits=4)
 
@@ -1261,8 +1261,8 @@ EXPORTAÇÕES
 
 ```{r tratamento_base}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -1294,10 +1294,10 @@ library(tidyverse)
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2025-09-01")
-atual <-  as.Date("2025-10-01")
+anterior <- as.Date("2025-10-01")
+atual <-  as.Date("2025-11-01")
 #today <- as.Date("2022-02-11")
-mes <- 10
+mes <- 11
 mes_ano <- month(atual)
 
 #Entrando dados no R
@@ -1569,7 +1569,7 @@ g10 <- ggplot(data=dados3) +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolor1) +
   labs(y= "% do Volume Total Exportados", x= "Países", title='Principais Destinos da Uva',
        caption = "")+
-  scale_y_continuous(limits=c(0, 40), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_y_continuous(limits=c(0, 45), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=45, hjust=0.5, size=8, margin = margin(b=10)),
         axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
@@ -1599,7 +1599,7 @@ g11 <- ggplot(data=dados4) +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolor1) +
   labs(y= "% de Exportação", x= "Vias", title='Principais vias de exportação',
        caption = "")+
-  scale_y_continuous(limits=c(0, 80), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_y_continuous(limits=c(0, 85), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
         axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
@@ -1693,8 +1693,8 @@ VOLUME CEASAS {data-navmenu="MERCADO INTERNO"}
 
 ```{r database4}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados
@@ -2005,8 +2005,8 @@ Row
 
 ```{r consumo_uva1}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2093,8 +2093,8 @@ Row
 
 ```{r consumo_uva3}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2138,8 +2138,8 @@ ggplotly(g3) %>%
 
 ```{r consumo_uva4}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_uva')
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2184,8 +2184,8 @@ EMPREGO
 
 ```{r database6}
 #Direcionado o R para o Diretorio a ser trabalhado
-#setwd('c:/Users/Lenovo/Dropbox/tempecon/dados_caged')
-setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
+setwd('c:/Users/Lenovo/Dropbox/tempecon/dados_caged')
+#setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
 
 atual <-  as.Date("2025-10-01")
 
@@ -2434,7 +2434,7 @@ ggplotly(g3)
 
 g4 <- ggplot(data = subclasse_positivos, aes(x = grau_instrucao, y = ..count..)) +
   geom_bar(fill='#1e4971')+
-    scale_y_continuous(limits=c(0, 1450), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    scale_y_continuous(limits=c(0, 1000), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
 labs(y= "Contratados Uva - VSF", x= "Grau de Instrução", title='Grau de Instrução dos empregos gerados',
        caption = "")+
   theme_minimal() +
