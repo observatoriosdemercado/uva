@@ -61,8 +61,8 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-#data <- as.Date('2025-12-05')
-data <- Sys.Date()
+data <- as.Date('2026-01-09')
+#data <- Sys.Date()
 sem_ano <- isoweek(data)
 
 #data <- as.Date('2025-08-01')
@@ -526,40 +526,40 @@ sazonal_graph <- tibble(cbind(semanas, sazonalidade))
 
 #Parte 3
 #Analise das comparações entre as médias
-preco_arra_2024 <- window(preco_arra, end=c(2024,52))
-seas24 <- seasplot(preco_arra_2024, trend=F, outplot = F)
-medias24 <- colMeans(seas24$season)
+preco_arra_2025 <- window(preco_arra, end=c(2025,52))
+seas25 <- seasplot(preco_arra_2025, trend=F, outplot = F)
+medias25 <- colMeans(seas25$season)
 
 #preco_arra_2022 <- window(preco_arra, end=c(2022,52))
 
-preco_arra_2023 <- window(preco_arra, end=c(2023,52))
+preco_arra_2024 <- window(preco_arra, end=c(2024,52))
 #seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
 #medias21 <- colMeans(seas21$season)
 
-preco_arra_25 <- as.matrix(tail(arra$preco_def,sem_ano))   
-preco_arra_2025 <- matrix(NA, nrow=52, ncol=1)
+preco_arra_26 <- as.matrix(tail(arra$preco_def,sem_ano))   
+preco_arra_2026 <- matrix(NA, nrow=52, ncol=1)
 
 for(i in 1:sem_ano){
-  preco_arra_2025[i,1] = preco_arra_25[i,1]
+  preco_arra_2026[i,1] = preco_arra_26[i,1]
 }
   
 
 #Como só se tem até a semana 52
-medias24 <- medias24[1:52]
+medias25 <- medias25[1:52]
 #medias21 <- medias21[1:52]
 
 matrix = matrix(NA, nrow=52, ncol=2)
 
 for(i in 1:52){
-  matrix[i,1] = min(seas24$season[,i])
-  matrix[i,2] = max(seas24$season[,i])
+  matrix[i,1] = min(seas25$season[,i])
+  matrix[i,2] = max(seas25$season[,i])
 }
 
 time <- seq(1:52)
-table <- data.frame(time, matrix[,1], round(medias24,2), matrix[,2], round(tail(preco_arra_2023,52),2),
-                    round(tail(preco_arra_2024,52),2), preco_arra_2025[,1])
-colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2023', 'Ano 2024', 
-                    'Ano 2025')
+table <- data.frame(time, matrix[,1], round(medias25,2), matrix[,2], round(tail(preco_arra_2024,52),2),
+                    round(tail(preco_arra_2025,52),2), preco_arra_2026[,1])
+colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2024', 'Ano 2025', 
+                    'Ano 2026')
 tablea <- table[,-c(5:7)]
 tableb <- table[,-c(2,3,4)]
 
@@ -572,15 +572,15 @@ mycolors <- c("dodgerblue2", "gold", "darkmagenta")
 preco_arra_23 <- arra %>% filter(ano=='2023')
 preco_arra_2023 <- as.matrix(preco_arra_23$preco_def)
 
-preco_arra_24 <- arra %>% filter(ano=='2024')
-preco_arra_2024 <- as.matrix(preco_arra_24$preco_def)
-variacao_24 <- (preco_arra_2024/lag(preco_arra_2024, 1) - 1)*100
-
+preco_arra_25 <- arra %>% filter(ano=='2025')
+preco_arra_2025 <- as.matrix(preco_arra_25$preco_def)
 variacao_25 <- (preco_arra_2025/lag(preco_arra_2025, 1) - 1)*100
 
+variacao_26 <- (preco_arra_2026/lag(preco_arra_2026, 1) - 1)*100
+
 semanas <- seq(1:52)
-variacao <- data.frame(semanas, variacao_24[,1], variacao_25[,1])
-colnames(variacao) = c('Semanas', 'Ano 2024', 'Ano 2025')
+variacao <- data.frame(semanas, variacao_25[,1], variacao_26[,1])
+colnames(variacao) = c('Semanas', 'Ano 2025', 'Ano 2026')
 
 variacao <- melt(variacao, id.var='Semanas')
 
@@ -778,39 +778,40 @@ Row {data-height=125}
 
 ```{r negra_setup}
 #Analise das comparações entre as médias
-preco_vitoria_2024 <- window(preco_vitoria, end=c(2024,52))
-seas24 <- seasplot(preco_vitoria_2024, trend=F, outplot = F)
-medias24 <- colMeans(seas24$season)
+#Analise das comparações entre as médias
+preco_vitoria_2025 <- window(preco_vitoria, end=c(2025,52))
+seas25 <- seasplot(preco_vitoria_2025, trend=F, outplot = F)
+medias25 <- colMeans(seas25$season)
 
 #preco_vitoria_2022 <- window(preco_vitoria, end=c(2022,52))
 
-preco_vitoria_2023 <- window(preco_vitoria, end=c(2023,52))
+preco_vitoria_2024 <- window(preco_vitoria, end=c(2024,52))
 #seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
 #medias21 <- colMeans(seas21$season)
 
-preco_vitoria_25 <- as.matrix(tail(vitoria$preco_def,sem_ano))  
-preco_vitoria_2025 <- matrix(NA, nrow=52, ncol=1)
+preco_vitoria_26 <- as.matrix(tail(vitoria$preco_def,sem_ano))  
+preco_vitoria_2026 <- matrix(NA, nrow=52, ncol=1)
 
 for(i in 1:sem_ano){
-  preco_vitoria_2025[i,1] = preco_vitoria_25[i,1]
+  preco_vitoria_2026[i,1] = preco_vitoria_26[i,1]
 }
   
 #Como só se tem até a semana 52
-#medias20 <- medias20[1:52]
-medias24 <- medias24[1:52]
+medias25 <- medias25[1:52]
+#medias21 <- medias21[1:52]
 
 matrix = matrix(NA, nrow=52, ncol=2)
 
 for(i in 1:52){
-  matrix[i,1] = min(seas24$season[,i])
-  matrix[i,2] = max(seas24$season[,i])
+  matrix[i,1] = min(seas25$season[,i])
+  matrix[i,2] = max(seas25$season[,i])
 }
 
 time <- seq(1:52)
-table <- data.frame(time, matrix[,1], round(medias24,2), matrix[,2], round(tail(preco_vitoria_2023,52),2),
-                    round(tail(preco_vitoria_2024,52),2), preco_vitoria_2025[,1])
-colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2023', 'Ano 2024', 
-                    'Ano 2025')
+table <- data.frame(time, matrix[,1], round(medias25,2), matrix[,2], round(tail(preco_vitoria_2024,52),2),
+                    round(tail(preco_vitoria_2025,52),2), preco_vitoria_2026[,1])
+colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2024', 'Ano 2025', 
+                    'Ano 2026')
 tablea <- table[,-c(5:7)]
 tableb <- table[,-c(2,3,4)]
 
@@ -821,15 +822,15 @@ mycolors <- c("dodgerblue2", "gold", "darkmagenta")
 preco_vitoria_23 <- vitoria %>% filter(ano=='2023')
 preco_vitoria_2023 <- as.matrix(preco_vitoria_23$preco_def)
 
-preco_vitoria_24 <- vitoria %>% filter(ano=='2024')
-preco_vitoria_2024 <- as.matrix(preco_vitoria_24$preco_def)
-variacao_24 <- (preco_vitoria_2024/lag(preco_vitoria_2024, 1) - 1)*100
-
+preco_vitoria_25 <- vitoria %>% filter(ano=='2025')
+preco_vitoria_2025 <- as.matrix(preco_vitoria_25$preco_def)
 variacao_25 <- (preco_vitoria_2025/lag(preco_vitoria_2025, 1) - 1)*100
 
+variacao_26 <- (preco_vitoria_2026/lag(preco_vitoria_2026, 1) - 1)*100
+
 semanas <- seq(1:52)
-variacao <- data.frame(semanas, variacao_24[,1], variacao_25[,1])
-colnames(variacao) = c('Semanas', 'Ano 2024', 'Ano 2025')
+variacao <- data.frame(semanas, variacao_25[,1], variacao_26[,1])
+colnames(variacao) = c('Semanas', 'Ano 2025', 'Ano 2026')
 
 variacao <- melt(variacao, id.var='Semanas')
 ```
@@ -861,7 +862,7 @@ valueBox(
 Row
 -----------------------------------------------------------------------
 
-### Mínimo, Máximo, Media e preços de 2020 a 2025 de Uva Negra Embalada {.no-title}
+### Mínimo, Máximo, Media e preços de 2020 a 2026 de Uva Negra Embalada {.no-title}
 
 ```{r negra1, results='', fig.cap='', fig.width=8, fig.height=4, fig.align='center'}
 
@@ -897,7 +898,7 @@ ggplotly(g5) %>%
                       title=''))
 ```
 
-### Variação Semanal em 2024 e 2025 de Uva Negra Embalada {.no-title}
+### Variação Semanal em 2024 e 2026 de Uva Negra Embalada {.no-title}
 
 ```{r negra2, results='', fig.cap=''}
 
@@ -1017,39 +1018,39 @@ NEGRA SEEDLESS {data-navmenu="PREÇOS AO PRODUTOR"}
 ```{r negrase_setup}
 
 #Analise das comparações entre as médias
+preco_vitoriase_2025 <- window(preco_vitoriase, end=c(2025,52))
+seas25 <- seasplot(preco_vitoriase_2025, trend=F, outplot = F)
+medias25 <- colMeans(seas25$season)
+
+#preco_vitoriase_2022 <- window(preco_vitoriase, end=c(2022,52))
+
 preco_vitoriase_2024 <- window(preco_vitoriase, end=c(2024,52))
-seas24 <- seasplot(preco_vitoriase_2024, trend=F, outplot = F)
-medias24 <- colMeans(seas24$season)
-
-preco_vitoriase_2023 <- window(preco_vitoriase, end=c(2023,52))
-
-#preco_vitoriase_2023 <- window(preco_vitoriase, end=c(2023,52))
 #seas21<-seasplot(preco_palmer_2021, trend=F, outplot = F)
 #medias21 <- colMeans(seas21$season)
 
-preco_vitoriase_25 <- as.matrix(tail(vitoriase$preco_def,sem_ano)) #ajustar toda semana
-preco_vitoriase_2025 <- matrix(NA, nrow=52, ncol=1)
+preco_vitoriase_26 <- as.matrix(tail(vitoriase$preco_def,sem_ano)) #ajustar toda semana
+preco_vitoriase_2026 <- matrix(NA, nrow=52, ncol=1)
 
 for(i in 1:sem_ano){
-  preco_vitoriase_2025[i,1] = preco_vitoriase_25[i,1]
+  preco_vitoriase_2026[i,1] = preco_vitoriase_26[i,1]
 }
   
 
 #Como só se tem até a semana 52
-#medias20 <- medias20[1:52]
-medias24 <- medias24[1:52]
+medias25 <- medias25[1:52]
+#medias21 <- medias21[1:52]
 
 matrix = matrix(NA, nrow=52, ncol=2)
 
 for(i in 1:52){
-  matrix[i,1] = min(seas24$season[,i])
-  matrix[i,2] = max(seas24$season[,i])
+  matrix[i,1] = min(seas25$season[,i])
+  matrix[i,2] = max(seas25$season[,i])
 }
 
 time <- seq(1:52)
-table <- data.frame(time, matrix[,1], round(medias24,2), matrix[,2], round(tail(preco_vitoriase_2023,52),2),
-                    round(tail(preco_vitoriase_2024,52),2), preco_vitoriase_2025[,1])
-colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2023', 'Ano 2024', 'Ano 2025')
+table <- data.frame(time, matrix[,1], round(medias25,2), matrix[,2], round(tail(preco_vitoriase_2024,52),2),
+                    round(tail(preco_vitoriase_2025,52),2), preco_vitoriase_2026[,1])
+colnames(table) = c('Semanas', 'Mínimo', 'Média', 'Máximo', 'Ano 2024', 'Ano 2025', 'Ano 2026')
 
 tablea <- table[,-c(5:7)]
 tableb <- table[,-c(2,3,4)]
@@ -1062,15 +1063,15 @@ mycolors <- c("dodgerblue2", "gold", "darkmagenta")
 preco_vitoriase_23 <- vitoriase %>% filter(ano=='2023')
 preco_vitoriase_2023 <- as.matrix(preco_vitoriase_23$preco_def)
 
-preco_vitoriase_24 <- vitoriase %>% filter(ano=='2024')
-preco_vitoriase_2024 <- as.matrix(preco_vitoriase_24$preco_def)
-variacao_24 <- (preco_vitoriase_2024/lag(preco_vitoriase_2024, 1) - 1)*100
-
+preco_vitoriase_25 <- vitoriase %>% filter(ano=='2025')
+preco_vitoriase_2025 <- as.matrix(preco_vitoriase_25$preco_def)
 variacao_25 <- (preco_vitoriase_2025/lag(preco_vitoriase_2025, 1) - 1)*100
 
+variacao_26 <- (preco_vitoriase_2026/lag(preco_vitoriase_2026, 1) - 1)*100
+
 semanas <- seq(1:52)
-variacao <- data.frame(semanas, variacao_24[,1], variacao_25[,1])
-colnames(variacao) = c('Semanas', 'Ano 2024', 'Ano 2025')
+variacao <- data.frame(semanas, variacao_25[,1], variacao_26[,1])
+colnames(variacao) = c('Semanas', 'Ano 2025', 'Ano 2026')
 
 variacao <- melt(variacao, id.var='Semanas')
 
@@ -1143,7 +1144,7 @@ ggplotly(g9) %>%
                       title=''))
 ```
 
-### Variação Semanal em 2025 e 2024 de Uva Negra {.no-title}
+### Variação Semanal em 2026 e 2025 de Uva Negra {.no-title}
 
 ```{r negrase2, results='', fig.cap=''}
 mycolors2 <- c("orange", "lightblue3")
@@ -1294,10 +1295,10 @@ library(tidyverse)
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2025-10-01")
-atual <-  as.Date("2025-11-01")
+anterior <- as.Date("2025-11-01")
+atual <-  as.Date("2025-12-01")
 #today <- as.Date("2022-02-11")
-mes <- 11
+mes <- 12
 mes_ano <- month(atual)
 
 #Entrando dados no R
@@ -1556,7 +1557,7 @@ ggplotly(g1) %>%
                       title=''))
 ```
 
-### Principais Destinos da Uva Exportada em Dezembro de 2024 {.no-title}
+### Principais Destinos da Uva Exportada em Dezembro de 2025 {.no-title}
 
 ```{r exporta15, fig.width=7, fig.height=4, fig.align='center'}
 
@@ -1588,7 +1589,7 @@ ggplotly(g10) %>%
                       title=''))
 ```
 
-### Principais vias de exportação da uva do Brasil: Janeiro de 2024. {.no-title}
+### Principais vias de exportação da uva do Brasil: Dezembro de 2025. {.no-title}
 
 ```{r exporta17}
 
@@ -1599,7 +1600,7 @@ g11 <- ggplot(data=dados4) +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolor1) +
   labs(y= "% de Exportação", x= "Vias", title='Principais vias de exportação',
        caption = "")+
-  scale_y_continuous(limits=c(0, 85), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_y_continuous(limits=c(0, 88), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
         axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
@@ -1621,7 +1622,7 @@ ggplotly(g11) %>%
 Row
 -----------------------------------------------------------------------
 
-### Volume das Exportações de Uva do Brasil: Janeiro de 2024 em comparação com as informações entre 2016-2023 {.no-title}
+### Volume das Exportações de Uva do Brasil: Janeiro de 2024 em comparação com as informações entre 2016-2025 {.no-title}
 
 ```{r exporta9, fig.width=10, fig.height=4, fig.align='center'}
 g7 <- ggplot()+
@@ -1656,7 +1657,7 @@ ggplotly(g7) %>%
                       title=''))
 ```
 
-### Importação de Uva pelo Brasil: 2016-2022. {.no-title}
+### Importação de Uva pelo Brasil: 2016-2025. {.no-title}
 
 ``` {r importa1}
 mycolors3 <- c("orange", "lightblue3", "red", "darkgreen")
@@ -2187,7 +2188,7 @@ EMPREGO
 setwd('c:/Users/Lenovo/Dropbox/tempecon/dados_caged')
 #setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
 
-atual <-  as.Date("2025-10-01")
+atual <-  as.Date("2025-11-01")
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2197,7 +2198,7 @@ library(plotly)
 
 #Entrando dados no R
 #Entrando dados no R
-dados1 <- read.csv2('outubro_2025.csv', header=T, sep=";", dec = ".")
+dados1 <- read.csv2('novembro_2025.csv', header=T, sep=";", dec = ".")
 colnames(dados1)[1] <- 'date'
 dados1$date <- seq(as.Date('2021-01-01'),to=atual,by='1 month')
 dados1a <- dados1 
@@ -2255,29 +2256,29 @@ totalm <- totalm %>%
 
 #Entrando com o restante dos dados
 
-load("outubro_25_caged.RData")
+load("novembro_25_caged.RData")
 
 #dados_08_vsf$sexo <- lapply(dados_08_vsf$sexo, factor)
 
-dados_10_vsf$sexo[dados_10_vsf$sexo == 1] <- 0
-dados_10_vsf$sexo[dados_10_vsf$sexo == 3] <- 1
+dados_11_vsf$sexo[dados_11_vsf$sexo == 1] <- 0
+dados_11_vsf$sexo[dados_11_vsf$sexo == 3] <- 1
 
-dados_10_vsf <- mutate(dados_10_vsf,
+dados_11_vsf <- mutate(dados_11_vsf,
                 sexo = factor(sexo, levels = 0:1, labels = c("Masculino", "Feminino")))
 
 # Mantendo apenas 
 
 #Separando as admissoes e as demissoes
-dados_10_vsf_positivos <-dados_10_vsf%>% filter(saldo_movim=="1")
-dados_10_vsf_negativos <-dados_10_vsf%>% filter(saldo_movim=="-1")
+dados_11_vsf_positivos <-dados_11_vsf%>% filter(saldo_movim=="1")
+dados_11_vsf_negativos <-dados_11_vsf%>% filter(saldo_movim=="-1")
 
 #Mantendo apenas o agronegocio
-secao_positivos <-dados_10_vsf_positivos%>% filter(secao=="A")
-secao_negativos <-dados_10_vsf_negativos%>% filter(secao=="A")
+secao_positivos <-dados_11_vsf_positivos%>% filter(secao=="A")
+secao_negativos <-dados_11_vsf_negativos%>% filter(secao=="A")
 
 #Mantendo apenas a manga
-subclasse_positivos <-dados_10_vsf_positivos%>% filter(subclasse=="132600")
-subclasse_negativos <-dados_10_vsf_negativos%>% filter(subclasse=="132600")
+subclasse_positivos <-dados_11_vsf_positivos%>% filter(subclasse=="132600")
+subclasse_negativos <-dados_11_vsf_negativos%>% filter(subclasse=="132600")
 
 #Ajustando o grau de escolaridade
 subclasse_positivos$grau_instrucao[subclasse_positivos$grau_instrucao == 80] <- 12
@@ -2351,7 +2352,7 @@ mycolors2 <- c("orange", "lightblue3")
 g1 <- ggplot() +  #estetica vai valer para todos os geom's
   geom_col(data=saldom, aes(x=mes, y=Saldo_uva, fill=ano), size=2, width = 0.9, position = "dodge")+
     scale_fill_manual(values=mycolors2)+
-    labs(y= "Saldo de Emprego (unidade)", x= "Meses do Ano", title='Saldo mensal de Empregos na Viticultura: 2023 e 2024',
+    labs(y= "Saldo de Emprego (unidade)", x= "Meses do Ano", title='Saldo mensal de Empregos na Viticultura: 2024 e 2025',
        caption = "")+
     scale_y_continuous(limits=c(-2100, 1700), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_minimal()+ #Definindo tema
@@ -2434,7 +2435,7 @@ ggplotly(g3)
 
 g4 <- ggplot(data = subclasse_positivos, aes(x = grau_instrucao, y = ..count..)) +
   geom_bar(fill='#1e4971')+
-    scale_y_continuous(limits=c(0, 1000), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    scale_y_continuous(limits=c(0, 800), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
 labs(y= "Contratados Uva - VSF", x= "Grau de Instrução", title='Grau de Instrução dos empregos gerados',
        caption = "")+
   theme_minimal() +
