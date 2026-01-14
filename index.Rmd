@@ -569,8 +569,8 @@ mycolors <- c("dodgerblue2", "gold", "darkmagenta")
 
 #Parte 4
 
-preco_arra_23 <- arra %>% filter(ano=='2023')
-preco_arra_2023 <- as.matrix(preco_arra_23$preco_def)
+preco_arra_24 <- arra %>% filter(ano=='2024')
+preco_arra_2024 <- as.matrix(preco_arra_24$preco_def)
 
 preco_arra_25 <- arra %>% filter(ano=='2025')
 preco_arra_2025 <- as.matrix(preco_arra_25$preco_def)
@@ -593,7 +593,7 @@ mycolors2 <- c("orange", "lightblue3")
 Row {data-height=125}
 -----------------------------------------------------------------------
 
-### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2025 
+### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2026 
 ``` {r}
 num <- tail(preco_arra,1)
 valueBox(
@@ -604,17 +604,17 @@ valueBox(
 #darkmagenta
 ```
 
-### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2024
+### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2025
 ``` {r}
-num <- preco_arra_2024[sem_ano]
+num <- preco_arra_2025[sem_ano]
 valueBox(
   value = paste0( "R$", format(round(num,2), decimal.mark =  ",")),
   icon= "fa-pen")
 ```
 
-### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2023
+### Preço de Uva Branca Embalada na Semana `r strftime(data, format = "%V")` de 2024
 ``` {r}
-num <- preco_arra_2023[sem_ano]
+num <- preco_arra_2024[sem_ano]
 valueBox(
   value = paste0( "R$", format(round(num,2), decimal.mark =  ",")),
   icon= "fa-pen")
@@ -658,7 +658,7 @@ ggplotly(g1) %>%
                       title=''))
 ```
 
-### Variação Semanal em 2025 e 2024 de Uva Branca Embalada {.no-title}
+### Variação Semanal em 2026 e 2025 de Uva Branca Embalada {.no-title}
 
 ```{r palmer 5, results='', fig.cap=''}
 
@@ -774,7 +774,7 @@ NEGRA SEEDLESS EMBALADA {data-navmenu="PREÇOS AO PRODUTOR"}
 Row {data-height=125}
 -----------------------------------------------------------------------
 
-### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2024 
+### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2026 
 
 ```{r negra_setup}
 #Analise das comparações entre as médias
@@ -819,8 +819,8 @@ tablea2 <- melt(tablea, id.var='Semanas')
 tableb2 <- melt(tableb, id.var='Semanas')
 mycolors <- c("dodgerblue2", "gold", "darkmagenta")
 
-preco_vitoria_23 <- vitoria %>% filter(ano=='2023')
-preco_vitoria_2023 <- as.matrix(preco_vitoria_23$preco_def)
+preco_vitoria_24 <- vitoria %>% filter(ano=='2024')
+preco_vitoria_2024 <- as.matrix(preco_vitoria_24$preco_def)
 
 preco_vitoria_25 <- vitoria %>% filter(ano=='2025')
 preco_vitoria_2025 <- as.matrix(preco_vitoria_25$preco_def)
@@ -843,17 +843,17 @@ valueBox(
   icon= "fa-arrow-down")
 ```
 
-### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2024
+### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2025
 ``` {r}
-num <- preco_vitoria_2024[sem_ano]
+num <- preco_vitoria_2025[sem_ano]
 valueBox(
   value = paste0( "R$", format(round(num,2), decimal.mark =  ",")),
   icon= "fa-pen")
 ```
 
-### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2023
+### Preço de Uva Negra Embalada na Semana `r strftime(data, format = "%V")` de 2024
 ``` {r}
-num <- preco_vitoria_2023[sem_ano]
+num <- preco_vitoria_2024[sem_ano]
 valueBox(
   value = paste0( "R$", format(round(num,2), decimal.mark =  ",")),
   icon= "fa-pen")
@@ -1060,8 +1060,8 @@ tableb2 <- melt(tableb, id.var='Semanas')
 mycolors <- c("dodgerblue2", "gold", "darkmagenta")
 
 #Parte 4
-preco_vitoriase_23 <- vitoriase %>% filter(ano=='2023')
-preco_vitoriase_2023 <- as.matrix(preco_vitoriase_23$preco_def)
+preco_vitoriase_24 <- vitoriase %>% filter(ano=='2024')
+preco_vitoriase_2024 <- as.matrix(preco_vitoriase_24$preco_def)
 
 preco_vitoriase_25 <- vitoriase %>% filter(ano=='2025')
 preco_vitoriase_2025 <- as.matrix(preco_vitoriase_25$preco_def)
@@ -1080,13 +1080,21 @@ variacao <- melt(variacao, id.var='Semanas')
 Row {data-height=125}
 -----------------------------------------------------------------------
 
-### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2025 
+### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2026 
 ``` {r}
 num <- tail(preco_vitoriase,1)
 valueBox(
   value = paste0( "R$", format(round(num,2), decimal.mark =  ",")),
 #  color = "green",
   icon= "fa-arrow-down")
+```
+
+### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2025
+``` {r}
+num <- preco_vitoriase_2025[sem_ano]
+valueBox(
+  value = paste0( "R$", format(round(num,2), decimal.mark =  ",")),
+  icon= "fa-pen")
 ```
 
 ### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2024
@@ -1097,18 +1105,10 @@ valueBox(
   icon= "fa-pen")
 ```
 
-### Preço de Uva Negra na Semana `r strftime(data, format = "%V")` de 2023
-``` {r}
-num <- preco_vitoriase_2023[sem_ano]
-valueBox(
-  value = paste0( "R$", format(round(num,2), decimal.mark =  ",")),
-  icon= "fa-pen")
-```
-
 Row
 -----------------------------------------------------------------------
 
-### Mínimo, Máximo, Media e preços de 2021 a 2025 de Uva Negra {.no-title}
+### Mínimo, Máximo, Media e preços de 2021 a 2026 de Uva Negra {.no-title}
 
 ```{r negrase1, results='', fig.cap='', fig.align='center'}
 
