@@ -61,7 +61,7 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-data <- as.Date('2026-01-09')
+data <- as.Date('2026-01-30')
 #data <- Sys.Date()
 sem_ano <- isoweek(data)
 
@@ -164,8 +164,8 @@ g1 <- dados %>%
 ggplotly(g1) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.35, 
-                      y=-0.20,
+                      x=0.50, 
+                      y=-0.40,
                       title=''))
 ```
 
@@ -194,8 +194,8 @@ g2 <- dados %>%
 ggplotly(g2) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.35, 
-                      y=-0.20,
+                      x=0.50, 
+                      y=-0.40,
                       title=''))
 ```
 
@@ -227,8 +227,8 @@ g3 <- dados %>%
 ggplotly(g3) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.35, 
-                      y=-0.20,
+                      x=0.50, 
+                      y=-0.40,
                       title=''))
 ```
 
@@ -257,8 +257,8 @@ g4 <- dados %>%
 ggplotly(g4) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.35, 
-                      y=-0.20,
+                      x=0.50, 
+                      y=-0.40,
                       title=''))
 ```
 
@@ -331,8 +331,8 @@ g1 <- ggplot(data=dados) +  #estetica vai valer para todos os geom's
 ggplotly(g1) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.35, 
-                      y=-0.20,
+                      x=0.50, 
+                      y=-0.40,
                       title=''))
 ```
 
@@ -359,8 +359,8 @@ g2 <- ggplot(data=dados) +  #estetica vai valer para todos os geom's
 ggplotly(g2) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.35, 
-                      y=-0.20,
+                      x=0.50, 
+                      y=-0.40,
                       title=''))
 ```
 
@@ -390,8 +390,8 @@ g3 <- ggplot(data=dados) +  #estetica vai valer para todos os geom's
 ggplotly(g3) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.35, 
-                      y=-0.20,
+                      x=0.50, 
+                      y=-0.40,
                       title=''))
 ```
 
@@ -418,8 +418,8 @@ g4 <- ggplot(data=dados) +  #estetica vai valer para todos os geom's
 ggplotly(g4) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.35, 
-                      y=-0.20,
+                      x=0.50, 
+                      y=-0.40,
                       title=''))
 ```
 
@@ -653,8 +653,8 @@ g1 <- ggplot()+
 ggplotly(g1) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.15, 
-                      y=-0.35,
+                      x=0.50, 
+                      y=-0.40,
                       title=''))
 ```
 
@@ -685,8 +685,8 @@ g2 <- ggplot()+
 ggplotly(g2) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.4, 
-                      y=-0.25,
+                      x=0.50, 
+                      y=-0.40,
                       title=''))
 ```
 
@@ -725,7 +725,7 @@ ggplotly(g3) %>%
   layout(legend = list(
                       orientation = "h", 
                       x=0.35, 
-                      y=-0.25,
+                      y=-0.40,
                       title=''))
 ```
 
@@ -763,8 +763,8 @@ g4 <- ggplot(data=sazonal_graph)+
 ggplotly(g4) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.05, 
-                      y=-0.25,
+                      x=0.50, 
+                      y=-0.40,
                       title=''))
 ```
 
@@ -893,8 +893,8 @@ g5 <- ggplot()+
 ggplotly(g5) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.15, 
-                      y=-0.35,
+                      x=0.40, 
+                      y=-0.50,
                       title=''))
 ```
 
@@ -930,7 +930,7 @@ ggplotly(g6) %>%
   layout(legend = list(
                       orientation = "h", 
                       x=0.4, 
-                      y=-0.25,
+                      y=-0.50,
                       title=''))
 ```
 
@@ -970,7 +970,7 @@ ggplotly(g7) %>%
   layout(legend = list(
                       orientation = "h", 
                       x=0.35, 
-                      y=-0.25,
+                      y=-0.40,
                       title=''))
 ```
 
@@ -1007,8 +1007,8 @@ g8 <- ggplot(data=sazonal_graph)+
 ggplotly(g8) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.05, 
-                      y=-0.25,
+                      x=0.40, 
+                      y=-0.50,
                       title=''))
 ```
 
@@ -1139,8 +1139,8 @@ g9 <- ggplot()+
 ggplotly(g9) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.15, 
-                      y=-0.35,
+                      x=0.40, 
+                      y=-0.50,
                       title=''))
 ```
 
@@ -1173,8 +1173,8 @@ g10 <- ggplot()+
 ggplotly(g10) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.4, 
-                      y=-0.25,
+                      x=0.40, 
+                      y=-0.50,
                       title=''))
 ```
 
@@ -1213,7 +1213,7 @@ ggplotly(g11) %>%
   layout(legend = list(
                       orientation = "h", 
                       x=0.35, 
-                      y=-0.25,
+                      y=-0.40,
                       title=''))
 ```
 
@@ -1252,8 +1252,8 @@ g12 <- ggplot(data=sazonal_graph)+
 ggplotly(g12) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.05, 
-                      y=-0.25,
+                      x=0.40, 
+                      y=-0.50,
                       title=''))
 ```
 
@@ -1552,8 +1552,8 @@ g1 <- ggplot(data=dados1) +  #estetica vai valer para todos os geom's
 ggplotly(g1) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.25, 
-                      y=-0.25,
+                      x=0.50, 
+                      y=-0.30,
                       title=''))
 ```
 
@@ -1584,8 +1584,8 @@ g10 <- ggplot(data=dados3) +  #estetica vai valer para todos os geom's
 ggplotly(g10) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.4, 
-                      y=-0.25,
+                      x=0.50, 
+                      y=-0.40,
                       title=''))
 ```
 
@@ -1614,8 +1614,8 @@ g11 <- ggplot(data=dados4) +  #estetica vai valer para todos os geom's
 ggplotly(g11) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.4, 
-                      y=-0.25,
+                      x=0.50, 
+                      y=-0.30,
                       title=''))
 ```
 
@@ -1652,7 +1652,7 @@ g7 <- ggplot()+
 ggplotly(g7) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.1, 
+                      x=0.3, 
                       y=1,
                       title=''))
 ```
@@ -1684,8 +1684,8 @@ geom_col(data=importacao, aes(x=date, y=value, fill=variable), lwd=1, position =
 ggplotly(g13) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.35, 
-                      y=-0.25,
+                      x=0.50, 
+                      y=-0.30,
                       title=''))
 ```
 
@@ -2047,8 +2047,8 @@ g1 <- ggplot()+
 ggplotly(g1) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.3, 
-                      y=-0.2,
+                      x=0.5, 
+                      y=-0.4,
                       title=''))
 ```
 
@@ -2082,7 +2082,7 @@ g2<- ggplot(data=consumo_var) +  #estetica vai valer para todos os geom's
 ggplotly(g2) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.3, 
+                      x=0.5, 
                       y=-0.4,
                       title=''))
 ```
@@ -2130,7 +2130,7 @@ g3 <- ggplot(data=dados2) +  #estetica vai valer para todos os geom's
 ggplotly(g3) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.3, 
+                      x=0.5, 
                       y=-0.50,
                       title=''))
 ```
@@ -2170,13 +2170,13 @@ g4 <- ggplot()+
         plot.title = element_text(hjust = 0.5, size=10),
         plot.caption = element_text(hjust = 0, size=10),
         legend.position = "bottom", legend.title = element_blank(),
-        legend.text=element_text(size=12)) # Definindo posição da legenda
+        legend.text=element_text(size=9)) # Definindo posição da legenda
 
 ggplotly(g4) %>%
   layout(legend = list(
                       orientation = "h", 
-                      x=0.0, 
-                      y=-0.45,
+                      x=0.5, 
+                      y=-0.40,
                       title=''))
 ```
 
