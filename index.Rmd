@@ -61,7 +61,7 @@ knitr::opts_chunk$set(
   )
 
 library(lubridate)
-data <- as.Date('2026-01-30')
+data <- as.Date('2026-02-13')
 #data <- Sys.Date()
 sem_ano <- isoweek(data)
 
@@ -898,7 +898,7 @@ ggplotly(g5) %>%
                       title=''))
 ```
 
-### Variação Semanal em 2024 e 2026 de Uva Negra Embalada {.no-title}
+### Variação Semanal em 2025 e 2026 de Uva Negra Embalada {.no-title}
 
 ```{r negra2, results='', fig.cap=''}
 
@@ -1295,16 +1295,16 @@ library(tidyverse)
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2025-11-01")
-atual <-  as.Date("2025-12-01")
+anterior <- as.Date("2025-12-01")
+atual <-  as.Date("2026-01-01")
 #today <- as.Date("2022-02-11")
-mes <- 12
+mes <- 1
 mes_ano <- month(atual)
 
 #Entrando dados no R
-dados1 <- read.csv2('exportacoes_2016_2025.csv', header=T, sep=";", dec = ".")
+dados1 <- read.csv2('exportacoes_2016_2026.csv', header=T, sep=";", dec = ".")
 dados1 <- dados1/1000
-dados1[,1] <- seq(2016, 2025, by = 1)
+dados1[,1] <- seq(2016, 2026, by = 1)
 colnames(dados1) = c('Ano', 'Valor', "Toneladas")
 dados1 <- tibble(dados1)
 
@@ -1314,15 +1314,15 @@ dados2 <- read.csv2('total_exporta_uva_br.csv', header=T, sep=";", dec = ".")
 colnames(dados2)[1]<-'ano'
 
 #Entrando dados no R
-dados3 <- read.csv2('destinos_2025.csv', header=T, sep=";", dec = ".")
+dados3 <- read.csv2('destinos_2026.csv', header=T, sep=";", dec = ".")
 colnames(dados3) = c('Paises', "Participacao")
 
 #Entrando dados no R
-dados4 <- read.csv2('via_2025.csv', header=T, sep=";", dec = ".")
+dados4 <- read.csv2('via_2026.csv', header=T, sep=";", dec = ".")
 colnames(dados4) = c('Vias', "Participacao")
 
 #Entrando dados no R
-dados5 <- read.csv2('uf_2025.csv', header=T, sep=";" , dec = ".")
+dados5 <- read.csv2('uf_2026.csv', header=T, sep=";" , dec = ".")
 colnames(dados5) = c('UF', "Participacao")
 
 #Cambio Baixando os dados para o R
@@ -1357,37 +1357,37 @@ sazonal_graph <- tibble(meses, sazonal_valor)
 
 #Comparações com os anos e entre as médias/max/min
 
-exporta_uva_valor_2024 <- window(exporta_uva_valor, end=c(2024,12))
-seas24 <- seasplot(exporta_uva_valor_2024, trend=F, outplot = F)
-medias24 <- colMeans(seas24$season)
+exporta_uva_valor_2025 <- window(exporta_uva_valor, end=c(2025,12))
+seas25 <- seasplot(exporta_uva_valor_2025, trend=F, outplot = F)
+medias25 <- colMeans(seas25$season)
 
 #exporta_uva_valor_2021 <- window(exporta_uva_valor, end=c(2021,12))
 
-exporta_uva_valor_2023 <- window(exporta_uva_valor, end=c(2023,12))
+exporta_uva_valor_2024 <- window(exporta_uva_valor, end=c(2024,12))
 #medias21 <- colMeans(seas21$season)
 
-exporta_uva_valor_25 <- as.matrix(tail(exporta_uva_valor,mes)) 
-exporta_uva_valor_2025 <- matrix(NA, nrow=12, ncol=1)
+exporta_uva_valor_26 <- as.matrix(tail(exporta_uva_valor,mes)) 
+exporta_uva_valor_2026 <- matrix(NA, nrow=12, ncol=1)
 
 for(i in 1:mes){
-  exporta_uva_valor_2025[i,1] = exporta_uva_valor_25[i,1]
+  exporta_uva_valor_2026[i,1] = exporta_uva_valor_26[i,1]
 }
   
 #Como só se tem até a semana 12
-medias24 <- medias24[1:12]
+medias25 <- medias25[1:12]
 
 matrix = matrix(NA, nrow=12, ncol=2)
 
 for(i in 1:12){
-  matrix[i,1] = min(seas24$season[,i])
-  matrix[i,2] = max(seas24$season[,i])
+  matrix[i,1] = min(seas25$season[,i])
+  matrix[i,2] = max(seas25$season[,i])
 }
 
 #time <- c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", #"Dezembro")
 #time <-seq(1:12)
-table <- data.frame(meses, matrix[,1], round(medias24,3), matrix[,2], round(tail(exporta_uva_valor_2023,12),3),
-                    round(tail(exporta_uva_valor_2024,12),3), exporta_uva_valor_2025[,1])
-colnames(table) = c('Meses', 'Mínimo', 'Média', 'Máximo', '2023', '2024', '2025')
+table <- data.frame(meses, matrix[,1], round(medias25,3), matrix[,2], round(tail(exporta_uva_valor_2024,12),3),
+                    round(tail(exporta_uva_valor_2025,12),3), exporta_uva_valor_2026[,1])
+colnames(table) = c('Meses', 'Mínimo', 'Média', 'Máximo', '2024', '2025', '2026')
 
 tablea <- table[,-c(5:7)]
 tableb <- table[,-c(2,3,4)]
@@ -1404,13 +1404,13 @@ exporta_uva_volume<-exporta_uva_volume/1000  #passando de quilo para tonelada
 #Ajuste para a variação Mensal do Volume
 
 
-variacao_volume_23 <-  dados2 %>% filter(ano=='2023')
 variacao_volume_24 <-  dados2 %>% filter(ano=='2024')
 variacao_volume_25 <-  dados2 %>% filter(ano=='2025')
+variacao_volume_26 <-  dados2 %>% filter(ano=='2026')
 
-variacao_volume_23 <-  variacao_volume_23[,4]/1000
 variacao_volume_24 <-  variacao_volume_24[,4]/1000
 variacao_volume_25 <-  variacao_volume_25[,4]/1000
+variacao_volume_26 <-  variacao_volume_26[,4]/1000
 
 #Setando como uma série temporal
 exporta_uva_volume <- ts(exporta_uva_volume, start=c(2016,1), freq=12)
@@ -1426,36 +1426,36 @@ sazonal_graph_volume <- tibble(meses, sazonal_volume)
 
 #Comparações com os anos e entre as médias/max/min
 
-exporta_uva_volume_2024 <- window(exporta_uva_volume, end=c(2024,12))
-seas24_vol<-seasplot(exporta_uva_volume_2024, trend=F, outplot = F)
-medias24_vol <- colMeans(seas24_vol$season)
+exporta_uva_volume_2025 <- window(exporta_uva_volume, end=c(2025,12))
+seas25_vol<-seasplot(exporta_uva_volume_2025, trend=F, outplot = F)
+medias25_vol <- colMeans(seas25_vol$season)
 
 #exporta_uva_volume_2021 <- window(exporta_uva_volume, end=c(2021,12))
 
-exporta_uva_volume_2023 <- window(exporta_uva_volume, end=c(2023,12))
+exporta_uva_volume_2024 <- window(exporta_uva_volume, end=c(2024,12))
 
-exporta_uva_volume_25 <- as.matrix(tail(exporta_uva_volume,mes)) #ajustar mensalmente
-exporta_uva_volume_2025 <- matrix(NA, nrow=12, ncol=1)
+exporta_uva_volume_26 <- as.matrix(tail(exporta_uva_volume,mes)) #ajustar mensalmente
+exporta_uva_volume_2026 <- matrix(NA, nrow=12, ncol=1)
 
 for(i in 1:mes){
-  exporta_uva_volume_2025[i,1] = exporta_uva_volume_25[i,1]
+  exporta_uva_volume_2026[i,1] = exporta_uva_volume_26[i,1]
 }
   
 #Como só se tem até a semana 12
-medias24_vol <- medias24_vol[1:12]
+medias25_vol <- medias25_vol[1:12]
 
 matrix_vol = matrix(NA, nrow=12, ncol=2)
 
 for(i in 1:12){
-  matrix_vol[i,1] = min(seas24_vol$season[,i])
-  matrix_vol[i,2] = max(seas24_vol$season[,i])
+  matrix_vol[i,1] = min(seas25_vol$season[,i])
+  matrix_vol[i,2] = max(seas25_vol$season[,i])
 }
 
 #time <- c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", #"Dezembro")
 #time <-seq(1:12)
-table_volume <- data.frame(meses, round(matrix_vol[,1],0), round(medias24_vol,0), round(matrix_vol[,2],0), round(tail(exporta_uva_volume_2023,12),0),
-round(tail(exporta_uva_volume_2024,12),0), round(exporta_uva_volume_2025[,1],0))
-colnames(table_volume) = c('Meses', 'Mínimo', 'Média', 'Máximo', '2023', '2024', '2025')
+table_volume <- data.frame(meses, round(matrix_vol[,1],0), round(medias25_vol,0), round(matrix_vol[,2],0), round(tail(exporta_uva_volume_2024,12),0),
+round(tail(exporta_uva_volume_2025,12),0), round(exporta_uva_volume_2026[,1],0))
+colnames(table_volume) = c('Meses', 'Mínimo', 'Média', 'Máximo', '2024', '2025', '2026')
 
 tablea_vol <- table_volume[,-c(5:7)]
 tableb_vol <- table_volume[,-c(2,3,4)]
@@ -1466,20 +1466,20 @@ tableb2_vol <- melt(tableb_vol, id.var='Meses')
 
 #Variação Mensal 2021
 
-variacao_volume_2023 <- as.matrix(variacao_volume_23)
 variacao_volume_2024 <- as.matrix(variacao_volume_24)
-variacao_volume_2025 <- matrix(NA, nrow=12, ncol=1)
-variacao_volume_25 <- as.matrix(variacao_volume_25)
+variacao_volume_2025 <- as.matrix(variacao_volume_25)
+variacao_volume_2026 <- matrix(NA, nrow=12, ncol=1)
+variacao_volume_26 <- as.matrix(variacao_volume_26)
 
 for(i in 1:mes){
-  variacao_volume_2025[i,1] = variacao_volume_25[i,1]
+  variacao_volume_2026[i,1] = variacao_volume_26[i,1]
 }
 
-variacao_24 <- ((variacao_volume_2024/variacao_volume_2023) - 1)*100
 variacao_25 <- ((variacao_volume_2025/variacao_volume_2024) - 1)*100
+variacao_26 <- ((variacao_volume_2026/variacao_volume_2025) - 1)*100
 
-variacao <- data.frame(meses, variacao_24, variacao_25)
-colnames(variacao) = c('Meses', 'Variação 2024 e 2023', 'Variação 2025 e 2024')
+variacao <- data.frame(meses, variacao_25, variacao_26)
+colnames(variacao) = c('Meses', 'Variação 2025 e 2024', 'Variação 2026 e 2025')
 
 variacaom <- melt(variacao, id.var='Meses')
 
@@ -1502,17 +1502,17 @@ valueBox(
   icon= "fa-arrow-up")
 ```
 
-### Volume Exportação em `r strftime(atual, format = "%B")` de 2024 
+### Volume Exportação em `r strftime(atual, format = "%B")` de 2025 
 ``` {r d2}
-num <- round(variacao_volume_2024[mes_ano, ],0)
+num <- round(variacao_volume_2025[mes_ano, ],0)
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
 ```
 
-### Volume Exportação em `r strftime(atual, format = "%B")` de 2023 
+### Volume Exportação em `r strftime(atual, format = "%B")` de 2024 
 ``` {r d3}
-num <- round(variacao_volume_2023[mes_ano, ],0)
+num <- round(variacao_volume_2024[mes_ano, ],0)
 valueBox(
   value = paste0(num, " Toneladas"),
   icon= "fa-pen")
@@ -1521,7 +1521,7 @@ valueBox(
 Row
 -----------------------------------------------------------------------
 
-### Receita de Exportação e Volume Exportado de Uva: 2016 a 2025 {.no-title}
+### Receita de Exportação e Volume Exportado de Uva: 2016 a 2026 {.no-title}
 
 ```{r exporta1, fig.width=8, fig.height=4, fig.align='center'}
 
@@ -1535,10 +1535,10 @@ g1 <- ggplot(data=dados1) +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolor1)+
   geom_line(aes(x=Ano, y=Valor, colour="Mil de Dólares"), size=2)+
   scale_colour_manual(values=mycolor2)+
-  labs(y= "US$ Mil / Ton", x= "Anos", title='Receita de Exportação e Volume Exportado de Uva: 2016 a 2025',
+  labs(y= "US$ Mil / Ton", x= "Anos", title='Receita de Exportação e Volume Exportado de Uva: 2016 a 2026',
        caption = "") +
   scale_y_continuous(limits=c(0, 185000), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
-  scale_x_continuous(breaks = seq(2016, 2025, by = 1))+
+  scale_x_continuous(breaks = seq(2016, 2026, by = 1))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
         axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
@@ -1557,7 +1557,7 @@ ggplotly(g1) %>%
                       title=''))
 ```
 
-### Principais Destinos da Uva Exportada em Dezembro de 2025 {.no-title}
+### Principais Destinos da Uva Exportada em Janeiro de 2026 {.no-title}
 
 ```{r exporta15, fig.width=7, fig.height=4, fig.align='center'}
 
@@ -1570,7 +1570,7 @@ g10 <- ggplot(data=dados3) +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolor1) +
   labs(y= "% do Volume Total Exportados", x= "Países", title='Principais Destinos da Uva',
        caption = "")+
-  scale_y_continuous(limits=c(0, 45), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_y_continuous(limits=c(0, 50), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=45, hjust=0.5, size=8, margin = margin(b=10)),
         axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
@@ -1589,7 +1589,7 @@ ggplotly(g10) %>%
                       title=''))
 ```
 
-### Principais vias de exportação da uva do Brasil: Dezembro de 2025. {.no-title}
+### Principais vias de exportação da uva do Brasil: Janeiro de 2026. {.no-title}
 
 ```{r exporta17}
 
@@ -1600,7 +1600,7 @@ g11 <- ggplot(data=dados4) +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolor1) +
   labs(y= "% de Exportação", x= "Vias", title='Principais vias de exportação',
        caption = "")+
-  scale_y_continuous(limits=c(0, 88), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_y_continuous(limits=c(0, 98), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
         axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
@@ -1622,7 +1622,7 @@ ggplotly(g11) %>%
 Row
 -----------------------------------------------------------------------
 
-### Volume das Exportações de Uva do Brasil: Janeiro de 2024 em comparação com as informações entre 2016-2025 {.no-title}
+### Volume das Exportações de Uva do Brasil: Janeiro de 2026 em comparação com as informações entre 2016-2026 {.no-title}
 
 ```{r exporta9, fig.width=10, fig.height=4, fig.align='center'}
 g7 <- ggplot()+
@@ -1657,7 +1657,7 @@ ggplotly(g7) %>%
                       title=''))
 ```
 
-### Importação de Uva pelo Brasil: 2016-2025. {.no-title}
+### Importação de Uva pelo Brasil: 2016-2026. {.no-title}
 
 ``` {r importa1}
 mycolors3 <- c("orange", "lightblue3", "red", "darkgreen")
