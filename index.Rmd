@@ -1294,10 +1294,10 @@ library(tidyverse)
 options(digits=4)
 
 library(lubridate)
-anterior <- as.Date("2025-12-01")
-atual <-  as.Date("2026-01-01")
+anterior <- as.Date("2026-01-01")
+atual <-  as.Date("2026-02-01")
 #today <- as.Date("2022-02-11")
-mes <- 1
+mes <- 2
 mes_ano <- month(atual)
 
 #Entrando dados no R
@@ -1556,7 +1556,7 @@ ggplotly(g1) %>%
                       title=''))
 ```
 
-### Principais Destinos da Uva Exportada em Janeiro de 2026 {.no-title}
+### Principais Destinos da Uva Exportada em Fevereiro de 2026 {.no-title}
 
 ```{r exporta15, fig.width=7, fig.height=4, fig.align='center'}
 
@@ -1569,7 +1569,7 @@ g10 <- ggplot(data=dados3) +  #estetica vai valer para todos os geom's
     scale_fill_manual(values=mycolor1) +
   labs(y= "% do Volume Total Exportados", x= "Países", title='Principais Destinos da Uva',
        caption = "")+
-  scale_y_continuous(limits=c(0, 50), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_y_continuous(limits=c(0, 55), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_classic()+ #Definindo tema
   theme(axis.text.x=element_text(angle=45, hjust=0.5, size=8, margin = margin(b=10)),
         axis.text.y=element_text(hjust=1, size=8, margin = margin(l=20)),
@@ -1588,7 +1588,7 @@ ggplotly(g10) %>%
                       title=''))
 ```
 
-### Principais vias de exportação da uva do Brasil: Janeiro de 2026. {.no-title}
+### Principais vias de exportação da uva do Brasil: Fevereiro de 2026. {.no-title}
 
 ```{r exporta17}
 
@@ -1621,7 +1621,7 @@ ggplotly(g11) %>%
 Row
 -----------------------------------------------------------------------
 
-### Volume das Exportações de Uva do Brasil: Janeiro de 2026 em comparação com as informações entre 2016-2025 {.no-title}
+### Volume das Exportações de Uva do Brasil: Fevereiro de 2026 em comparação com as informações entre 2016-2025 {.no-title}
 
 ```{r exporta9, fig.width=10, fig.height=4, fig.align='center'}
 g7 <- ggplot()+
@@ -2187,7 +2187,7 @@ EMPREGO
 setwd('c:/Users/Lenovo/Dropbox/tempecon/dados_caged')
 #setwd('/Users/jricardofl/Dropbox/tempecon/dados_caged')
 
-atual <-  as.Date("2025-12-01")
+atual <-  as.Date("2026-01-01")
 
 #Inicio do Script
 #Pacotes a serem utilizados 
@@ -2197,19 +2197,20 @@ library(plotly)
 
 #Entrando dados no R
 #Entrando dados no R
-dados1 <- read.csv2('dezembro_2025.csv', header=T, sep=";", dec = ".")
+dados1 <- read.csv2('janeiro_2026.csv', header=T, sep=";", dec = ".")
 colnames(dados1)[1] <- 'date'
 dados1$date <- seq(as.Date('2021-01-01'),to=atual,by='1 month')
 dados1a <- dados1 
 dados1a$ano <- strftime(dados1a$date, format="%Y") 
 dados1a$mes <- strftime(dados1a$date, format="%B") 
 
-saldo_24 <- dados1a |> filter(ano == "2024") |> select(ano, mes, Saldo_uva) |> mutate(mes = as.character(mes))
 saldo_25 <- dados1a |> filter(ano == "2025") |> select(ano, mes, Saldo_uva) |> mutate(mes = as.character(mes))
 
-saldom <- rbind(saldo_24, saldo_25)   # agora não vira NA
+saldo_26 <- dados1a |> filter(ano == "2026") |> select(ano, mes, Saldo_uva) |> mutate(mes = as.character(mes))
+
+saldom <- rbind(saldo_25, saldo_26)   # agora não vira NA
 # ou, melhor:
-saldom <- bind_rows(saldo_24, saldo_25)
+saldom <- bind_rows(saldo_25, saldo_26)
 
 mes_levels <- c("janeiro","fevereiro","março","abril","maio","junho",
                 "julho","agosto","setembro","outubro","novembro","dezembro")
@@ -2220,18 +2221,10 @@ dados1a <- dados1 |>
     mes = factor(format(date, "%B"), levels = mes_levels, ordered = TRUE)
   )
 
-saldo_24 <- dados1a |> filter(ano == "2024") |> select(ano, mes, Saldo_uva)
 saldo_25 <- dados1a |> filter(ano == "2025") |> select(ano, mes, Saldo_uva)
+saldo_26 <- dados1a |> filter(ano == "2026") |> select(ano, mes, Saldo_uva)
 
-saldom <- rbind(saldo_24, saldo_25)   # funciona porque os levels são idênticos
-
-total_24 <- dados1a %>%
-  select(c(ano, mes, Contratados_Uva, Demitidos_Uva, Saldo_uva))%>% 
-  filter(ano=='2024')
-
-total_24$mes <- factor(total_24$mes,levels = c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", 
-                                           "Junho", "Julho", "Agosto", "Setembro", "Outubro",
-                                           "Novembro", "Dezembro"))
+saldom <- rbind(saldo_25, saldo_26)   # funciona porque os levels são idênticos
 
 total_25 <- dados1a %>%
   select(c(ano, mes, Contratados_Uva, Demitidos_Uva, Saldo_uva)) %>% 
@@ -2239,45 +2232,53 @@ total_25 <- dados1a %>%
 
 total_25$mes <- factor(total_25$mes,levels = c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro",  "Novembro", "Dezembro"))
 
-totalm <- merge(total_24, total_25, by="mes", all = T)
+total_26 <- dados1a %>%
+  select(c(ano, mes, Contratados_Uva, Demitidos_Uva, Saldo_uva))%>% 
+  filter(ano=='2026')
+
+total_26$mes <- factor(total_26$mes,levels = c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", 
+                                           "Junho", "Julho", "Agosto", "Setembro", "Outubro",
+                                           "Novembro", "Dezembro"))
+
+totalm <- merge(total_25, total_26, by="mes", all = T)
 #totalm <- inner_join(total_23, total_24, by="mes")
 
 totalm <- totalm %>%
         select(c(mes,Contratados_Uva.x, Demitidos_Uva.x, Contratados_Uva.y, Demitidos_Uva.y, Saldo_uva.x, Saldo_uva.y))
 
 totalm <- totalm %>%
-  rename("Contratados 2024" = Contratados_Uva.x,
-         "Demitidos 2024" = Demitidos_Uva.x,
-         "Contratados 2025" = Contratados_Uva.y,
-         "Demitidos 2025" = Demitidos_Uva.y,
-         "Saldo 2024" = Saldo_uva.x,
-         "Saldo 2025" = Saldo_uva.y)
+  rename("Contratados 2025" = Contratados_Uva.x,
+         "Demitidos 2025" = Demitidos_Uva.x,
+         "Contratados 2026" = Contratados_Uva.y,
+         "Demitidos 2026" = Demitidos_Uva.y,
+         "Saldo 2025" = Saldo_uva.x,
+         "Saldo 2026" = Saldo_uva.y)
 
 #Entrando com o restante dos dados
 
-load("dezembro_25_caged.RData")
+load("janeiro_26_caged.RData")
 
 #dados_08_vsf$sexo <- lapply(dados_08_vsf$sexo, factor)
 
-dados_12_vsf$sexo[dados_12_vsf$sexo == 1] <- 0
-dados_12_vsf$sexo[dados_12_vsf$sexo == 3] <- 1
+dados_01_vsf$sexo[dados_01_vsf$sexo == 1] <- 0
+dados_01_vsf$sexo[dados_01_vsf$sexo == 3] <- 1
 
-dados_12_vsf <- mutate(dados_12_vsf,
+dados_01_vsf <- mutate(dados_01_vsf,
                 sexo = factor(sexo, levels = 0:1, labels = c("Masculino", "Feminino")))
 
 # Mantendo apenas 
 
 #Separando as admissoes e as demissoes
-dados_12_vsf_positivos <-dados_12_vsf%>% filter(saldo_movim=="1")
-dados_12_vsf_negativos <-dados_12_vsf%>% filter(saldo_movim=="-1")
+dados_01_vsf_positivos <-dados_01_vsf%>% filter(saldo_movim=="1")
+dados_01_vsf_negativos <-dados_01_vsf%>% filter(saldo_movim=="-1")
 
 #Mantendo apenas o agronegocio
-secao_positivos <-dados_12_vsf_positivos%>% filter(secao=="A")
-secao_negativos <-dados_12_vsf_negativos%>% filter(secao=="A")
+secao_positivos <-dados_01_vsf_positivos%>% filter(secao=="A")
+secao_negativos <-dados_01_vsf_negativos%>% filter(secao=="A")
 
 #Mantendo apenas a manga
-subclasse_positivos <-dados_12_vsf_positivos%>% filter(subclasse=="132600")
-subclasse_negativos <-dados_12_vsf_negativos%>% filter(subclasse=="132600")
+subclasse_positivos <-dados_01_vsf_positivos%>% filter(subclasse=="132600")
+subclasse_negativos <-dados_01_vsf_negativos%>% filter(subclasse=="132600")
 
 #Ajustando o grau de escolaridade
 subclasse_positivos$grau_instrucao[subclasse_positivos$grau_instrucao == 80] <- 12
@@ -2310,7 +2311,7 @@ subclasse_positivos$salario <- as.integer(subclasse_positivos$salario)
 Row {data-height=125}
 -----------------------------------------------------------------------
 
-### pela viticultura em `r strftime(atual, format = "%B")` de 2025 
+### pela viticultura em `r strftime(atual, format = "%B")` de 2026 
 ``` {r emp1}
 num <- tail(dados1$Contratados_Uva,1)
 valueBox(
@@ -2319,7 +2320,7 @@ valueBox(
   icon= "fa-arrow-up")
 ```
 
-### pela viticultura em `r strftime(atual, format = "%B")` de 2025 
+### pela viticultura em `r strftime(atual, format = "%B")` de 2026 
 ``` {r emp2}
 num <- tail(dados1$Demitidos_Uva,1)
 valueBox(
@@ -2328,7 +2329,7 @@ valueBox(
   icon= "fa-arrow-down")
 ```
 
-### Saldo Gerado pela viticultura em `r strftime(atual, format = "%B")` de 2025
+### Saldo Gerado pela viticultura em `r strftime(atual, format = "%B")` de 2026
 ``` {r emp3}
 num <- tail(dados1$Saldo_uva,1)
 valueBox(
@@ -2351,7 +2352,7 @@ mycolors2 <- c("orange", "lightblue3")
 g1 <- ggplot() +  #estetica vai valer para todos os geom's
   geom_col(data=saldom, aes(x=mes, y=Saldo_uva, fill=ano), size=2, width = 0.9, position = "dodge")+
     scale_fill_manual(values=mycolors2)+
-    labs(y= "Saldo de Emprego (unidade)", x= "Meses do Ano", title='Saldo mensal de Empregos na Viticultura: 2023 e 2024',
+    labs(y= "Saldo de Emprego (unidade)", x= "Meses do Ano", title='Saldo mensal de Empregos na Viticultura: 2025 e 2026',
        caption = "")+
     scale_y_continuous(limits=c(-2100, 1700), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
   theme_minimal()+ #Definindo tema
@@ -2434,7 +2435,7 @@ ggplotly(g3)
 
 g4 <- ggplot(data = subclasse_positivos, aes(x = grau_instrucao, y = ..count..)) +
   geom_bar(fill='#1e4971')+
-    scale_y_continuous(limits=c(0, 850), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+    scale_y_continuous(limits=c(0, 950), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
 labs(y= "Contratados Uva - VSF", x= "Grau de Instrução", title='Grau de Instrução dos empregos gerados',
        caption = "")+
   theme_minimal() +
