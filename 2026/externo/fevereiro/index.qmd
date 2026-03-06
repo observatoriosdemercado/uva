@@ -275,7 +275,7 @@ Em relação aos volumes, em `r strftime(atual, format = "%B de %Y")` foram de 9
 
 Em termos dos valores das exportações, em `r strftime(atual, format = "%B de %Y")` foram cerca de US\$ 2,28 milhões de dólares, abaixo da média histórica de US\$ 1,24 milhões. Em `r strftime(atual, format = "%B")` de 2024 foram gerados US\$ 2,4 milhões em receitas e, em `r strftime(atual, format = "%B")` de 2025, um total de US\$ 901 mil. Assim, pode-se considerar que os preços em `r strftime(atual, format = "%B")` foram mais baixos do que a média histórica e os dois anos anteriores.
 
-Os principais destinos foram a Holanda (50,1%), o Reino Unido (15,78%) e o Canadá (12,39%). Começam a aparecer os embarques para a China, depois da abertura do mercado. Em janeiro foram 1,5 t e em fevereiro, 3,5 t embarcadas de forma área. A principal via de envio foi a maritima (96,36%), com 89,7% do total despachado pela alfândega de Fortaleza. Os principais estados de origem da uva foram Pernambuco (65,95%) e Bahia (31,64%). Em `r strftime(atual, format = "%B de %Y")` foram importadas 819 t de uvas do Chile, 292 t da Argentina e 54 t do Peru.
+Os principais destinos foram a Holanda (50,1%), o Reino Unido (15,78%) e o Canadá (12,39%). A principal via de envio foi a maritima (96,36%), com 89,7% do total despachado pela alfândega de Fortaleza. Os principais estados de origem da uva foram Pernambuco (65,95%) e Bahia (31,64%). Em `r strftime(atual, format = "%B de %Y")` foram importadas 819 t de uvas do Chile, 292 t da Argentina e 54 t do Peru.
 
 A taxa de câmbio esperada pelo mercado para o final do ano de 2026 é de R$5,43 para 1 dólar.
 
