@@ -1,0 +1,118 @@
+/* Overrides aplicados via include-in-header */
+
+body {
+  background-color: #F7F8FA;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: #1F2937;
+}
+
+.card {
+  border: 1px solid #E5E7EB !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03), 0 1px 6px rgba(0,0,0,0.04) !important;
+}
+
+.card-header {
+  background-color: #FFFFFF !important;
+  border-bottom: 1px solid #F1F2F4 !important;
+  font-weight: 600 !important;
+  color: #1F2937 !important;
+  font-size: 0.95rem !important;
+}
+
+.navbar {
+  background-color: #183b8c !important;
+}
+
+.navbar-brand img { max-height: 36px; }
+
+.navbar .navbar-brand,
+.navbar .navbar-brand:hover,
+.navbar .navbar-brand:focus {
+  color: #FFFFFF !important;
+}
+
+.navbar .navbar-title,
+.navbar .quarto-title-meta {
+  color: #FFFFFF !important;
+}
+
+.navbar .nav-link {
+  color: rgba(255, 255, 255, 0.75) !important;
+  font-weight: 500;
+  border-radius: 6px;
+  padding: 0.4rem 0.9rem !important;
+  margin: 0 0.15rem;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link:focus {
+  color: #FFFFFF !important;
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.navbar .nav-link.active,
+.navbar .nav-item.show .nav-link {
+  color: #183b8c !important;
+  background-color: #FFFFFF !important;
+  font-weight: 700 !important;
+}
+
+.navbar .nav-link.active:hover,
+.navbar .nav-link.active:focus {
+  color: #183b8c !important;
+  background-color: #FFFFFF !important;
+}
+
+.navbar .dropdown-menu .dropdown-item {
+  color: #1F2937 !important;
+}
+
+.navbar .quarto-navbar-tools .quarto-navigation-tool,
+.navbar .quarto-navbar-tools a {
+  color: #FFFFFF !important;
+}
+
+.valuebox {
+  border-radius: 10px;
+}
+
+.value-box-area {
+  padding: 0.6rem 0.8rem !important;
+}
+
+.value-box-area p {
+  margin: 0 !important;
+  line-height: 1.2 !important;
+}
+
+.value-box-area > p:nth-of-type(2) {
+  font-size: 2.1rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
+}
+
+.value-box-area > p:nth-of-type(4) {
+  font-size: 1.05rem !important;
+  font-weight: 500 !important;
+  opacity: 0.95;
+  margin-top: 0.4rem !important;
+}
+
+.value-box-showcase .bi {
+  font-size: 2.8rem !important;
+  opacity: 0.9;
+}
+
+/* Cor de texto dos valueboxes deixada para o Bootstrap auto-contrastar */
+
+table {
+  font-size: 0.9rem;
+}
+
+table thead th {
+  background-color: #F1F2F4 !important;
+  font-weight: 600 !important;
+  border-bottom: 2px solid #E5E7EB !important;
+}

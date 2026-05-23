@@ -1,0 +1,510 @@
+---
+title: "Preços de Uva ao Produtor"
+format:
+  dashboard:
+    embed-resources: true
+    logo: logo_embrapa.png
+    nav-buttons:
+      - icon: github
+        href: https://github.com/observatoriosdemercado
+    theme: cosmo
+    include-in-header:
+      - _header.html
+    scrolling: true
+    orientation: rows
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(plotly)
+library(scales)
+library(lubridate)
+
+source("_helpers.R")
+
+# Parametros temporais
+data_ref     <- Sys.Date()
+ano_atual    <- as.integer(format(data_ref, "%Y"))
+semana_atual <- isoweek(data_ref)
+
+# Paleta da manga / harmoniosa com Bootstrap
+pal <- list(
+  area  = "#E8A33D",
+  prod  = "#3D5A80",
+  vol   = "#2E7D5B",
+  vbp   = "#C44536",
+  ink   = "#1F2937",
+  grid  = "#E5E7EB"
+)
+
+tema_card <- function() {
+  theme_minimal(base_size = 12) +
+    theme(
+      plot.title         = element_text(face = "bold", size = 13, color = pal$ink),
+      plot.caption       = element_text(size = 9, color = "#6B7280", hjust = 0),
+      axis.title         = element_text(size = 11, color = pal$ink),
+      axis.text          = element_text(size = 10, color = pal$ink),
+      panel.grid.minor   = element_blank(),
+      panel.grid.major.x = element_blank(),
+      panel.grid.major.y = element_line(color = pal$grid),
+      legend.position    = "none"
+    )
+}
+```
+
+```{r prices-setup}
+branca <- analise_preco(ler_serie_preco("dados_uva_arra_semana.csv"),
+                        ano_atual, semana_atual)
+negraE <- analise_preco(ler_serie_preco("dados_uva_vitoria_semana.csv"),
+                        ano_atual, semana_atual)
+negraS <- analise_preco(ler_serie_preco("dados_uva_vitoriaSE_semana.csv"),
+                        ano_atual, semana_atual)
+```
+
+# Branca Seedless Embalada
+
+## Row {height=150}
+
+::: {.valuebox icon="currency-dollar" color="success"}
+`{r} fmt_brl(branca$preco_atual)`
+
+Preço Branca Seedless — Semana `{r} semana_atual` / `{r} ano_atual`
+:::
+
+::: {.valuebox icon="clock-history" color="warning"}
+`{r} fmt_brl(branca$preco_mesma_sem_ano_ant1)`
+
+Mesma semana em `{r} ano_atual - 1`
+:::
+
+::: {.valuebox icon="hourglass" color="primary"}
+`{r} fmt_brl(branca$preco_mesma_sem_ano_ant2)`
+
+Mesma semana em `{r} ano_atual - 2`
+:::
+
+## Row {height=500}
+
+```{r}
+#| title: "Envelope histórico (mín / méd / máx) e anos recentes — Branca Seedless"
+env <- branca$envelope
+cores_anos <- setNames(c("#9CA3AF", pal$prod, pal$vbp),
+                       c(as.character(ano_atual - 2),
+                         as.character(ano_atual - 1),
+                         as.character(ano_atual)))
+linhas <- bind_rows(
+  branca$anos |> pivot_longer(-semana, names_to = "Série", values_to = "preco"),
+  env |> select(semana, preco = media) |> mutate(Série = "Média histórica")
+)
+cores_full <- c(cores_anos, "Média histórica" = "#6B7280")
+tipos_full <- c(setNames(rep("solid", length(cores_anos)), names(cores_anos)),
+                "Média histórica" = "dashed")
+ordem <- c(names(cores_anos), "Média histórica")
+ymax_env <- max(env$maximo, na.rm = TRUE)
+
+g <- ggplot() +
+  geom_ribbon(data = env, aes(x = semana, ymin = minimo, ymax = maximo,
+                              fill = "Faixa mín–máx histórica"),
+              alpha = 0.20) +
+  geom_vline(xintercept = semana_atual, color = pal$ink,
+             linetype = "dotted", alpha = 0.55) +
+  annotate("text", x = semana_atual, y = ymax_env,
+           label = paste("Sem.", semana_atual),
+           hjust = -0.15, vjust = 1, size = 3.2, color = pal$ink) +
+  geom_line(data = linhas, aes(x = semana, y = preco,
+                               color = Série, linetype = Série),
+            linewidth = 0.9) +
+  scale_color_manual(values = cores_full, breaks = ordem) +
+  scale_linetype_manual(values = tipos_full, breaks = ordem) +
+  scale_fill_manual(values = c("Faixa mín–máx histórica" = pal$area), name = NULL) +
+  scale_x_continuous(breaks = seq(1, 52, 2)) +
+  scale_y_continuous(labels = label_number(prefix = "R$ ", decimal.mark = ",")) +
+  labs(x = "Semana", y = NULL,
+       caption = "Linha pontilhada vertical = semana atual. Fonte: CEPEA/ESALQ, deflacionado pelo IGP-DI") +
+  tema_card() +
+  theme(legend.position = "top", legend.title = element_blank())
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Variação semanal (%) — Branca Seedless"
+var_long <- branca$variacao |>
+  pivot_longer(-semana, names_to = "Ano", values_to = "var_pct")
+cores_var <- setNames(c(pal$prod, pal$vbp),
+                      c(as.character(ano_atual - 1),
+                        as.character(ano_atual)))
+
+g <- ggplot(var_long, aes(x = semana, y = var_pct, fill = Ano)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+  geom_hline(yintercept = 0, color = pal$ink, linewidth = 0.3) +
+  scale_fill_manual(values = cores_var) +
+  scale_x_continuous(breaks = seq(1, 52, 2)) +
+  scale_y_continuous(labels = label_number(suffix = "%", decimal.mark = ",")) +
+  labs(x = "Semana", y = NULL,
+       caption = "Fonte: Observatório de Mercado de Uva / Embrapa") +
+  tema_card() +
+  theme(legend.position = "top", legend.title = element_blank())
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
+
+## Row {height=500}
+
+```{r}
+#| title: "Preço deflacionado e tendência — Branca Seedless (animação ano a ano)"
+df <- branca$serie |>
+  mutate(tendencia = branca$trend) |>
+  select(date, Preço = preco_def_filled, Tendência = tendencia) |>
+  pivot_longer(-date, names_to = "Série", values_to = "valor")
+
+anos_anim <- sort(unique(as.integer(format(df$date, "%Y"))))
+df_anim <- do.call(rbind, lapply(anos_anim, function(yr) {
+  df |>
+    filter(as.integer(format(date, "%Y")) <= yr) |>
+    mutate(frame = yr)
+}))
+x_lim <- range(df$date)
+y_lim <- range(df$valor, na.rm = TRUE)
+
+g <- ggplot(df_anim, aes(x = date, y = valor, color = Série,
+                         linewidth = Série, frame = frame)) +
+  geom_line() +
+  scale_color_manual(values = c(Preço = "#9CA3AF", Tendência = pal$vol)) +
+  scale_linewidth_manual(values = c(Preço = 0.5, Tendência = 1.1)) +
+  scale_x_date(limits = x_lim, date_breaks = "1 year", date_labels = "%Y") +
+  scale_y_continuous(limits = y_lim,
+                     labels = label_number(prefix = "R$ ", decimal.mark = ",")) +
+  labs(x = NULL, y = NULL,
+       caption = "Tendência = média móvel centrada. Fonte: CEPEA/ESALQ, deflacionado pelo IGP-DI") +
+  tema_card() +
+  theme(legend.position = "top", legend.title = element_blank())
+
+ggplotly(g) |>
+  animation_opts(frame = 350, transition = 80, redraw = FALSE) |>
+  animation_slider(currentvalue = list(prefix = "Até o ano ",
+                                       font = list(color = pal$ink, size = 13))) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE) |>
+  htmlwidgets::onRender("function(el, x) { setTimeout(function() { Plotly.animate(el); }, 400); }")
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Sazonalidade — fator multiplicativo por semana — Branca Seedless"
+g <- ggplot(branca$sazonal, aes(x = semana, y = fator)) +
+  geom_hline(yintercept = 1, color = "#9CA3AF", linetype = "dashed") +
+  geom_line(color = pal$prod, linewidth = 1.2) +
+  geom_point(color = pal$prod, size = 2) +
+  scale_x_continuous(breaks = seq(1, 52, 2)) +
+  scale_y_continuous(labels = label_number(decimal.mark = ",", accuracy = 0.01)) +
+  labs(x = "Semana", y = "Fator (1 = média)",
+       caption = "Decomposição multiplicativa clássica. Fonte: Observatório de Mercado de Uva / Embrapa") +
+  tema_card()
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
+
+# Negra Seedless Embalada
+
+## Row {height=150}
+
+::: {.valuebox icon="currency-dollar" color="success"}
+`{r} fmt_brl(negraE$preco_atual)`
+
+Preço Negra Seedless Emb. — Semana `{r} semana_atual` / `{r} ano_atual`
+:::
+
+::: {.valuebox icon="clock-history" color="warning"}
+`{r} fmt_brl(negraE$preco_mesma_sem_ano_ant1)`
+
+Mesma semana em `{r} ano_atual - 1`
+:::
+
+::: {.valuebox icon="hourglass" color="primary"}
+`{r} fmt_brl(negraE$preco_mesma_sem_ano_ant2)`
+
+Mesma semana em `{r} ano_atual - 2`
+:::
+
+## Row {height=500}
+
+```{r}
+#| title: "Envelope histórico (mín / méd / máx) e anos recentes — Negra Seedless Embalada"
+env <- negraE$envelope
+cores_anos <- setNames(c("#9CA3AF", pal$prod, pal$vbp),
+                       c(as.character(ano_atual - 2),
+                         as.character(ano_atual - 1),
+                         as.character(ano_atual)))
+linhas <- bind_rows(
+  negraE$anos |> pivot_longer(-semana, names_to = "Série", values_to = "preco"),
+  env |> select(semana, preco = media) |> mutate(Série = "Média histórica")
+)
+cores_full <- c(cores_anos, "Média histórica" = "#6B7280")
+tipos_full <- c(setNames(rep("solid", length(cores_anos)), names(cores_anos)),
+                "Média histórica" = "dashed")
+ordem <- c(names(cores_anos), "Média histórica")
+ymax_env <- max(env$maximo, na.rm = TRUE)
+
+g <- ggplot() +
+  geom_ribbon(data = env, aes(x = semana, ymin = minimo, ymax = maximo,
+                              fill = "Faixa mín–máx histórica"),
+              alpha = 0.20) +
+  geom_vline(xintercept = semana_atual, color = pal$ink,
+             linetype = "dotted", alpha = 0.55) +
+  annotate("text", x = semana_atual, y = ymax_env,
+           label = paste("Sem.", semana_atual),
+           hjust = -0.15, vjust = 1, size = 3.2, color = pal$ink) +
+  geom_line(data = linhas, aes(x = semana, y = preco,
+                               color = Série, linetype = Série),
+            linewidth = 0.9) +
+  scale_color_manual(values = cores_full, breaks = ordem) +
+  scale_linetype_manual(values = tipos_full, breaks = ordem) +
+  scale_fill_manual(values = c("Faixa mín–máx histórica" = pal$area), name = NULL) +
+  scale_x_continuous(breaks = seq(1, 52, 2)) +
+  scale_y_continuous(labels = label_number(prefix = "R$ ", decimal.mark = ",")) +
+  labs(x = "Semana", y = NULL,
+       caption = "Linha pontilhada vertical = semana atual. Fonte: CEPEA/ESALQ, deflacionado pelo IGP-DI") +
+  tema_card() +
+  theme(legend.position = "top", legend.title = element_blank())
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Variação semanal (%) — Negra Seedless Embalada"
+var_long <- negraE$variacao |>
+  pivot_longer(-semana, names_to = "Ano", values_to = "var_pct")
+cores_var <- setNames(c(pal$prod, pal$vbp),
+                      c(as.character(ano_atual - 1),
+                        as.character(ano_atual)))
+
+g <- ggplot(var_long, aes(x = semana, y = var_pct, fill = Ano)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+  geom_hline(yintercept = 0, color = pal$ink, linewidth = 0.3) +
+  scale_fill_manual(values = cores_var) +
+  scale_x_continuous(breaks = seq(1, 52, 2)) +
+  scale_y_continuous(labels = label_number(suffix = "%", decimal.mark = ",")) +
+  labs(x = "Semana", y = NULL,
+       caption = "Fonte: Observatório de Mercado de Uva / Embrapa") +
+  tema_card() +
+  theme(legend.position = "top", legend.title = element_blank())
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
+
+## Row {height=500}
+
+```{r}
+#| title: "Preço deflacionado e tendência — Negra Seedless Embalada (animação ano a ano)"
+df <- negraE$serie |>
+  mutate(tendencia = negraE$trend) |>
+  select(date, Preço = preco_def_filled, Tendência = tendencia) |>
+  pivot_longer(-date, names_to = "Série", values_to = "valor")
+
+anos_anim <- sort(unique(as.integer(format(df$date, "%Y"))))
+df_anim <- do.call(rbind, lapply(anos_anim, function(yr) {
+  df |>
+    filter(as.integer(format(date, "%Y")) <= yr) |>
+    mutate(frame = yr)
+}))
+x_lim <- range(df$date)
+y_lim <- range(df$valor, na.rm = TRUE)
+
+g <- ggplot(df_anim, aes(x = date, y = valor, color = Série,
+                         linewidth = Série, frame = frame)) +
+  geom_line() +
+  scale_color_manual(values = c(Preço = "#9CA3AF", Tendência = pal$vol)) +
+  scale_linewidth_manual(values = c(Preço = 0.5, Tendência = 1.1)) +
+  scale_x_date(limits = x_lim, date_breaks = "1 year", date_labels = "%Y") +
+  scale_y_continuous(limits = y_lim,
+                     labels = label_number(prefix = "R$ ", decimal.mark = ",")) +
+  labs(x = NULL, y = NULL,
+       caption = "Tendência = média móvel centrada. Fonte: CEPEA/ESALQ, deflacionado pelo IGP-DI") +
+  tema_card() +
+  theme(legend.position = "top", legend.title = element_blank())
+
+ggplotly(g) |>
+  animation_opts(frame = 350, transition = 80, redraw = FALSE) |>
+  animation_slider(currentvalue = list(prefix = "Até o ano ",
+                                       font = list(color = pal$ink, size = 13))) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE) |>
+  htmlwidgets::onRender("function(el, x) { setTimeout(function() { Plotly.animate(el); }, 400); }")
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Sazonalidade — fator multiplicativo por semana — Negra Seedless Embalada"
+g <- ggplot(negraE$sazonal, aes(x = semana, y = fator)) +
+  geom_hline(yintercept = 1, color = "#9CA3AF", linetype = "dashed") +
+  geom_line(color = pal$prod, linewidth = 1.2) +
+  geom_point(color = pal$prod, size = 2) +
+  scale_x_continuous(breaks = seq(1, 52, 2)) +
+  scale_y_continuous(labels = label_number(decimal.mark = ",", accuracy = 0.01)) +
+  labs(x = "Semana", y = "Fator (1 = média)",
+       caption = "Decomposição multiplicativa clássica. Fonte: Observatório de Mercado de Uva / Embrapa") +
+  tema_card()
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
+
+# Negra Seedless
+
+## Row {height=150}
+
+::: {.valuebox icon="currency-dollar" color="success"}
+`{r} fmt_brl(negraS$preco_atual)`
+
+Preço Negra Seedless — Semana `{r} semana_atual` / `{r} ano_atual`
+:::
+
+::: {.valuebox icon="clock-history" color="warning"}
+`{r} fmt_brl(negraS$preco_mesma_sem_ano_ant1)`
+
+Mesma semana em `{r} ano_atual - 1`
+:::
+
+::: {.valuebox icon="hourglass" color="primary"}
+`{r} fmt_brl(negraS$preco_mesma_sem_ano_ant2)`
+
+Mesma semana em `{r} ano_atual - 2`
+:::
+
+## Row {height=500}
+
+```{r}
+#| title: "Envelope histórico (mín / méd / máx) e anos recentes — Negra Seedless"
+env <- negraS$envelope
+cores_anos <- setNames(c("#9CA3AF", pal$prod, pal$vbp),
+                       c(as.character(ano_atual - 2),
+                         as.character(ano_atual - 1),
+                         as.character(ano_atual)))
+linhas <- bind_rows(
+  negraS$anos |> pivot_longer(-semana, names_to = "Série", values_to = "preco"),
+  env |> select(semana, preco = media) |> mutate(Série = "Média histórica")
+)
+cores_full <- c(cores_anos, "Média histórica" = "#6B7280")
+tipos_full <- c(setNames(rep("solid", length(cores_anos)), names(cores_anos)),
+                "Média histórica" = "dashed")
+ordem <- c(names(cores_anos), "Média histórica")
+ymax_env <- max(env$maximo, na.rm = TRUE)
+
+g <- ggplot() +
+  geom_ribbon(data = env, aes(x = semana, ymin = minimo, ymax = maximo,
+                              fill = "Faixa mín–máx histórica"),
+              alpha = 0.20) +
+  geom_vline(xintercept = semana_atual, color = pal$ink,
+             linetype = "dotted", alpha = 0.55) +
+  annotate("text", x = semana_atual, y = ymax_env,
+           label = paste("Sem.", semana_atual),
+           hjust = -0.15, vjust = 1, size = 3.2, color = pal$ink) +
+  geom_line(data = linhas, aes(x = semana, y = preco,
+                               color = Série, linetype = Série),
+            linewidth = 0.9) +
+  scale_color_manual(values = cores_full, breaks = ordem) +
+  scale_linetype_manual(values = tipos_full, breaks = ordem) +
+  scale_fill_manual(values = c("Faixa mín–máx histórica" = pal$area), name = NULL) +
+  scale_x_continuous(breaks = seq(1, 52, 2)) +
+  scale_y_continuous(labels = label_number(prefix = "R$ ", decimal.mark = ",")) +
+  labs(x = "Semana", y = NULL,
+       caption = "Linha pontilhada vertical = semana atual. Fonte: CEPEA/ESALQ, deflacionado pelo IGP-DI") +
+  tema_card() +
+  theme(legend.position = "top", legend.title = element_blank())
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Variação semanal (%) — Negra Seedless"
+var_long <- negraS$variacao |>
+  pivot_longer(-semana, names_to = "Ano", values_to = "var_pct")
+cores_var <- setNames(c(pal$prod, pal$vbp),
+                      c(as.character(ano_atual - 1),
+                        as.character(ano_atual)))
+
+g <- ggplot(var_long, aes(x = semana, y = var_pct, fill = Ano)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+  geom_hline(yintercept = 0, color = pal$ink, linewidth = 0.3) +
+  scale_fill_manual(values = cores_var) +
+  scale_x_continuous(breaks = seq(1, 52, 2)) +
+  scale_y_continuous(labels = label_number(suffix = "%", decimal.mark = ",")) +
+  labs(x = "Semana", y = NULL,
+       caption = "Fonte: Observatório de Mercado de Uva / Embrapa") +
+  tema_card() +
+  theme(legend.position = "top", legend.title = element_blank())
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
+
+## Row {height=500}
+
+```{r}
+#| title: "Preço deflacionado e tendência — Negra Seedless (animação ano a ano)"
+df <- negraS$serie |>
+  mutate(tendencia = negraS$trend) |>
+  select(date, Preço = preco_def_filled, Tendência = tendencia) |>
+  pivot_longer(-date, names_to = "Série", values_to = "valor")
+
+anos_anim <- sort(unique(as.integer(format(df$date, "%Y"))))
+df_anim <- do.call(rbind, lapply(anos_anim, function(yr) {
+  df |>
+    filter(as.integer(format(date, "%Y")) <= yr) |>
+    mutate(frame = yr)
+}))
+x_lim <- range(df$date)
+y_lim <- range(df$valor, na.rm = TRUE)
+
+g <- ggplot(df_anim, aes(x = date, y = valor, color = Série,
+                         linewidth = Série, frame = frame)) +
+  geom_line() +
+  scale_color_manual(values = c(Preço = "#9CA3AF", Tendência = pal$vol)) +
+  scale_linewidth_manual(values = c(Preço = 0.5, Tendência = 1.1)) +
+  scale_x_date(limits = x_lim, date_breaks = "1 year", date_labels = "%Y") +
+  scale_y_continuous(limits = y_lim,
+                     labels = label_number(prefix = "R$ ", decimal.mark = ",")) +
+  labs(x = NULL, y = NULL,
+       caption = "Tendência = média móvel centrada. Fonte: CEPEA/ESALQ, deflacionado pelo IGP-DI") +
+  tema_card() +
+  theme(legend.position = "top", legend.title = element_blank())
+
+ggplotly(g) |>
+  animation_opts(frame = 350, transition = 80, redraw = FALSE) |>
+  animation_slider(currentvalue = list(prefix = "Até o ano ",
+                                       font = list(color = pal$ink, size = 13))) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE) |>
+  htmlwidgets::onRender("function(el, x) { setTimeout(function() { Plotly.animate(el); }, 400); }")
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Sazonalidade — fator multiplicativo por semana — Negra Seedless"
+g <- ggplot(negraS$sazonal, aes(x = semana, y = fator)) +
+  geom_hline(yintercept = 1, color = "#9CA3AF", linetype = "dashed") +
+  geom_line(color = pal$prod, linewidth = 1.2) +
+  geom_point(color = pal$prod, size = 2) +
+  scale_x_continuous(breaks = seq(1, 52, 2)) +
+  scale_y_continuous(labels = label_number(decimal.mark = ",", accuracy = 0.01)) +
+  labs(x = "Semana", y = "Fator (1 = média)",
+       caption = "Decomposição multiplicativa clássica. Fonte: Observatório de Mercado de Uva / Embrapa") +
+  tema_card()
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
