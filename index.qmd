@@ -1,0 +1,815 @@
+---
+title: "Mercado de Uva"
+format:
+  dashboard:
+    embed-resources: true
+    logo: logo_embrapa.png
+    nav-buttons:
+      - icon: github
+        href: https://github.com/observatoriosdemercado
+    theme: cosmo
+    include-in-header:
+      - _header.html
+    scrolling: true
+    orientation: rows
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(plotly)
+library(scales)
+library(lubridate)
+
+source("_helpers.R")
+
+# Parametros temporais
+data_ref     <- Sys.Date()
+ano_atual    <- as.integer(format(data_ref, "%Y"))
+semana_atual <- isoweek(data_ref)
+mes_atual    <- as.integer(format(data_ref, "%m"))
+
+# Dados IBGE (Brasil e Vale)
+dados <- read_excel(file.path(DADOS_DIR, "uva_ibge2024.xlsx"),
+                    col_names = TRUE)
+dados$produtividade <- round(dados$produtividade, 0)
+
+# Paleta (mesma do dashboard de manga, vivida e harmoniosa com Bootstrap)
+pal <- list(
+  area  = "#E8A33D",   # ambar
+  prod  = "#3D5A80",   # azul (produtividade)
+  vol   = "#2E7D5B",   # verde (volume)
+  vbp   = "#C44536",   # vermelho (VBP)
+  ink   = "#1F2937",
+  grid  = "#E5E7EB"
+)
+
+tema_card <- function() {
+  theme_minimal(base_size = 12) +
+    theme(
+      plot.title       = element_text(face = "bold", size = 13, color = pal$ink),
+      plot.caption     = element_text(size = 9, color = "#6B7280", hjust = 0),
+      axis.title       = element_text(size = 11, color = pal$ink),
+      axis.text        = element_text(size = 10, color = pal$ink),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.x = element_blank(),
+      panel.grid.major.y = element_line(color = pal$grid),
+      legend.position  = "none"
+    )
+}
+```
+
+# Brasil {data-navmenu="Dados Gerais"}
+
+## Row {height=150}
+
+::: {.valuebox icon="bounding-box" color="warning"}
+36,5 Mil ha
+
+Área Plantada (2024)
+:::
+
+::: {.valuebox icon="graph-up" color="success"}
+31 t/ha
+
+Produtividade Média (2024)
+:::
+
+::: {.valuebox icon="box-seam" color="primary"}
+1,13 Mi t
+
+Volume Produzido (2024)
+:::
+
+::: {.valuebox icon="cash-stack" color="danger"}
+R$ 6,74 Bi
+
+Valor da Produção (2024)
+:::
+
+## Row {height=420}
+
+```{r}
+#| title: "Área Plantada — Brasil"
+g_data <- dados |>
+  filter(abrangencia == "brasil") |>
+  mutate(label_y = area + max(area, na.rm = TRUE) * 0.08)
+
+g <- ggplot(g_data, aes(x = ano, y = area)) +
+  geom_col(fill = pal$area, width = 0.7) +
+  geom_text(aes(y = label_y,
+                label = formatC(area, format = "d", big.mark = ".", decimal.mark = ",")),
+            size = 3, color = pal$ink) +
+  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
+                     expand = expansion(mult = c(0.02, 0.18))) +
+  labs(x = NULL, y = "Hectares",
+       caption = "Fonte: IBGE (2025)") +
+  tema_card()
+
+ggplotly(g, tooltip = c("x", "y")) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Produtividade — Brasil"
+g_data <- dados |>
+  filter(abrangencia == "brasil") |>
+  mutate(label_y = produtividade + max(produtividade, na.rm = TRUE) * 0.08)
+
+g <- ggplot(g_data, aes(x = ano, y = produtividade)) +
+  geom_col(fill = pal$prod, width = 0.7) +
+  geom_text(aes(y = label_y, label = produtividade),
+            size = 3, color = pal$ink) +
+  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_y_continuous(expand = expansion(mult = c(0.02, 0.18))) +
+  labs(x = NULL, y = "Toneladas / Hectare",
+       caption = "Fonte: IBGE (2025)") +
+  tema_card()
+
+ggplotly(g, tooltip = c("x", "y")) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Volume Produzido — Brasil"
+g_data <- dados |>
+  filter(abrangencia == "brasil") |>
+  mutate(volume = quantidade / 1000,
+         label_y = volume + max(volume, na.rm = TRUE) * 0.08)
+
+g <- ggplot(g_data, aes(x = ano, y = volume)) +
+  geom_col(fill = pal$vol, width = 0.7) +
+  geom_text(aes(y = label_y,
+                label = formatC(round(volume), format = "d", big.mark = ".", decimal.mark = ",")),
+            size = 3, color = pal$ink) +
+  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
+                     expand = expansion(mult = c(0.02, 0.18))) +
+  labs(x = NULL, y = "Mil Toneladas",
+       caption = "Fonte: IBGE (2025)") +
+  tema_card()
+
+ggplotly(g, tooltip = c("x", "y")) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Valor Bruto da Produção — Brasil"
+g_data <- dados |>
+  filter(abrangencia == "brasil") |>
+  mutate(vbp_milhoes = vbp / 1000,
+         label_y = vbp_milhoes + max(vbp_milhoes, na.rm = TRUE) * 0.08)
+
+g <- ggplot(g_data, aes(x = ano, y = vbp_milhoes)) +
+  geom_col(fill = pal$vbp, width = 0.7) +
+  geom_text(aes(y = label_y,
+                label = formatC(round(vbp_milhoes), format = "d", big.mark = ".", decimal.mark = ",")),
+            size = 3, color = pal$ink) +
+  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
+                     expand = expansion(mult = c(0.02, 0.18))) +
+  labs(x = NULL, y = "Milhões de R$",
+       caption = "Fonte: IBGE (2025)") +
+  tema_card()
+
+ggplotly(g, tooltip = c("x", "y")) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Evolução Conjunta — Área e Volume (índice 2011 = 100)"
+df <- dados |>
+  filter(abrangencia == "brasil") |>
+  arrange(ano) |>
+  mutate(
+    `Área`   = area / area[1] * 100,
+    `Volume` = quantidade / quantidade[1] * 100
+  ) |>
+  select(ano, `Área`, `Volume`) |>
+  pivot_longer(-ano, names_to = "Indicador", values_to = "Indice")
+
+g <- ggplot(df, aes(x = ano, y = Indice, color = Indicador)) +
+  geom_line(linewidth = 1.1) +
+  geom_point(size = 2) +
+  scale_color_manual(values = c(`Área` = pal$area, Volume = pal$vol)) +
+  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  labs(x = NULL, y = "Índice (2011 = 100)",
+       caption = "Fonte: IBGE (2025) — elaboração própria") +
+  tema_card() +
+  theme(legend.position = "top", legend.title = element_blank())
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Resumo por Ano — Brasil"
+dados |>
+  filter(abrangencia == "brasil") |>
+  arrange(desc(ano)) |>
+  select(Ano = ano,
+         `Área (ha)` = area,
+         `Produtiv. (t/ha)` = produtividade,
+         `Volume (t)` = quantidade,
+         `VBP (Mil R$)` = vbp) |>
+  head(10) |>
+  knitr::kable(format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+# Vale do São Francisco {data-navmenu="Dados Gerais"}
+
+## Row {height=150}
+
+::: {.valuebox icon="bounding-box" color="warning"}
+18.058 ha
+
+Área Plantada (2024)
+:::
+
+::: {.valuebox icon="graph-up" color="success"}
+47 t/ha
+
+Produtividade Média (2024)
+:::
+
+::: {.valuebox icon="box-seam" color="primary"}
+851 Mil t
+
+Volume Produzido (2024)
+:::
+
+::: {.valuebox icon="cash-stack" color="danger"}
+R$ 5,2 Bi
+
+Valor da Produção (2024)
+:::
+
+## Row {height=420}
+
+```{r}
+#| title: "Área Plantada — Vale do São Francisco"
+g_data <- dados |>
+  filter(abrangencia == "vale") |>
+  mutate(label_y = area + max(area, na.rm = TRUE) * 0.08)
+
+g <- ggplot(g_data, aes(x = ano, y = area)) +
+  geom_col(fill = pal$area, width = 0.7) +
+  geom_text(aes(y = label_y,
+                label = formatC(area, format = "d", big.mark = ".", decimal.mark = ",")),
+            size = 3, color = pal$ink) +
+  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
+                     expand = expansion(mult = c(0.02, 0.18))) +
+  labs(x = NULL, y = "Hectares",
+       caption = "Fonte: IBGE (2025)") +
+  tema_card()
+
+ggplotly(g, tooltip = c("x", "y")) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Produtividade — Vale do São Francisco"
+g_data <- dados |>
+  filter(abrangencia == "vale") |>
+  mutate(label_y = produtividade + max(produtividade, na.rm = TRUE) * 0.08)
+
+g <- ggplot(g_data, aes(x = ano, y = produtividade)) +
+  geom_col(fill = pal$prod, width = 0.7) +
+  geom_text(aes(y = label_y, label = produtividade),
+            size = 3, color = pal$ink) +
+  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_y_continuous(expand = expansion(mult = c(0.02, 0.18))) +
+  labs(x = NULL, y = "Toneladas / Hectare",
+       caption = "Fonte: IBGE (2025)") +
+  tema_card()
+
+ggplotly(g, tooltip = c("x", "y")) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Volume Produzido — Vale do São Francisco"
+g_data <- dados |>
+  filter(abrangencia == "vale") |>
+  mutate(volume = quantidade / 1000,
+         label_y = volume + max(volume, na.rm = TRUE) * 0.08)
+
+g <- ggplot(g_data, aes(x = ano, y = volume)) +
+  geom_col(fill = pal$vol, width = 0.7) +
+  geom_text(aes(y = label_y,
+                label = formatC(round(volume), format = "d", big.mark = ".", decimal.mark = ",")),
+            size = 3, color = pal$ink) +
+  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
+                     expand = expansion(mult = c(0.02, 0.18))) +
+  labs(x = NULL, y = "Mil Toneladas",
+       caption = "Fonte: IBGE (2025)") +
+  tema_card()
+
+ggplotly(g, tooltip = c("x", "y")) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Valor Bruto da Produção — Vale do São Francisco"
+g_data <- dados |>
+  filter(abrangencia == "vale") |>
+  mutate(vbp_milhoes = vbp / 1000,
+         label_y = vbp_milhoes + max(vbp_milhoes, na.rm = TRUE) * 0.08)
+
+g <- ggplot(g_data, aes(x = ano, y = vbp_milhoes)) +
+  geom_col(fill = pal$vbp, width = 0.7) +
+  geom_text(aes(y = label_y,
+                label = formatC(round(vbp_milhoes), format = "d", big.mark = ".", decimal.mark = ",")),
+            size = 3, color = pal$ink) +
+  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
+                     expand = expansion(mult = c(0.02, 0.18))) +
+  labs(x = NULL, y = "Milhões de R$",
+       caption = "Fonte: IBGE (2025)") +
+  tema_card()
+
+ggplotly(g, tooltip = c("x", "y")) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Participação do Vale no Total Brasil (%)"
+df <- dados |>
+  arrange(ano, abrangencia) |>
+  group_by(ano) |>
+  summarise(
+    `Área (%)`   = area[abrangencia == "vale"] / area[abrangencia == "brasil"] * 100,
+    `Volume (%)` = quantidade[abrangencia == "vale"] / quantidade[abrangencia == "brasil"] * 100,
+    `VBP (%)`    = vbp[abrangencia == "vale"] / vbp[abrangencia == "brasil"] * 100,
+    .groups = "drop"
+  ) |>
+  pivot_longer(-ano, names_to = "Indicador", values_to = "pct")
+
+g <- ggplot(df, aes(x = ano, y = pct, color = Indicador)) +
+  geom_line(linewidth = 1.1) +
+  geom_point(size = 2) +
+  scale_color_manual(values = c(`Área (%)` = pal$area,
+                                `Volume (%)` = pal$vol,
+                                `VBP (%)` = pal$vbp)) +
+  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_y_continuous(labels = label_number(suffix = "%", decimal.mark = ",")) +
+  labs(x = NULL, y = "% do total nacional",
+       caption = "Fonte: IBGE (2025) — elaboração própria") +
+  tema_card() +
+  theme(legend.position = "top", legend.title = element_blank())
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Resumo por Ano — Vale do São Francisco"
+dados |>
+  filter(abrangencia == "vale") |>
+  arrange(desc(ano)) |>
+  select(Ano = ano,
+         `Área (ha)` = area,
+         `Produtiv. (t/ha)` = produtividade,
+         `Volume (t)` = quantidade,
+         `VBP (Mil R$)` = vbp) |>
+  head(10) |>
+  knitr::kable(format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+
+# Exportações
+
+```{r exp-setup}
+# Exportacoes mensais
+exp_mes <- read.csv2(file.path(DADOS_DIR, "total_exporta_uva_br.csv"),
+                     header = TRUE, sep = ";", dec = ".") |>
+  rename(ano = ano, mes = mes, valor = valor, quilo = quilo)
+
+exp_anual <- read.csv2(file.path(DADOS_DIR, "exportacoes_2016_2026.csv"),
+                       header = TRUE, sep = ";", dec = ".")
+colnames(exp_anual) <- c("ano", "valor_usd", "kg_liquido")
+exp_anual <- exp_anual |>
+  mutate(toneladas = kg_liquido / 1000,
+         valor_milhao_usd = valor_usd / 1e6)
+
+destinos <- read.csv2(file.path(DADOS_DIR, "destinos_2026.csv"),
+                      header = TRUE, sep = ";", dec = ".",
+                      fileEncoding = "UTF-8")
+colnames(destinos) <- c("Pais", "Percentual")
+
+vias <- read.csv2(file.path(DADOS_DIR, "via_2026.csv"),
+                  header = TRUE, sep = ";", dec = ".",
+                  fileEncoding = "Latin1")
+colnames(vias) <- c("Via", "Percentual")
+
+ufs <- read.csv2(file.path(DADOS_DIR, "uf_2026.csv"),
+                 header = TRUE, sep = ";", dec = ".",
+                 fileEncoding = "Latin1")
+colnames(ufs) <- c("UF", "Percentual")
+
+importa <- read.csv2(file.path(DADOS_DIR, "importacao.csv"),
+                     header = TRUE, sep = ";", dec = ".")
+colnames(importa) <- c("ano", "mes", "Chile", "Argentina", "Peru", "Egito")
+importa <- importa |>
+  mutate(date = as.Date(sprintf("%04d-%02d-01", ano, mes))) |>
+  select(-ano, -mes) |>
+  pivot_longer(-date, names_to = "Pais", values_to = "Toneladas")
+
+# Analise mensal (autodetecta o ultimo mes com dado)
+expanal <- analise_exportacao(exp_mes |> rename(volume = quilo),
+                              ano_atual,
+                              col_volume = "volume", divisor_volume = 1000)
+mes_label <- c("janeiro","fevereiro","março","abril","maio","junho",
+               "julho","agosto","setembro","outubro","novembro","dezembro")[expanal$mes_referencia]
+```
+
+## Row {height=150}
+
+::: {.valuebox icon="box-arrow-up-right" color="primary"}
+`{r} fmt_num(expanal$vol_atual)` t
+
+Exportações em `{r} mes_label` / `{r} ano_atual`
+:::
+
+::: {.valuebox icon="clock-history" color="warning"}
+`{r} fmt_num(expanal$vol_mesmo_mes_ano_ant1)` t
+
+Mesmo mês em `{r} ano_atual - 1`
+:::
+
+::: {.valuebox icon="hourglass" color="success"}
+`{r} fmt_num(expanal$vol_mesmo_mes_ano_ant2)` t
+
+Mesmo mês em `{r} ano_atual - 2`
+:::
+
+## Row {height=480}
+
+```{r}
+#| title: "Receita (US$ Mi) e Volume (mil t) exportados — 2016 a 2026"
+exp_anual <- exp_anual |>
+  mutate(volume_mil_t = toneladas / 1000,
+         label_y = volume_mil_t + max(volume_mil_t, na.rm = TRUE) * 0.06)
+
+g <- ggplot(exp_anual, aes(x = ano)) +
+  geom_col(aes(y = volume_mil_t, fill = "Volume (mil t)"), width = 0.65) +
+  geom_text(aes(y = label_y,
+                label = formatC(round(volume_mil_t), format = "d",
+                                big.mark = ".", decimal.mark = ",")),
+            size = 2.9, color = pal$ink) +
+  geom_line(aes(y = valor_milhao_usd, color = "Receita (US$ Mi)"), linewidth = 1.3) +
+  geom_point(aes(y = valor_milhao_usd, color = "Receita (US$ Mi)"), size = 2.5) +
+  scale_fill_manual(name = NULL, values = c("Volume (mil t)" = pal$vol)) +
+  scale_color_manual(name = NULL, values = c("Receita (US$ Mi)" = pal$vbp)) +
+  scale_x_continuous(breaks = seq(2016, 2026, 1)) +
+  scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
+                     expand = expansion(mult = c(0.02, 0.14))) +
+  labs(x = NULL, y = NULL,
+       caption = "Fonte: Comex Stat (MDIC) — eixos compartilhados (mil t e Mi US$ na mesma escala)") +
+  tema_card() +
+  theme(legend.position = "top", legend.title = element_blank())
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
+
+## Row {height=500}
+
+```{r}
+#| title: "Envelope histórico mensal (mín / méd / máx) e anos recentes"
+env <- expanal$envelope
+cores_anos <- setNames(c("#9CA3AF", pal$prod, pal$vbp),
+                       c(as.character(ano_atual - 2),
+                         as.character(ano_atual - 1),
+                         as.character(ano_atual)))
+linhas <- bind_rows(
+  expanal$anos |>
+    select(-mes_num) |>
+    pivot_longer(-mes, names_to = "Série", values_to = "volume"),
+  env |> select(mes, volume = media) |> mutate(Série = "Média histórica")
+)
+cores_full <- c(cores_anos, "Média histórica" = "#6B7280")
+tipos_full <- c(setNames(rep("solid", length(cores_anos)), names(cores_anos)),
+                "Média histórica" = "dashed")
+ordem <- c(names(cores_anos), "Média histórica")
+
+g <- ggplot() +
+  geom_ribbon(data = env, aes(x = mes, ymin = minimo, ymax = maximo,
+                              group = 1, fill = "Faixa mín–máx histórica"),
+              alpha = 0.20) +
+  geom_line(data = linhas, aes(x = mes, y = volume,
+                               color = Série, linetype = Série, group = Série),
+            linewidth = 0.9) +
+  geom_point(data = linhas, aes(x = mes, y = volume, color = Série), size = 1.6) +
+  scale_color_manual(values = cores_full, breaks = ordem) +
+  scale_linetype_manual(values = tipos_full, breaks = ordem) +
+  scale_fill_manual(values = c("Faixa mín–máx histórica" = pal$area), name = NULL) +
+  scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ",")) +
+  labs(x = NULL, y = "Toneladas",
+       caption = "Volume mensal de exportações. Fonte: Comex Stat (MDIC)") +
+  tema_card() +
+  theme(legend.position = "top", legend.title = element_blank(),
+        axis.text.x = element_text(angle = 30, hjust = 1))
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Principais destinos das exportações brasileiras"
+off_d <- max(destinos$Percentual, na.rm = TRUE) * 0.025
+g <- ggplot(destinos, aes(y = reorder(Pais, Percentual), x = Percentual)) +
+  geom_col(fill = pal$vol, width = 0.7) +
+  geom_text(aes(x = Percentual + off_d,
+                label = paste0(formatC(Percentual, format = "f", digits = 1,
+                                       decimal.mark = ","), "%")),
+            hjust = 0, size = 3.3, color = pal$ink) +
+  scale_x_continuous(labels = label_number(suffix = "%", decimal.mark = ","),
+                     expand = expansion(mult = c(0, 0.22))) +
+  labs(x = "% do volume total exportado", y = NULL,
+       caption = "Fonte: Comex Stat (MDIC)") +
+  tema_card() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.major.x = element_line(color = pal$grid))
+
+ggplotly(g, tooltip = c("x", "y")) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Principais vias de exportação"
+off_v <- max(vias$Percentual, na.rm = TRUE) * 0.025
+g <- ggplot(vias, aes(y = reorder(Via, Percentual), x = Percentual)) +
+  geom_col(fill = pal$prod, width = 0.55) +
+  geom_text(aes(x = Percentual + off_v,
+                label = paste0(formatC(Percentual, format = "f", digits = 1,
+                                       decimal.mark = ","), "%")),
+            hjust = 0, size = 3.5, color = pal$ink) +
+  scale_x_continuous(labels = label_number(suffix = "%", decimal.mark = ","),
+                     expand = expansion(mult = c(0, 0.22))) +
+  labs(x = "% do volume total", y = NULL,
+       caption = "Fonte: Comex Stat (MDIC)") +
+  tema_card() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.major.x = element_line(color = pal$grid))
+
+ggplotly(g, tooltip = c("x", "y")) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Estados de origem das exportações"
+off_u <- max(ufs$Percentual, na.rm = TRUE) * 0.025
+g <- ggplot(ufs, aes(y = reorder(UF, Percentual), x = Percentual)) +
+  geom_col(fill = pal$vbp, width = 0.55) +
+  geom_text(aes(x = Percentual + off_u,
+                label = paste0(formatC(Percentual, format = "f", digits = 1,
+                                       decimal.mark = ","), "%")),
+            hjust = 0, size = 3.5, color = pal$ink) +
+  scale_x_continuous(labels = label_number(suffix = "%", decimal.mark = ","),
+                     expand = expansion(mult = c(0, 0.22))) +
+  labs(x = "% do volume total", y = NULL,
+       caption = "Fonte: Comex Stat (MDIC)") +
+  tema_card() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.major.x = element_line(color = pal$grid))
+
+ggplotly(g, tooltip = c("x", "y")) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE)
+```
+
+## Row {height=480}
+
+```{r}
+#| title: "Importações de uva pelo Brasil — total anual por origem (2016–2026)"
+importa_anual <- importa |>
+  mutate(ano = format(date, "%Y")) |>
+  group_by(ano, Pais) |>
+  summarise(Toneladas = sum(Toneladas, na.rm = TRUE), .groups = "drop")
+
+cores_imp <- c(Chile = pal$vol, Argentina = pal$prod,
+               Peru = pal$vbp, Egito = pal$area)
+
+g <- ggplot(importa_anual, aes(x = ano, y = Toneladas, fill = Pais)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.75) +
+  scale_fill_manual(values = cores_imp) +
+  scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ",")) +
+  labs(x = NULL, y = "Toneladas",
+       caption = "Fonte: Comex Stat (MDIC) — origens das uvas importadas pelo Brasil (totais anuais)") +
+  tema_card() +
+  theme(legend.position = "top", legend.title = element_blank())
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
+
+# Mercado de Trabalho
+
+```{r trabalho-setup}
+# === AJUSTAR MENSALMENTE ===
+ref_caged <- list(
+  mes_nome = "marco",
+  mes_num  = 3,
+  ano      = 2026
+)
+caged_dir <- "C:/Users/Lenovo/Dropbox/tempecon/dados_caged"
+# ===========================
+
+caged_csv      <- file.path(caged_dir, paste0(ref_caged$mes_nome, "_",  ref_caged$ano, ".csv"))
+caged_rdata    <- file.path(caged_dir, paste0(ref_caged$mes_nome, "_",  ref_caged$ano %% 100, "_caged.RData"))
+data_ref_caged <- as.Date(sprintf("%d-%02d-01", ref_caged$ano, ref_caged$mes_num))
+
+mes_levels <- c("janeiro","fevereiro","março","abril","maio","junho",
+                "julho","agosto","setembro","outubro","novembro","dezembro")
+mes_label_t <- paste0(mes_levels[ref_caged$mes_num], " de ", ref_caged$ano)
+
+dados_caged <- read.csv2(caged_csv, header = TRUE, sep = ";", dec = ".")
+colnames(dados_caged)[1] <- "date"
+dados_caged$date <- seq(as.Date("2021-01-01"), to = data_ref_caged, by = "1 month")
+dados_caged$ano  <- format(dados_caged$date, "%Y")
+dados_caged$mes  <- factor(mes_levels[as.integer(format(dados_caged$date, "%m"))],
+                           levels = mes_levels, ordered = TRUE)
+
+ultimo <- tail(dados_caged, 1)
+
+saldo_compara <- dados_caged |>
+  filter(ano %in% c("2025", "2026")) |>
+  select(ano, mes, Saldo_uva)
+
+load(caged_rdata)
+nome_df_micro <- paste0("dados_", sprintf("%02d", ref_caged$mes_num), "_vsf")
+micro <- get(nome_df_micro)
+
+micro$sexo[micro$sexo == 1] <- 0
+micro$sexo[micro$sexo == 3] <- 1
+micro <- micro |>
+  mutate(sexo = factor(sexo, levels = 0:1, labels = c("Masculino", "Feminino")))
+
+# CNAE 13.26.00 (uva)
+contratados <- micro |> filter(saldo_movim == "1", subclasse == "132600")
+
+contratados$grau_instrucao[contratados$grau_instrucao == 80] <- 12
+contratados$grau_instrucao[contratados$grau_instrucao == 99] <- 13
+contratados <- contratados |>
+  mutate(grau_instrucao = factor(grau_instrucao, levels = 1:13,
+    labels = c("Analfabeto", "Até 5ª Incompleto", "5ª Completo Fundamental",
+               "6ª a 9ª Fundamental", "Fundamental Completo", "Médio Incompleto",
+               "Médio Completo", "Superior Incompleto", "Superior Completo",
+               "Mestrado", "Doutorado", "Pós-Graduação Completa",
+               "Não Identificado")))
+```
+
+## Row {height=150}
+
+::: {.valuebox icon="arrow-up-circle" color="success"}
+`{r} formatC(ultimo$Contratados_Uva, format = "d", big.mark = ".", decimal.mark = ",")` Contratados
+
+Viticultura — `{r} mes_label_t`
+:::
+
+::: {.valuebox icon="arrow-down-circle" color="danger"}
+`{r} formatC(ultimo$Demitidos_Uva, format = "d", big.mark = ".", decimal.mark = ",")` Demitidos
+
+Viticultura — `{r} mes_label_t`
+:::
+
+::: {.valuebox icon="people-fill" color="primary"}
+`{r} formatC(ultimo$Saldo_uva, format = "d", big.mark = ".", decimal.mark = ",")` Saldo
+
+Empregos formais — `{r} mes_label_t`
+:::
+
+## Row {height=420}
+
+```{r}
+#| title: "Saldo mensal de empregos formais — 2025 vs 2026"
+saldo_offset <- max(abs(saldo_compara$Saldo_uva), na.rm = TRUE) * 0.10
+saldo_compara <- saldo_compara |>
+  mutate(label_y = Saldo_uva + sign(Saldo_uva) * saldo_offset)
+
+g <- ggplot(saldo_compara, aes(x = mes, y = Saldo_uva, fill = ano, group = ano)) +
+  geom_col(position = position_dodge(width = 0.7), width = 0.6) +
+  geom_hline(yintercept = 0, color = pal$ink, linewidth = 0.3) +
+  geom_text(aes(y = label_y,
+                label = formatC(Saldo_uva, format = "d", big.mark = ".", decimal.mark = ",")),
+            position = position_dodge(width = 0.7),
+            size = 2.6, color = pal$ink) +
+  scale_fill_manual(values = c("2025" = pal$prod, "2026" = pal$vol)) +
+  scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
+                     expand = expansion(mult = c(0.18, 0.18))) +
+  labs(x = NULL, y = "Saldo (unidades)",
+       caption = "Fonte: CAGED/MTE — admissões menos desligamentos na CNAE 13.26.00") +
+  tema_card() +
+  theme(legend.position = "top", legend.title = element_blank(),
+        axis.text.x = element_text(angle = 30, hjust = 1))
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Contratados por gênero — Vale do São Francisco"
+genero <- contratados |>
+  count(sexo) |>
+  mutate(pct = n / sum(n) * 100,
+         rotulo = paste0(formatC(n, format = "d", big.mark = ".", decimal.mark = ","),
+                         " (", formatC(pct, format = "f", digits = 1, decimal.mark = ","), "%)"),
+         label_y = n + max(n, na.rm = TRUE) * 0.08)
+
+g <- ggplot(genero, aes(x = sexo, y = n, fill = sexo)) +
+  geom_col(width = 0.5) +
+  geom_text(aes(y = label_y, label = rotulo), size = 3.3, color = pal$ink) +
+  scale_fill_manual(values = c("Masculino" = pal$prod, "Feminino" = pal$vol)) +
+  scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
+                     expand = expansion(mult = c(0.02, 0.20))) +
+  labs(x = NULL, y = "Contratados",
+       caption = "Fonte: CAGED/MTE — microdados Vale do São Francisco") +
+  tema_card()
+
+ggplotly(g, tooltip = c("x", "y")) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE)
+```
+
+## Row {height=420}
+
+```{r}
+#| title: "Contratados por idade — Vale do São Francisco"
+g <- ggplot(contratados, aes(x = idade)) +
+  geom_histogram(binwidth = 3, fill = pal$vol, color = "white", alpha = 0.92) +
+  scale_x_continuous(limits = c(18, 70), breaks = seq(20, 70, 5)) +
+  scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ",")) +
+  labs(x = "Idade", y = "Contratados",
+       caption = "Fonte: CAGED/MTE — microdados Vale do São Francisco") +
+  tema_card()
+
+ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
+```
+
+## Row {height=480}
+
+```{r}
+#| title: "Contratados por grau de instrução — Vale do São Francisco"
+educ <- contratados |>
+  count(grau_instrucao, .drop = FALSE) |>
+  filter(n > 0) |>
+  mutate(label_y = n + max(n, na.rm = TRUE) * 0.08)
+
+g <- ggplot(educ, aes(x = grau_instrucao, y = n)) +
+  geom_col(fill = pal$prod, width = 0.65) +
+  geom_text(aes(y = label_y,
+                label = formatC(n, format = "d", big.mark = ".", decimal.mark = ",")),
+            size = 3, color = pal$ink) +
+  scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
+                     expand = expansion(mult = c(0.02, 0.20))) +
+  labs(x = NULL, y = "Contratados",
+       caption = "Fonte: CAGED/MTE — microdados Vale do São Francisco") +
+  tema_card() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+
+ggplotly(g, tooltip = c("x", "y")) |>
+  limpar_legenda_plotly() |>
+  config(displayModeBar = FALSE)
+```
