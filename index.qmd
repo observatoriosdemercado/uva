@@ -649,8 +649,8 @@ ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
 ```{r trabalho-setup}
 # === AJUSTAR MENSALMENTE ===
 ref_caged <- list(
-  mes_nome = "marco",
-  mes_num  = 3,
+  mes_nome = "abril",
+  mes_num  = 4,
   ano      = 2026
 )
 caged_dir <- "C:/Users/Lenovo/Dropbox/tempecon/dados_caged"
