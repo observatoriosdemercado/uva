@@ -1,0 +1,919 @@
+---
+title: "OBSERVATÓRIO DO MERCADO DE UVA DA EMBRAPA SEMIÁRIDO"
+author: "João Ricardo F. de Lima"
+date: "today"
+editor: source
+lang: pt
+language:
+    toc-title-document: '<a href="https://observatoriosdemercado.github.io/uva/" target="_blank"><img src="img/logo_embrapa.jpg" alt="Logotipo Embrapa" width="150"></a>'
+format:
+  html:
+    toc: true
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+    toc-location: left
+    code-fold: false
+    embed-resources: true
+    page-layout: full
+#    fig-asp: 0.618
+    fig-width: 10
+    fig-height: 8
+#    fig-dpi: 200
+    fig-align: center
+    df-print: paged
+theme:
+  light: flatly
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+```{r setup, include=FALSE}
+# ----------------------------------------------------------------------------
+# 1. OPÇÕES GLOBAIS
+# ----------------------------------------------------------------------------
+knitr::opts_chunk$set(
+  echo    = FALSE,
+  warning = FALSE,
+  message = FALSE
+  )
+
+options(digits = 4)
+
+# ----------------------------------------------------------------------------
+# 2. PACOTES
+# ----------------------------------------------------------------------------
+library(lubridate)
+library(foreign)
+library(mFilter)
+library(forecast)
+library(dplyr)
+library(tibble)
+library(tsutils)
+library(xts)
+library(ggthemes)
+library(FinTS)
+library(scales)
+library(ggplot2)
+library(reshape)
+library(reshape2)
+library(imputeTS)
+library(seasonal)
+library(uroot)
+library(tseries)
+library(quantmod)
+library(kableExtra)   # tabelas complexas
+library(lmtest)
+library(magrittr)
+library(plotly)
+library(DT)
+
+# ----------------------------------------------------------------------------
+# 3. PARÂMETROS DO BOLETIM
+# ----------------------------------------------------------------------------
+#today <- as.Date('2026-05-08')
+today <- Sys.Date()
+last    <- today - 7
+sem_ano <- isoweek(today)
+time    <- 1:52   # vetor de semanas usado nas tabelas/gráficos
+
+# Pasta com os dados (ajuste conforme a máquina)
+#data_dir <- '/Users/jricardofl/Dropbox/tempecon/dados_uva'
+data_dir <- 'C:/Users/Lenovo/Dropbox/tempecon/dados_uva'
+
+# ----------------------------------------------------------------------------
+# 4. FUNÇÕES AUXILIARES
+#    (mesma lógica repetida para as 3 uvas; aqui fica em um só lugar)
+# ----------------------------------------------------------------------------
+
+# Lê as séries embaladas (Branca/Arra-15 e Negra/Vitória), resolve missings
+# (Kalman), junta com o IGP-DI e deflaciona. Período 2017 em diante.
+ler_uva_embalada <- function() {
+  setwd(data_dir)
+
+  dados1 <- read.csv2('dados_uva_arra_semana.csv', header = TRUE, sep = ";", dec = ".")
+  colnames(dados1)[1] <- 'produto'
+  dados1 <- na_kalman(dados1)
+
+  dados2 <- read.csv2('dados_uva_vitoria_semana.csv', header = TRUE, sep = ";", dec = ".")
+  colnames(dados2)[1] <- 'produto'
+  dados2 <- na_kalman(dados2)
+
+  igpdi <- read.csv2('igpdi_uva.csv', header = TRUE, sep = ";", dec = ".")
+  colnames(igpdi)[1] <- 'ano'
+
+  dados1$date <- seq(as.Date('2017-01-07'), to = today, by = '1 week')
+  dados1$date[dados1$date == "2022-12-31"] <- "2023-01-01"
+  dados2$date <- seq(as.Date('2017-01-07'), to = today, by = '1 week')
+  dados2$date[dados2$date == "2022-12-31"] <- "2023-01-01"
+
+  dados1 <- full_join(dados1, igpdi)
+  dados2 <- full_join(dados2, igpdi)
+
+  # Deflacionar a série de preços pelo IGP-DI
+  dados1$preco_def <- dados1[, 4] * (tail(dados1[, 6], 1) / dados1[, 6])
+  dados2$preco_def <- dados2[, 4] * (tail(dados2[, 6], 1) / dados2[, 6])
+
+  dados <- full_join(dados1, dados2)
+  dados <- dados %>% select(c(date, produto, preco_def, ano))
+  dados
+}
+
+# Lê a série Negra sem embalagem (Vitória SE). Período 2019 em diante.
+ler_uva_se <- function() {
+  setwd(data_dir)
+
+  dados3 <- read.csv2('dados_uva_vitoriaSE_semana.csv', header = TRUE, sep = ";", dec = ".")
+  colnames(dados3)[1] <- 'produto'
+  dados3 <- na_kalman(dados3)
+
+  igpdi <- read.csv2('igpdi_uva.csv', header = TRUE, sep = ";", dec = ".")
+  colnames(igpdi)[1] <- 'ano'
+
+  dados3$date <- seq(as.Date('2019-01-05'), to = today, by = '1 week')
+  dados3$date[dados3$date == "2022-12-31"] <- "2023-01-01"
+
+  igpdi2 <- igpdi %>% filter(ano >= '2019')
+
+  dadosv <- full_join(dados3, igpdi2)
+
+  # Deflacionar a série de preços pelo IGP-DI
+  dadosv$preco_def <- dadosv[, 4] * (tail(dadosv[, 6], 1) / dadosv[, 6])
+
+  dadosv <- tibble(dadosv) %>% select(c(date, produto, preco_def, ano))
+  dadosv
+}
+
+# Monta as tabelas (mínimo/média/máximo + anos 2024, 2025, 2026) para o gráfico
+# de comparação entre as médias históricas.
+tabela_comparacao_uva <- function(preco_serie, serie_df) {
+  preco_2025 <- window(preco_serie, end = c(2025, 52))
+  seas25     <- seasplot(preco_2025, trend = FALSE, outplot = FALSE)
+  medias25   <- colMeans(seas25$season)
+
+  preco_2024 <- window(preco_serie, end = c(2024, 52))
+
+  preco_atual <- as.matrix(tail(serie_df$preco_def, sem_ano))
+  preco_2026  <- matrix(NA, nrow = 52, ncol = 1)
+  for (i in 1:sem_ano) {
+    preco_2026[i, 1] <- preco_atual[i, 1]
+  }
+
+  # Como só se tem até a semana 52
+  medias25 <- medias25[1:52]
+
+  minmax <- matrix(NA, nrow = 52, ncol = 2)
+  for (i in 1:52) {
+    minmax[i, 1] <- min(seas25$season[, i])
+    minmax[i, 2] <- max(seas25$season[, i])
+  }
+
+  table <- data.frame(time, minmax[, 1], round(medias25, 2), minmax[, 2],
+                       round(tail(preco_2024, 52), 2),
+                       round(tail(preco_2025, 52), 2), preco_2026[, 1])
+  colnames(table) <- c('Semanas', 'Mínimo', 'Média', 'Máximo',
+                        'Ano 2024', 'Ano 2025', 'Ano 2026')
+
+  tablea <- table[, -c(5:7)]
+  tableb <- table[, -c(2, 3, 4)]
+
+  list(
+    preco_2024 = preco_2024,
+    preco_2025 = preco_2025,
+    preco_2026 = preco_2026,
+    medias     = round(medias25, 2),   # média histórica por semana
+    table      = table,                # tabela completa (para a aba TABELA)
+    tablea2    = melt(tablea, id.var = 'Semanas'),
+    tableb2    = melt(tableb, id.var = 'Semanas')
+  )
+}
+
+# Monta a variação semanal de preços 2025 x 2026.
+# Retorna: $grafico (formato longo p/ ggplot) e $tabela (formato largo p/ datatable).
+tabela_variacao_uva <- function(serie_df, preco_2026) {
+  preco_25     <- serie_df %>% filter(ano == '2025')
+  preco_2025   <- as.matrix(preco_25$preco_def)
+  variacao_25  <- (preco_2025 / lag(preco_2025, 1) - 1) * 100
+  variacao_26  <- (preco_2026 / lag(preco_2026, 1) - 1) * 100
+
+  semanas  <- seq(1:52)
+  variacao <- data.frame(semanas, variacao_25[, 1], variacao_26[, 1])
+  colnames(variacao) <- c('Semanas', 'Ano 2025', 'Ano 2026')
+
+  tabela <- variacao[, -1]
+  colnames(tabela) <- c('Variação em 2025', 'Variação em 2026')
+
+  list(
+    grafico = melt(variacao, id.var = 'Semanas'),
+    tabela  = tabela
+  )
+}
+
+# ----------------------------------------------------------------------------
+# 5. VALORES DA ANÁLISE
+# ----------------------------------------------------------------------------
+
+# >>> ÚNICO PREENCHIMENTO MANUAL POR SEMANA <<<
+# Faixa "variando entre" — NÃO existe na base do CEPEA, digite os valores:
+arra_max <- 15.6; arra_min <- 12.0   # Uva branca sem semente embalada
+vit_max  <- 11.0; vit_min  <- 9.0    # Uva negra sem semente embalada
+vitse_max  <- 6.0; vitse_min  <- 5.0    # Uva negra sem embalagem
+
+# --- Funções de formatação / redação ----------------------------------------
+fmt <- function(x, dec = 2) formatC(round(x, dec), format = "f", digits = dec,
+                                    big.mark = ".", decimal.mark = ",")
+comp_palavra <- function(a, b) if (a < b) "menor" else if (a > b) "maior" else "igual"
+faixa        <- function(med, vmax, vmin) if (round(med, 2) == round(vmax, 2) && round(vmax, 2) == round(vmin, 2)) "sem variação" else paste0("variando entre R\\$ ", fmt(vmax), " e R\\$ ", fmt(vmin))
+qa_palavra   <- function(v) if (v < 0) "queda"     else "alta"
+rec_palavra  <- function(v) if (v < 0) "recuaram"  else "avançaram"
+ar_palavra   <- function(v) if (v < 0) "redução"   else "aumento"
+
+# --- Cálculos automáticos (vêm da base do CEPEA) ----------------------------
+.dados_uva  <- ler_uva_embalada()
+.dadosv_uva <- ler_uva_se()
+
+.arra      <- .dados_uva %>% filter(produto == "arra_15")
+.vitoria   <- .dados_uva %>% filter(produto == "vitoria")
+.vitoriase <- .dadosv_uva
+
+.cmp_arra      <- tabela_comparacao_uva(ts(.arra[, 3],      start = c(2017, 1), freq = 52), .arra)
+.cmp_vitoria   <- tabela_comparacao_uva(ts(.vitoria[, 3],   start = c(2017, 1), freq = 52), .vitoria)
+.cmp_vitoriase <- tabela_comparacao_uva(ts(.vitoriase[, 3], start = c(2019, 1), freq = 52), .vitoriase)
+
+w <- sem_ano
+
+# Preço médio da semana atual (último dado de 2026)
+arra_atual <- tail(.arra$preco_def, 1)
+vit_atual  <- tail(.vitoria$preco_def, 1)
+vse_atual  <- tail(.vitoriase$preco_def, 1)
+
+# Média histórica e anos anteriores (deflacionados), para a semana atual
+arra_hist <- .cmp_arra$medias[w]
+arra_2024 <- round(tail(.cmp_arra$preco_2024, 52), 2)[w]
+arra_2025 <- round(tail(.cmp_arra$preco_2025, 52), 2)[w]
+vit_hist  <- .cmp_vitoria$medias[w]
+vit_2024  <- round(tail(.cmp_vitoria$preco_2024, 52), 2)[w]
+vit_2025  <- round(tail(.cmp_vitoria$preco_2025, 52), 2)[w]
+vse_hist  <- .cmp_vitoriase$medias[w]
+vse_2024  <- round(tail(.cmp_vitoriase$preco_2024, 52), 2)[w]
+vse_2025  <- round(tail(.cmp_vitoriase$preco_2025, 52), 2)[w]
+
+# Variação % vs. semana anterior (preço deflacionado de 2026)
+arra_var <- (.cmp_arra$preco_2026[w, 1]      / .cmp_arra$preco_2026[w - 1, 1]      - 1) * 100
+vit_var  <- (.cmp_vitoria$preco_2026[w, 1]   / .cmp_vitoria$preco_2026[w - 1, 1]   - 1) * 100
+vse_var  <- (.cmp_vitoriase$preco_2026[w, 1] / .cmp_vitoriase$preco_2026[w - 1, 1] - 1) * 100
+```
+
+<hr>
+
+# ANÁLISE DOS PREÇOS AO PRODUTOR ATÉ A SEMANA `r strftime(today, format = "%V")`
+
+<hr>
+
+Os dados utilizados nesta análise são semanais e disponibilizados pelo **CEPEA (Esalq-USP)** englobando o período de 2017 a 2026, de uva sem semente branca e negra embaladas (incluso uva+material de embalagem+resfriamento, FOB-Petrolina), para os produtores do Vale do São Francisco. Também mostra informações sobre a uva negra sem embalagem, com dados semanais de 2019 à 2026. Os preços até a semana `r strftime(today, format = "%V de %Y")`, deflacionados pelo IGP-DI, são comparados com a média de cada semana entre 2017 e 2026, mínimo e máximo. Os preços deflacionados de 2024 e de 2025 também são apresentados para comparação de 2026 com os dois anos anteriores.
+
+O preço médio de uva sem semente branca embalada, na semana `r strftime(today, format = "%V")`, foi R\$ `r fmt(arra_atual)`, `r faixa(arra_atual, arra_max, arra_min)`. Este valor é `r comp_palavra(arra_atual, arra_hist)` do que a média histórica deflacionada, que foi R\$ `r fmt(arra_hist)`. Em 2024, o preço foi R\$ `r fmt(arra_2024)` e, em 2025, R\$ `r fmt(arra_2025)`. Em relação a semana `r strftime(last, format = "%V")`, houve uma `r qa_palavra(arra_var)` de `r fmt(abs(arra_var))`%.
+
+No caso da uva sem semente negra embalada (embalagem do produtor + resfriamento), na semana `r strftime(today, format = "%V")` o preço médio foi de R\$ `r fmt(vit_atual)`, `r faixa(vit_atual, vit_max, vit_min)`. Em 2024, o preço deflacionado é de R\$ `r fmt(vit_2024)`. Em 2025, o preço é de R\$ `r fmt(vit_2025)` e a média histórica deflacionada para esta semana é de R\$ `r fmt(vit_hist)`. Em relação à semana `r strftime(last, format = "%V")`, os preços `r rec_palavra(vit_var)` `r fmt(abs(vit_var))`%.
+
+Para a uva sem semente negra, o preço médio na semana `r strftime(today, format = "%V")` é R\$ `r fmt(vse_atual)`, `r faixa(vse_atual, vitse_max, vitse_min)`, `r ar_palavra(vse_var)` de `r fmt(abs(vse_var))`% em relação à semana anterior. O preço médio da semana é `r comp_palavra(vse_atual, vse_hist)` do que a média histórica deflacionada (R\$ `r fmt(vse_hist)`). Em 2024, o preço deflacionado é de R\$ `r fmt(vse_2024)` e, em 2025, o preço é de R\$ `r fmt(vse_2025)`.
+
+<br>
+
+# 1. UVA BRANCA SEM SEMENTE EMBALADA AO PRODUTOR DO VALE DO SÃO FRANCISCO
+
+<br>
+
+```{r tratamento_base, results='', fig.cap=''}
+dados  <- ler_uva_embalada()
+dadosv <- ler_uva_se()
+
+arra      <- dados %>% filter(produto == "arra_15")
+vitoria   <- dados %>% filter(produto == "vitoria")
+vitoriase <- dadosv
+
+preco_arra <- ts(arra[, 3], start = c(2017, 1), freq = 52)
+sazonal_arra <- cmav(preco_arra, outplot = F)
+
+preco_vitoria <- ts(vitoria[, 3], start = c(2017, 1), freq = 52)
+sazonal_vitoria <- cmav(preco_vitoria, outplot = F)
+
+preco_vitoriase <- ts(vitoriase[, 3], start = c(2019, 1), freq = 52)
+sazonal_vitoriase <- cmav(preco_vitoriase, outplot = F)
+```
+
+## EVOLUÇÃO DA TENDÊNCIA DE UVA BRANCA SEM SEMENTE EMBALADA NO VALE SÃO FRANCISCO: 2017 A 2026
+
+```{r branca1, results=''}
+#Gráficos
+
+g1 <- ggplot(data=arra, aes(x=date)) +  #estetica vai valer para todos os geom's
+  geom_line(aes(y=preco_def, colour="PREÇO KG"), lwd=1)+
+  geom_line(aes(y=sazonal_arra, colour="TENDÊNCIA"), lwd=1)+
+  scale_colour_manual("",
+                      breaks = c("PREÇO KG", "TENDÊNCIA"),
+                      values = c("blue", "red")) +
+  labs(y= "Preço R$/KG", x= "Semanas de cada Ano", title='',
+       caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa") +
+  scale_y_continuous(limits=c(0,21), n.breaks = 10, expand = expansion(add=c(0,0.5)),
+                     labels=number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_date(date_breaks = "1 year",
+               labels = date_format("%Y"))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=20)),
+        axis.title.x = element_text(size=10, face = "bold", margin = margin(b=10)),
+        axis.title.y = element_text(size=10, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=16, face="italic"),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = c(1,1),
+        legend.justification = c(1.2, 1.2),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g1) %>%
+  layout(legend = list(
+                      orientation = "h",
+                      x=0.4,
+                      y=-0.25,
+                      title=''))
+```
+
+Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+<br>
+
+## EVOLUÇÃO DA SAZONALIDADE PREÇO DE UVA BRANCA SEM SEMENTE EMBALADA AO PRODUTOR DO VALE SÃO FRANCISCO
+
+```{r branca2, results='', fig.cap=''}
+#Decompor a Série
+decompa<-decompose(preco_arra, type = 'multiplicative')
+
+sazonalidade <- decompa$figure
+semanas <- seq(1:52)
+sazonal_graph <- tibble(cbind(semanas, sazonalidade))
+
+g2 <- ggplot(data=sazonal_graph)+
+  geom_line(aes(x=semanas, y=sazonalidade), color="blue", size=1)+
+  scale_y_continuous(limits=c(0,1.5), n.breaks = 5, expand = expansion(add=c(0,0.5)),
+                     labels=number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 3))+
+  labs(y= "", x= "Semanas de cada Ano", title='',
+       caption = "Fonte: Observatório de Mercado de Uva da Embrapa")+
+  theme_classic()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g2) %>%
+  layout(legend = list(
+                      orientation = "h",
+                      x=0.25,
+                      y=-0.2,
+                      title=''))
+```
+
+Fonte: Observatório de Mercado de Uva da Embrapa
+
+<br> <br>
+
+## EVOLUÇÃO DOS PREÇOS DE UVA BRANCA SEM SEMENTE EMBALADA AO PRODUTOR DO VALE SÃO FRANCISCO
+
+::: panel-tabset
+### GRÁFICO
+
+```{r branca3, results='', fig.cap=''}
+comp_arra <- tabela_comparacao_uva(preco_arra, arra)
+
+preco_arra_2024 <- comp_arra$preco_2024
+preco_arra_2025 <- comp_arra$preco_2025
+preco_arra_2026 <- comp_arra$preco_2026
+table   <- comp_arra$table        # usado na aba TABELA (chunk branca4)
+tablea2 <- comp_arra$tablea2
+tableb2 <- comp_arra$tableb2
+mycolors <- c("dodgerblue2", "gold", "darkmagenta")
+
+g3 <- ggplot()+
+  geom_col(data=tableb2, aes(x=Semanas, y=value, fill=variable), size=2, width = 0.7,
+           position = "dodge")+
+  scale_fill_manual(values=mycolors)+
+    geom_line(data=tablea2, aes(x=Semanas, y=value, colour=variable), linetype = "solid",
+            size = 1)+
+  scale_colour_manual(values = c("red", "chocolate", "darkgreen")) +
+  scale_y_continuous(limits = c(0, 20), n.breaks = 10, labels = number_format(accuracy = 0.01,
+                                                       decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 3))+
+  labs(y= "Preço Uva Branca Embalada R$/KG", x= "Semanas de cada Ano", title='',
+       caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_classic()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=8)) # Definindo posição da legenda
+
+ggplotly(g3) %>%
+  layout(legend = list(
+                      orientation = "h",
+                      x=0.5,
+                      y=-0.35,
+                      title=''))
+```
+
+Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS DA UVA BRANCA SEM SEMENTE EMBALADA EM TABELA**
+
+```{r branca4}
+table <- table[,-1]
+#rmarkdown::paged_table(round(table,2))
+datatable(round(table,2))
+```
+
+Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## EVOLUÇÃO DA VARIAÇÃO SEMANAL DE PREÇOS DA UVA BRANCA SEM SEMENTE EMBALADA (MI) NO VALE DO SÃO FRANCISCO
+
+::: panel-tabset
+### GRÁFICO
+
+```{r branca5, results='', fig.cap=''}
+var_arra <- tabela_variacao_uva(arra, preco_arra_2026)
+variacao  <- var_arra$grafico
+variacaot <- var_arra$tabela     # usado na aba TABELA (chunk branca6)
+mycolors2 <- c("orange", "lightblue3")
+
+g4 <- ggplot()+
+  geom_col(data=variacao, aes(x=Semanas, y=value, fill=variable), size=2,
+           width = 0.9, position = "dodge")+
+  scale_fill_manual(values=mycolors2)+
+  scale_y_continuous(labels = number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 3))+
+  labs(y= "Variação Percentual", x= "Semanas do Ano", title='',
+       caption = "Fonte: Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g4) %>%
+  layout(legend = list(
+                      orientation = "h",
+                      x=0.35,
+                      y=-0.3,
+                      title=''))
+```
+
+Fonte: Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+```{r branca6}
+#rmarkdown::paged_table(round(tableD,2))
+datatable(round(variacaot,2), option = list(
+  autoWidth = TRUE))
+```
+
+Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+# 2. UVA NEGRA SEM SEMENTE EMBALADA AO PRODUTOR DO VALE DO SÃO FRANCISCO
+
+## EVOLUÇÃO DA TENDÊNCIA DE UVA NEGRA SEM SEMENTE EMBALADA NO VALE SÃO FRANCISCO: 2017 A 2026.
+
+```{r negra1, results='', fig.cap=''}
+#Gráficos
+
+g5 <- ggplot(data=vitoria, aes(x=date)) +  #estetica vai valer para todos os geom's
+  geom_line(aes(y=preco_def, colour="PREÇO KG"), lwd=1)+
+  geom_line(aes(y=sazonal_vitoria, colour="TENDÊNCIA"), lwd=1)+
+  scale_colour_manual("",
+                      breaks = c("PREÇO KG", "TENDÊNCIA"),
+                      values = c("blue", "red")) +
+  labs(y= "Preço R$/KG", x= "Semanas de cada Ano", title='',
+       caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa") +
+  scale_y_continuous(limits=c(0,20), n.breaks = 10, expand = expansion(add=c(0,0.5)),
+                     labels=number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_date(date_breaks = "1 year",
+               labels = date_format("%Y"))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=20)),
+        axis.title.x = element_text(size=10, face = "bold", margin = margin(b=20)),
+        axis.title.y = element_text(size=10, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=16, face="italic"),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = c(1,1),
+        legend.justification = c(1.2, 1.2),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g5) %>%
+  layout(legend = list(
+                      orientation = "h",
+                      x=0.35,
+                      y=-0.3,
+                      title=''))
+```
+
+Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+<br> <br>
+
+## EVOLUÇÃO DA SAZONALIDADE PREÇO DE UVA NEGRA SEM SEMENTE EMBALADA AO PRODUTOR DO VALE SÃO FRANCISCO
+
+```{r negra2, results='', fig.cap=''}
+#Decompor a Série
+decompa<-decompose(preco_vitoria, type = 'multiplicative')
+
+sazonalidade <- decompa$figure
+semanas <- seq(1:52)
+sazonal_graph <- tibble(cbind(semanas, sazonalidade))
+
+g6 <- ggplot(data=sazonal_graph)+
+  geom_line(aes(x=semanas, y=sazonalidade), color="blue", size=1)+
+  scale_y_continuous(limits=c(0,1.5), n.breaks = 5, expand = expansion(add=c(0,0.5)),
+                     labels=number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 3))+
+  labs(y= "", x= "Semanas de cada Ano", title='',
+       caption = "Fonte: Observatório de Mercado de Uva da Embrapa")+
+  theme_classic()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g6) %>%
+  layout(legend = list(
+                      orientation = "h",
+                      x=0.25,
+                      y=-0.3,
+                      title=''))
+```
+
+Fonte: Observatório de Mercado de Uva da Embrapa
+
+## EVOLUÇÃO DOS PREÇOS DE UVA NEGRA SEM SEMENTE EMBALADA AO PRODUTOR DO VALE SÃO FRANCISCO
+
+::: panel-tabset
+### GRÁFICO
+
+```{r negra3, results='', fig.cap=''}
+comp_vitoria <- tabela_comparacao_uva(preco_vitoria, vitoria)
+
+preco_vitoria_2024 <- comp_vitoria$preco_2024
+preco_vitoria_2025 <- comp_vitoria$preco_2025
+preco_vitoria_2026 <- comp_vitoria$preco_2026
+table   <- comp_vitoria$table        # usado na aba TABELA (chunk negra4)
+tablea2 <- comp_vitoria$tablea2
+tableb2 <- comp_vitoria$tableb2
+mycolors <- c("dodgerblue2", "gold", "darkmagenta")
+
+g7 <- ggplot()+
+  geom_col(data=tableb2, aes(x=Semanas, y=value, fill=variable), size=2, width = 0.7,
+           position = "dodge")+
+  scale_fill_manual(values=mycolors)+
+    geom_line(data=tablea2, aes(x=Semanas, y=value, colour=variable), linetype = "solid",
+            size = 1)+
+  scale_colour_manual(values = c("red", "chocolate", "darkgreen")) +
+  scale_y_continuous(limits = c(0, 20), n.breaks = 10, labels = number_format(accuracy = 0.01,
+                                                       decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 3))+
+  labs(y= "Preço uva Negra Embalada R$/KG", x= "Semanas de cada Ano", title='',
+       caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_classic()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=11, margin = margin(b=10)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=8)) # Definindo posição da legenda
+
+ggplotly(g7) %>%
+  layout(legend = list(
+                      orientation = "h",
+                      x=0.35,
+                      y=-0.3,
+                      title=''))
+```
+
+Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS DA UVA NEGRA SEM SEMENTE EMBALADA EM TABELA**
+
+```{r negra4}
+table <- table[,-1]
+#round(table,2)
+datatable(round(table,2))
+```
+
+Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## EVOLUÇÃO DA VARIAÇÃO SEMANAL DE PREÇOS DA UVA NEGRA SEM SEMENTE EMBALADA (MI)
+
+::: panel-tabset
+### GRÁFICO
+
+```{r negra5, results='', fig.cap=''}
+var_vitoria <- tabela_variacao_uva(vitoria, preco_vitoria_2026)
+variacao   <- var_vitoria$grafico
+variacaot  <- var_vitoria$tabela     # usado na aba TABELA (chunk negra6)
+mycolors2 <- c("orange", "lightblue3")
+
+g8 <- ggplot()+
+  geom_col(data=variacao, aes(x=Semanas, y=value, fill=variable), size=2,
+           width = 0.9, position = "dodge")+
+  scale_fill_manual(values=mycolors2)+
+  scale_y_continuous(labels = number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 3))+
+  labs(y= "Variação Percentual", x= "Semanas do Ano", title='',
+       caption = "Fonte: Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=11, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g8) %>%
+  layout(legend = list(
+                      orientation = "h",
+                      x=0.35,
+                      y=-0.3,
+                      title=''))
+```
+
+Fonte: Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+```{r negra6}
+#rmarkdown::paged_table(round(tableD,2))
+datatable(round(variacaot,2), option = list(
+  autoWidth = TRUE))
+```
+
+Fonte: Observatório de Mercado de Uva da Embrapa
+:::
+
+# 3. UVA NEGRA SEM SEMENTE AO PRODUTOR DO VALE DO SÃO FRANCISCO
+
+## EVOLUÇÃO DA TENDÊNCIA DE UVA NEGRA SEM SEMENTE NO VALE SÃO FRANCISCO: 2019 A 2026.
+
+```{r negrase1, results='', fig.cap=''}
+#Gráficos
+
+g9 <- ggplot(data=vitoriase, aes(x=date)) +  #estetica vai valer para todos os geom's
+  geom_line(aes(y=preco_def, colour="PREÇO KG"), lwd=1)+
+  geom_line(aes(y=sazonal_vitoriase, colour="TENDÊNCIA"), lwd=1)+
+  scale_colour_manual("",
+                      breaks = c("PREÇO KG", "TENDÊNCIA"),
+                      values = c("blue", "red")) +
+  labs(y= "Preço R$/KG", x= "Semanas de cada Ano", title='',
+       caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa") +
+  scale_y_continuous(limits=c(0,12), n.breaks = 8, expand = expansion(add=c(0,0.5)),
+                     labels=number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_date(date_breaks = "1 year",
+               labels = date_format("%Y"))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=20)),
+        axis.title.x = element_text(size=10, face = "bold", margin = margin(b=20)),
+        axis.title.y = element_text(size=10, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=16, face="italic"),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = c(1,1),
+        legend.justification = c(1.2, 1.2),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g9) %>%
+  layout(legend = list(
+                      orientation = "h",
+                      x=0.35,
+                      y=-0.3,
+                      title=''))
+```
+
+Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+<br> <br>
+
+## EVOLUÇÃO DA SAZONALIDADE PREÇO DE UVA NEGRA SEM SEMENTE NO VALE SÃO FRANCISCO
+
+```{r negrase2, results='', fig.cap=''}
+#Decompor a Série
+decompa<-decompose(preco_vitoriase, type = 'multiplicative')
+
+sazonalidade <- decompa$figure
+semanas <- seq(1:52)
+sazonal_graph <- tibble(cbind(semanas, sazonalidade))
+
+g10 <- ggplot(data=sazonal_graph)+
+  geom_line(aes(x=semanas, y=sazonalidade), color="blue", size=1)+
+  scale_y_continuous(limits=c(0,1.5), n.breaks = 5, expand = expansion(add=c(0,0.5)),
+                     labels=number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 3))+
+  labs(y= "", x= "Semanas de cada Ano", title='',
+       caption = "Fonte: Observatório de Mercado de Uva da Embrapa")+
+  theme_classic()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=11, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g10) %>%
+  layout(legend = list(
+                      orientation = "h",
+                      x=0.25,
+                      y=-0.3,
+                      title=''))
+```
+
+Fonte: Observatório de Mercado de Uva da Embrapa
+
+<br> <br>
+
+## EVOLUÇÃO DOS PREÇOS DE UVA NEGRA SEM SEMENTE AO PRODUTOR DO VALE SÃO FRANCISCO
+
+::: panel-tabset
+### GRÁFICO
+
+```{r negrase3, results='', fig.cap=''}
+comp_vitoriase <- tabela_comparacao_uva(preco_vitoriase, vitoriase)
+
+preco_vitoriase_2024 <- comp_vitoriase$preco_2024
+preco_vitoriase_2025 <- comp_vitoriase$preco_2025
+preco_vitoriase_2026 <- comp_vitoriase$preco_2026
+table   <- comp_vitoriase$table        # usado na aba TABELA (chunk negrase4)
+tablea2 <- comp_vitoriase$tablea2
+tableb2 <- comp_vitoriase$tableb2
+mycolors <- c("dodgerblue2", "gold", "darkmagenta")
+
+g11 <- ggplot()+
+  geom_col(data=tableb2, aes(x=Semanas, y=value, fill=variable), size=2, width = 0.7,
+           position = "dodge")+
+  scale_fill_manual(values=mycolors)+
+    geom_line(data=tablea2, aes(x=Semanas, y=value, colour=variable), linetype = "solid",
+            size = 1)+
+  scale_colour_manual(values = c("red", "chocolate", "darkgreen")) +
+  scale_y_continuous(limits = c(0, 12), n.breaks = 10, labels = number_format(accuracy = 0.01,
+                                                       decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 3))+
+  labs(y= "Preço Uva Negra Contentor R$/Kg", x= "Semanas de cada Ano", title='',
+       caption = "Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_classic()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=11, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=8)) # Definindo posição da legenda
+
+ggplotly(g11) %>%
+  layout(legend = list(
+                      orientation = "h",
+                      x=0.35,
+                      y=-0.3,
+                      title=''))
+```
+
+Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS DA UVA NEGRA SEM SEMENTE EM TABELA**
+
+```{r negrase4}
+table <- table[,-1]
+datatable(round(table,2))
+```
+
+Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## EVOLUÇÃO DA VARIAÇÃO SEMANAL DE PREÇOS DA UVA NEGRA SEM SEMENTE (MI)
+
+::: panel-tabset
+### GRÁFICO
+
+```{r negrase5, results='', fig.cap=''}
+var_vitoriase <- tabela_variacao_uva(vitoriase, preco_vitoriase_2026)
+variacao   <- var_vitoriase$grafico
+variacaot  <- var_vitoriase$tabela     # usado na aba TABELA (chunk negrase6)
+mycolors2 <- c("orange", "lightblue3")
+
+g12 <- ggplot()+
+  geom_col(data=variacao, aes(x=Semanas, y=value, fill=variable), size=2,
+           width = 0.9, position = "dodge")+
+  scale_fill_manual(values=mycolors2)+
+  scale_y_continuous(labels = number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_continuous(breaks = seq(1, 52, by = 3))+
+  labs(y= "Variação Percentual", x= "Semanas do Ano", title='',
+       caption = "Fonte: Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=11, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g12) %>%
+  layout(legend = list(
+                      orientation = "h",
+                      x=0.35,
+                      y=-0.3,
+                      title=''))
+```
+
+Fonte: Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA**
+
+```{r negrase6}
+#rmarkdown::paged_table(round(tableD,2))
+datatable(round(variacaot,2), option = list(
+  autoWidth = TRUE))
+```
+
+Fonte: CEPEA reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+<br>
+
+# INFORMAÇÕES E APOIO
+
+<br>
+
+<center>![](logo_uva.png){width="10cm"}</center>
+
+<br>
+
+<center>João Ricardo F. de Lima</center>
+
+<center>Email Coordenador: joao.ricardo\@embrapa.br</center>
+
+<br>
+
+<center><https://www.embrapa.br/observatorio-da-uva></center>
+
+<center>[Dashboard Mercado de Uva](https://bit.ly/3OgmyKp)</center>
+
+<br>
+
+<center>Telefones:</center>
+
+<center>87-3866-3667</center>
+
+<center>87-99961-5799</center>
+
+<br>
+
+<center>![](apoio4.png){width="10.5cm"}</center>
