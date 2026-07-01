@@ -1,0 +1,423 @@
+---
+title: "OBSERVATÓRIO DO MERCADO DE UVA DA EMBRAPA SEMIÁRIDO"
+author: "João Ricardo F. de Lima"
+date: "today"
+editor: source
+lang: pt
+language:
+    toc-title-document: '<a href="https://observatoriosdemercado.github.io/manga/" target="_blank"><img src="img/logo_embrapa.jpg" alt="Logotipo Embrapa" width="150"></a>'
+format:
+  html:
+    toc: true
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+    toc-location: left
+    code-fold: false
+    embed-resources: true
+    page-layout: full
+    fig-width: 12
+    fig-height: 9
+    fig-align: center
+    df-print: paged
+theme:
+  light: flatly
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+```{r setup, include=FALSE}
+library(lubridate)
+library(ggplot2)
+library(scales)
+library(plotly)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(DT)
+
+# Parâmetros do mês (única coisa a mudar a cada relatório)
+anterior  <- as.Date("2026-04-01")
+atual     <- as.Date("2026-05-01")
+dados_dir <- "C:/Users/Lenovo/Dropbox/tempecon/dados_caged"
+arq_serie      <- "maio_2026.csv"
+arq_estoque    <- "estoque_maio26.csv"
+arq_caged      <- "maio_26_caged.RData"
+nome_dados_vsf <- "dados_05_vsf"   # objeto carregado do .RData
+
+# Paleta
+cor_ano  <- c("orange", "lightblue3")
+cor_bar  <- "steelblue"
+cor_hist <- "#69b3a2"
+
+# Nomes de meses
+niv_meses_cap <- c("Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+                   "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro")
+niv_meses_low <- tolower(niv_meses_cap)
+
+# Tema padrão dos gráficos (parametrizado)
+tema_emp <- function(ang_x = 0, base = 10, x_text = base, face_title = "plain") {
+  theme_minimal() +
+    theme(
+      axis.text.x  = element_text(angle = ang_x,
+                                  hjust = if (ang_x == 0) 0.5 else 1,
+                                  size  = x_text, margin = margin(b = 20)),
+      axis.text.y  = element_text(hjust = 1, size = base, margin = margin(l = 20)),
+      axis.title.x = element_text(size = base, face = "bold", margin = margin(b = 20)),
+      axis.title.y = element_text(size = base, face = "bold", margin = margin(l = 20)),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      plot.title   = element_text(hjust = 0.5, size = base + 2, face = face_title),
+      plot.caption = element_text(hjust = 0, size = 12),
+      legend.position = "bottom",
+      legend.title    = element_blank(),
+      legend.text     = element_text(size = 12)
+    )
+}
+
+# Helper p/ legenda horizontal no plotly
+legenda_h <- function(p) {
+  ggplotly(p) |>
+    layout(legend = list(orientation = "h", x = 0.35, y = -0.35, title = ""))
+}
+
+# Formatadores numéricos em pt-BR
+fmt_num <- function(x) formatC(x, format = "d", big.mark = ".", decimal.mark = ",")
+fmt_pct <- function(x) gsub("\\.", ",", formatC(x, digits = 2, format = "f"))
+fmt_brl <- function(x) paste0("R\\$ ", formatC(x, format = "d",
+                                               big.mark = ".", decimal.mark = ","))
+```
+
+```{r dados, include=FALSE}
+# 1) Série mensal de contratados/demitidos/saldo --------------------------------
+caged <- read.csv2(file.path(dados_dir, arq_serie), header = TRUE, sep = ";")
+caged[[1]] <- seq(as.Date("2021-01-01"), to = atual, by = "1 month")
+names(caged)[1] <- "date"
+caged <- caged |>
+  mutate(
+    ano = format(date, "%Y"),
+    mes = factor(format(date, "%m"),
+                 levels = sprintf("%02d", 1:12),
+                 labels = niv_meses_cap)
+  )
+
+# saldo (formato longo) — base dos gráficos de coluna
+saldom <- caged |>
+  filter(ano %in% c("2025", "2026")) |>
+  select(ano, mes, Saldo_uva)
+
+# tabela 2025 x 2026 (formato largo)
+totalm <- caged |>
+  filter(ano %in% c("2025", "2026")) |>
+  select(ano, mes, Contratados_Uva, Demitidos_Uva, Saldo_uva) |>
+  pivot_wider(
+    names_from  = ano,
+    values_from = c(Contratados_Uva, Demitidos_Uva, Saldo_uva),
+    names_glue  = "{str_replace(str_replace(.value, '_Uva', ''), '_uva', '')} {ano}"
+  ) |>
+  mutate(mes = factor(mes, levels = niv_meses_cap, ordered = TRUE)) |>
+  arrange(mes) |>
+  select(mes,
+         `Contratados 2025`, `Demitidos 2025`,
+         `Contratados 2026`, `Demitidos 2026`,
+         `Saldo 2025`,       `Saldo 2026`)
+
+# 2) Estoque --------------------------------------------------------------------
+estoque <- read.csv2(file.path(dados_dir, arq_estoque), header = TRUE, sep = ";") |>
+  mutate(uva_total = uva_pe + uva_ba)
+
+estoquem <- saldom |>
+  mutate(uva_total = estoque$uva_total) |>
+  select(-Saldo_uva)
+
+estoque_wide <- estoquem |>
+  mutate(
+    ano = as.integer(ano),
+    mes = factor(tolower(mes), levels = niv_meses_low, ordered = TRUE)
+  ) |>
+  pivot_wider(names_from = ano, values_from = uva_total) |>
+  arrange(mes)
+
+# 3) Detalhe dos contratados (sexo, idade, escolaridade, salário) ---------------
+load(file.path(dados_dir, arq_caged))
+dados_vsf <- get(nome_dados_vsf)
+
+niv_grau <- c("Analfabeto","Até 5ª Incompleto","5ª Completo Fundamental",
+              "6ª a 9ª Fundamental","Fundamental Completo","Médio Incompleto",
+              "Médio Completo","Superior Incompleto","Superior Completo",
+              "Mestrado","Doutorado","Pós-Graduação completa","Não Identificado")
+
+subclasse_positivos <- dados_vsf |>
+  filter(saldo_movim == "1", subclasse == "132600") |>
+  mutate(
+    sexo = factor(case_when(sexo == 1 ~ 0,
+                            sexo == 3 ~ 1,
+                            TRUE      ~ as.numeric(sexo)),
+                  levels = 0:1, labels = c("Masculino","Feminino")),
+    grau_instrucao = case_when(grau_instrucao == 80 ~ 12,
+                               grau_instrucao == 99 ~ 13,
+                               TRUE                 ~ grau_instrucao),
+    grau_instrucao = factor(grau_instrucao, levels = 1:13, labels = niv_grau),
+    salario = as.integer(as.numeric(sub(",", ".", salario, fixed = TRUE)))
+  )
+
+# tabela de frequência relativa dos salários
+prob_table <- as.data.frame(prop.table(table(subclasse_positivos$salario)) * 100) |>
+  setNames(c("Salários", "Frequencia Relativa")) |>
+  mutate(`Frequencia Relativa` = round(`Frequencia Relativa`, 2))
+```
+
+```{r texto_auto, include=FALSE}
+# Estatísticas usadas no texto introdutório ------------------------------------
+
+mes_label <- niv_meses_cap[as.integer(format(atual, "%m"))]
+ano_atual <- format(atual, "%Y")
+ano_ant   <- as.character(as.integer(ano_atual) - 1L)
+
+# Estoque atual vs mesmo mês do ano anterior
+estoque_atual    <- estoquem |> filter(ano == ano_atual, mes == mes_label) |> pull(uva_total)
+estoque_anterior <- estoquem |> filter(ano == ano_ant,   mes == mes_label) |> pull(uva_total)
+var_estoque_pct  <- (estoque_atual - estoque_anterior) / estoque_anterior * 100
+sentido_estoque  <- if (var_estoque_pct >= 0) "aumento" else "redução"
+
+# Saldo / contratados / demitidos
+linha_atual    <- caged |> filter(ano == ano_atual, mes == mes_label)
+linha_anterior <- caged |> filter(ano == ano_ant,   mes == mes_label)
+
+saldo_atual       <- linha_atual$Saldo_uva
+saldo_anterior    <- linha_anterior$Saldo_uva
+contratados_atual <- linha_atual$Contratados_Uva
+demitidos_atual   <- linha_atual$Demitidos_Uva
+
+sinal_saldo <- if (saldo_atual >= 0) "positivo" else "negativo"
+comp_demis  <- if (contratados_atual >  demitidos_atual) "maior" else "menor"
+comp_saldo  <- if (saldo_atual       >= saldo_anterior) "melhora" else "piora"
+qtd_mantem  <- if (comp_saldo == "melhora") "maior" else "menor"
+
+# Gênero
+total_contratados <- nrow(subclasse_positivos)
+n_masc   <- sum(subclasse_positivos$sexo == "Masculino")
+n_fem    <- sum(subclasse_positivos$sexo == "Feminino")
+pct_masc <- n_masc / total_contratados * 100
+pct_fem  <- n_fem  / total_contratados * 100
+
+# Idade — extrai as contagens diretamente do histograma (mesmos bins do gráfico)
+hist_idade <- ggplot_build(
+  ggplot(subclasse_positivos, aes(x = idade)) +
+    geom_histogram(binwidth = 3) +
+    scale_x_continuous(limits = c(18, 65))
+)$data[[1]] |>
+  arrange(x) |>
+  filter(count > 0)
+
+# 4 primeiras barras visíveis
+bin_idade <- hist_idade |> slice_head(n = 4)
+lab_idade <- floor(bin_idade$xmax)               # rótulos: limites superiores
+n_idade   <- bin_idade$count                     # contagens (tooltip do plotly)
+pct_idade <- n_idade / total_contratados * 100   # percentuais por faixa
+
+# Escolaridade dominante
+escol_tab     <- sort(table(subclasse_positivos$grau_instrucao), decreasing = TRUE)
+escol_top     <- tolower(names(escol_tab)[1])
+escol_top_n   <- as.integer(escol_tab[1])
+escol_top_pct <- escol_top_n / total_contratados * 100
+
+# Salário: 2 valores mais frequentes + máximo
+sal_tab    <- sort(table(subclasse_positivos$salario), decreasing = TRUE)
+sal1_valor <- as.integer(names(sal_tab)[1])
+sal1_pct   <- as.integer(sal_tab[1]) / total_contratados * 100
+sal2_valor <- as.integer(names(sal_tab)[2])
+sal2_pct   <- as.integer(sal_tab[2]) / total_contratados * 100
+sal_max    <- max(subclasse_positivos$salario, na.rm = TRUE)
+```
+
+<hr>
+
+# ANÁLISE DOS EMPREGOS GERADOS NA VITICULTURA EM `r toupper(strftime(atual, format = "%B DE %Y"))`
+
+Os dados utilizados nesta análise são mensais e disponibilizados pelo CAGED (Cadastro Geral de Empregados e Desempregados) até o mês de `r strftime(atual, format = "%B de %Y")`. As variáveis são estoque de empregos, saldo de empregos, empregos por gênero, contratados por idade e por escolaridade para a cultura da uva. Considera-se o conjunto de municípios da Bahia (Casa Nova, Curaçá, Juazeiro, Sento Sé, Sobradinho, etc.) e Pernambuco (Belém do S. Francisco, Lagoa Grande, Orocó, Petrolina, etc.), que formam o Vale do Submédio São Francisco. No caso do **Estoque**, as informações são para todo o estado da Bahia e de Pernambuco.
+
+Em `r strftime(atual, format = "%B de %Y")`, o Estoque de empregos na cultura da uva é de `r fmt_num(estoque_atual)` pessoas. No mesmo mês do ano passado, este valor era de `r fmt_num(estoque_anterior)`, ou seja, ocorreu um `r sentido_estoque` do número de pessoas ocupadas na viticultura de `r fmt_pct(abs(var_estoque_pct))`%, nesta comparação.
+
+O saldo de empregos na viticultura em `r strftime(atual, format = "%B de %Y")` no Vale do São Francisco é `r sinal_saldo`, de `r fmt_num(saldo_atual)` pessoas, ou seja, o total de contratações (`r fmt_num(contratados_atual)`) foi `r comp_demis` do que o total de demissões (`r fmt_num(demitidos_atual)`). Em relação ao mesmo mês do ano passado, se tem uma `r comp_saldo` no saldo total (`r fmt_num(saldo_anterior)` em `r ano_ant` e `r fmt_num(saldo_atual)` em `r ano_atual`), pois o número de pessoas que mantiveram o emprego foi `r qtd_mantem`.
+
+Dos contratados no mês, `r fmt_num(n_masc)` são do sexo masculino (`r fmt_pct(pct_masc)`% do total) e `r fmt_num(n_fem)` do sexo feminino (`r fmt_pct(pct_fem)`%). Em relação à idade, `r fmt_pct(pct_idade[1])`% dos contratados tem até `r lab_idade[1]` anos, `r fmt_pct(pct_idade[2])`% até `r lab_idade[2]` anos, `r fmt_pct(pct_idade[3])`% até `r lab_idade[3]` anos e `r fmt_pct(pct_idade[4])`% até `r lab_idade[4]` anos.
+
+Sobre o nível de escolaridade, a maioria das admissões é de pessoas com `r escol_top` (`r fmt_num(escol_top_n)`). Do total de contratados, `r fmt_pct(escol_top_pct)`% possuem este nível de escolaridade.
+
+Com relação aos salários pagos, o valor mais frequente foi de `r fmt_brl(sal1_valor)`, presente em `r fmt_pct(sal1_pct)`% dos contratos, seguido por `r fmt_brl(sal2_valor)` (`r fmt_pct(sal2_pct)`%). O maior salário registrado foi de `r fmt_brl(sal_max)`.
+
+<hr>
+
+<br>
+
+# 1. EVOLUÇÃO DO ESTOQUE DE EMPREGOS NA VITICULTURA
+
+<br>
+
+::: panel-tabset
+## GRÁFICO
+
+```{r emp0}
+g0 <- ggplot(estoquem, aes(x = mes, y = uva_total, fill = ano)) +
+  geom_col(width = 0.9, position = "dodge") +
+  scale_fill_manual(values = cor_ano) +
+  scale_y_continuous(limits = c(0, 35000), n.breaks = 10,
+                     expand = expansion(add = c(0, 0.5))) +
+  labs(y = "Estoque de Emprego", x = "Meses do Ano") +
+  tema_emp(ang_x = 35, base = 14, face_title = "italic")
+
+legenda_h(g0)
+```
+
+## TABELA
+**VISUALIZAÇÃO DOS DADOS EM TABELA**
+
+```{r emp0a}
+datatable(estoque_wide,
+          options = list(autoWidth = TRUE, pageLength = 12))
+```
+Fonte: CAGED reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+<br>
+
+# 2. EVOLUÇÃO DO SALDO DE EMPREGOS GERADOS NA VITICULTURA
+
+<br>
+
+::: panel-tabset
+## GRÁFICO
+
+```{r emp1}
+g1 <- ggplot(saldom, aes(x = mes, y = Saldo_uva, fill = ano)) +
+  geom_col(width = 0.9, position = "dodge") +
+  scale_fill_manual(values = cor_ano) +
+  scale_y_continuous(limits = c(-2100, 1700), n.breaks = 10,
+                     expand = expansion(add = c(0, 0.5))) +
+  labs(y = "Saldo de Emprego", x = "Meses do Ano") +
+  tema_emp(ang_x = 35, base = 14, face_title = "italic")
+
+legenda_h(g1)
+```
+
+## TABELA
+**VISUALIZAÇÃO DOS DADOS EM TABELA**
+
+```{r emp1a}
+datatable(totalm,
+          options  = list(autoWidth = TRUE, pageLength = 12),
+          rownames = FALSE)
+```
+Fonte: CAGED reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+<br>
+
+# 3. DISTRIBUIÇÃO DOS EMPREGOS GERADOS POR GÊNERO
+
+``` {r emp2}
+g2 <- ggplot(subclasse_positivos, aes(x = sexo)) +
+  geom_bar(fill = cor_bar) +
+  labs(y = "Contratados Uva - VSF", x = "Gênero") +
+  tema_emp(base = 10)
+
+ggplotly(g2)
+```
+
+<br>
+
+# 4. DISTRIBUIÇÃO DOS EMPREGOS GERADOS POR IDADE
+
+``` {r emp3}
+g3 <- ggplot(subclasse_positivos, aes(x = idade)) +
+  geom_histogram(binwidth = 3, fill = cor_hist, color = "#e9ecef", alpha = 0.9) +
+  scale_x_continuous(limits = c(18, 65), n.breaks = 10,
+                     expand = expansion(add = c(0, 0.5))) +
+  labs(y = "Contratados Uva - VSF", x = "Idades",
+       title = "Distribuição dos empregos gerados por idade") +
+  tema_emp(base = 10)
+
+ggplotly(g3)
+```
+
+<br>
+
+# 5. GRAU DE INSTRUÇÃO DOS EMPREGOS GERADOS
+
+``` {r emp4}
+ymax_emp4 <- ceiling(max(table(subclasse_positivos$grau_instrucao)) / 100) * 100
+
+g4 <- ggplot(subclasse_positivos, aes(x = grau_instrucao)) +
+  geom_bar(fill = cor_bar) +
+  scale_y_continuous(limits = c(0, ymax_emp4), n.breaks = 10,
+                     expand = expansion(add = c(0, 0.5))) +
+  labs(y = "Contratados Uva - VSF", x = "Grau de Instrução") +
+  tema_emp(ang_x = 30, base = 14, x_text = 10, face_title = "italic")
+
+ggplotly(g4)
+```
+
+<br>
+
+# 6. DISTRIBUIÇÃO DOS EMPREGOS GERADOS POR SALÁRIO
+
+::: panel-tabset
+## GRÁFICO
+
+``` {r emp5}
+g5 <- ggplot(subclasse_positivos, aes(x = salario)) +
+  geom_histogram(binwidth = 700, fill = cor_hist, color = "#e9ecef") +
+  scale_x_continuous(limits = c(0, 8500), n.breaks = 6,
+                     expand = expansion(add = c(0, 0.5))) +
+  labs(y = "Contratados Uva - VSF", x = "Salários",
+       title = "Distribuição dos empregos gerados por salarios") +
+  tema_emp(base = 10)
+
+ggplotly(g5)
+```
+
+## TABELA
+**VISUALIZAÇÃO DOS DADOS EM TABELA**
+
+```{r emp5a}
+datatable(prob_table,
+          options = list(autoWidth = TRUE, pageLength = 15,
+                         columnDefs = list(list(className = "dt-center", targets = "_all"))))
+```
+Fonte: CAGED reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+<br>
+
+# INFORMAÇÕES E APOIO
+
+<br>
+
+<center>![](logo_uva.png){width="10cm"}</center>
+
+<br>
+
+<center>João Ricardo F. de Lima</center>
+
+<center>Email Coordenador: joao.ricardo\@embrapa.br</center>
+
+<br>
+
+<center><https://www.embrapa.br/web/semiarido/observatorio-da-uva></center>
+
+<center>[Dashboard Mercado de Uva](https://bit.ly/3OgmyKp)</center>
+
+<br>
+
+<center>Telefones:</center>
+
+<center>87-3866-3667</center>
+
+<center>87-99961-5799</center>
+
+<br>
+
+<center>![](apoio4.png){width="10cm"}</center>
