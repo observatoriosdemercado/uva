@@ -878,20 +878,17 @@ library(reshape2)
 #Entrando dados no R
 dados21 <- read.csv2('urf_uva.csv', header=T, sep=";", dec = ".")
 
-# Set the custom order for 'regiao' using factor
-dados21$URF <- factor(dados21$URF, levels = c("ALF-Fortaleza", "ALF-Salvador", "Aeroporto de GRU", "ALF-Dionísio Cerqueira", "ALF-Foz do Iguaçu", "Porto de Santos", "Outros"))
-
 dados21a <- melt(dados21, id.var='URF')
 
 mycolors <- "gold"
 
 g8 <- ggplot() +
-  geom_col(data=dados21a, aes(x=URF, y=value, fill=variable), size=2, width = 0.7, position = position_dodge(width = .5, preserve = "total"))+
+  geom_col(data=dados21a, aes(x=ordena_outros(URF, value), y=value, fill=variable), size=2, width = 0.7, position = position_dodge(width = .5, preserve = "total"))+
   scale_fill_manual(values=mycolors) +
   scale_y_continuous(n.breaks = 10)+
   labs(y= "Percentual Despachado (%)", x= "Unidade da Receita Federal do Brasil",
        caption = "Fonte: COMEXSTAT reprocessado pelos Observatórios de Uva da Embrapa, 2026.")+
-  geom_text(data=dados21a, aes(y=value, x=URF, group=variable, label=value), 
+  geom_text(data=dados21a, aes(y=value, x=ordena_outros(URF, value), group=variable, label=value),
     position = position_dodge(width = .5, preserve = "total"), 
     size=4, 
     hjust=0.5, 
