@@ -1,0 +1,1211 @@
+---
+title: "OBSERVATÓRIO DO MERCADO DE UVA DA EMBRAPA SEMIÁRIDO"
+author: "João Ricardo F. de Lima"
+date: "today"
+editor: source
+lang: pt
+language: 
+  toc-title-document: '<a href="https://observatoriosdemercado.github.io/uva/" target="_blank"><img src="img/logo_embrapa.jpg" alt="Logotipo Embrapa" width="150"></a>'
+format: 
+  html:
+    toc: true
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+    toc-location: left
+    code-fold: false
+    embed-resources: true
+    page-layout: full
+#    fig-asp: 0.618
+    fig-width: 10
+    fig-height: 8
+#    fig-dpi: 300
+    fig-align: center
+    df-print: paged
+theme:
+  light: flatly
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+```{r setup, include=FALSE}
+library(lubridate)
+
+# Datas automaticas (nao precisam mais ser ajustadas todo mes).
+# Mes de referencia = ULTIMO mes disponivel no proprio dado
+# (ultimo ano/mes de total_exporta_uva_br.csv). Mais robusto que o calendario:
+# garante que os graficos/janelas nunca passem do ultimo dado disponibilizado.
+.tot  <- read.csv2('C:/Users/Lenovo/Dropbox/tempecon/dados_uva/total_exporta_uva_br.csv',
+                   header = TRUE, sep = ";", dec = ".")
+.ult  <- tail(.tot, 1)
+atual    <- as.Date(sprintf("%04d-%02d-01", as.integer(.ult[[1]]), as.integer(.ult[[2]])))
+anterior <- atual - months(1)
+mes      <- month(atual)
+
+# today = sexta-feira anterior a data do render (ultima semana do preco/deflator)
+# %u (ISO): segunda=1 ... sexta=5 ... domingo=7
+.wd   <- as.integer(format(Sys.Date(), "%u"))
+today <- Sys.Date() - ((.wd - 5) %% 7)
+if (today >= Sys.Date()) today <- today - 7   # se hoje for sexta, pega a anterior
+```
+
+<hr>
+
+```{r tratamento_base}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
+
+#Inicio do Script
+#Pacotes a serem utilizados 
+library(mFilter)
+library(forecast)
+library(tsutils)
+library(seasonal)
+library(ggplot2)
+library(uroot)
+library(tseries)
+library(ggthemes)
+library(dplyr)
+library(quantmod)
+library(scales)
+library(kableExtra)# complex tables
+library(lmtest)
+library(FinTS)
+library(plotly)
+library(DT)
+library(magrittr)
+library(rmarkdown)
+library(reshape2)
+library(rbcb)
+library(tidyverse)
+library(lubridate)
+library(zoo)
+
+#checkX13()
+
+options(digits=4)
+
+# --- Helpers de grafico (eixo Y automatico + "Outros" sempre por ultimo) ---
+# Topo do eixo Y automatico: ~8% de folga acima do maximo, arredondado p/ passo
+# redondo (0,2 / 2 / 20 / 200 / 2.000 ...); 'cap' limita o topo (ex.: 100 em %).
+ylim_auto <- function(x, headroom = 1.08, cap = NA_real_) {
+  m <- max(x, na.rm = TRUE) * headroom
+  if (!is.finite(m) || m <= 0) return(1)
+  base <- 10^floor(log10(m)) / 5
+  lim  <- ceiling(m / base) * base
+  if (!is.na(cap)) lim <- min(lim, cap)
+  lim
+}
+# Ordena barras por valor decrescente, mas mantem "Outros" sempre como ultima barra.
+ordena_outros <- function(rotulo, valor) {
+  o <- rotulo[order(-valor)]
+  factor(rotulo, levels = c(setdiff(o, "Outros"), intersect(o, "Outros")))
+}
+
+#Entrando dados no R
+dados1 <- read.csv2('exportacoes_2016_2026.csv', header=T, sep=";", dec = ".")
+dados1 <- dados1/1000
+dados1[,1] <- seq(2016, 2026, by = 1)
+colnames(dados1) = c('Ano', 'Valor', "Toneladas")
+dados1 <- tibble(dados1)
+
+#Entrando dados no R
+dados2 <- read.csv2('total_exporta_uva_br.csv', header=T, sep=";", dec = ".")
+#dados <- dados[,-c(9:10)] #retirar as ultimas colunas
+colnames(dados2)[1]<-'ano'
+
+#Entrando dados no R
+dados3 <- read.csv2('destinos_2026.csv', header=T, sep=";", dec = ".")
+colnames(dados3) = c('Paises', "Participacao")
+
+#Entrando dados no R
+dados4 <- read.csv2('via_2026.csv', header=T, sep=";", dec = ".")
+colnames(dados4) = c('Vias', "Participacao")
+
+#Entrando dados no R
+dados5 <- read.csv2('uf_2026.csv', header=T, sep=";" , dec = ".")
+colnames(dados5) = c('UF', "Participacao")
+
+#Cambio Baixando os dados para o R
+dados6 <- get_market_expectations("monthly", "Câmbio", start_date = "2026-01-01")
+dados6 <- dados6 %>% filter (baseCalculo == 0, DataReferencia == '12/2026') 
+#dados6 <- filter(dados6, DataReferencia == '12/2023')
+#cambio_esperado <- dados6$Media
+#dates <- dados6$Data
+dados6 <- data.frame(dates=dados6$Data, cambio=dados6$Media)
+
+# Entrando dados no R
+dados7 <- read.csv2('importacao.csv', header=T, sep=";" , dec = ".")
+dados7 <- dados7 |>
+  mutate(across(everything(), ~replace_na(., 0.0)))
+dados7 <- dados7[,-c(1,2)]
+colnames(dados7) = c('Chile', 'Argentina', 'Peru', 'Egito')
+
+#Ajusta para Valor
+#Analise de Serie Temporal
+exporta_uva_valor <- dados2[,3]
+exporta_uva_valor<-exporta_uva_valor/1000
+exporta_uva_valor <- ts(exporta_uva_valor, start=c(2016,1), freq=12)
+
+#Tendencia
+trend_valor <- cmav(exporta_uva_valor, outplot=F)
+date <- seq(as.Date('2016-01-01'),to=atual,by='1 month') 
+trend_valor <- tibble(date, trend_valor)
+
+#Sazonalidade
+decompa<-decompose(exporta_uva_valor, type = 'multiplicative')
+sazonal_valor <- decompa$figure
+#meses <- seq(1:12)
+meses <- seq(as.Date("2024/1/1"), by = "month", length.out = 12) 
+sazonal_graph <- tibble(meses, sazonal_valor)
+
+#Comparações com os anos e entre as médias/max/min
+
+exporta_uva_valor_2025 <- window(exporta_uva_valor, end=c(2025,12))
+seas25 <- seasplot(exporta_uva_valor_2025, trend=F, outplot = F)
+medias25 <- colMeans(seas25$season)
+
+#exporta_uva_valor_2021 <- window(exporta_uva_valor, end=c(2021,12))
+
+exporta_uva_valor_2024 <- window(exporta_uva_valor, end=c(2024,12))
+#medias21 <- colMeans(seas21$season)
+
+exporta_uva_valor_26 <- as.matrix(tail(exporta_uva_valor,mes)) 
+exporta_uva_valor_2026 <- matrix(NA, nrow=12, ncol=1)
+
+for(i in 1:mes){
+  exporta_uva_valor_2026[i,1] = exporta_uva_valor_26[i,1]
+}
+  
+#Como só se tem até a semana 12
+medias25 <- medias25[1:12]
+
+matrix = matrix(NA, nrow=12, ncol=2)
+
+for(i in 1:12){
+  matrix[i,1] = min(seas25$season[,i])
+  matrix[i,2] = max(seas25$season[,i])
+}
+
+#time <- c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", #"Dezembro")
+#time <-seq(1:12)
+table <- data.frame(meses, matrix[,1], round(medias25,3), matrix[,2], round(tail(exporta_uva_valor_2024,12),3),
+                    round(tail(exporta_uva_valor_2025,12),3), exporta_uva_valor_2026[,1])
+colnames(table) = c('Meses', 'Mínimo', 'Média', 'Máximo', '2024', '2025', '2026')
+
+tablea <- table[,-c(5:7)]
+tableb <- table[,-c(2,3,4)]
+
+tablea2 <- melt(tablea, id.var='Meses')
+tableb2 <- melt(tableb, id.var='Meses')
+mycolors <- c("lightblue3", "gray44", "gold")
+
+#Ajusta para Volume
+#Analise de Serie Temporal
+exporta_uva_volume <- dados2[,4]
+exporta_uva_volume<-exporta_uva_volume/1000  #passando de quilo para tonelada
+
+#Ajuste para a variação Mensal do Volume
+
+
+variacao_volume_24 <-  dados2 %>% filter(ano=='2024')
+variacao_volume_25 <-  dados2 %>% filter(ano=='2025')
+variacao_volume_26 <-  dados2 %>% filter(ano=='2026')
+
+variacao_volume_24 <-  variacao_volume_24[,4]/1000
+variacao_volume_25 <-  variacao_volume_25[,4]/1000
+variacao_volume_26 <-  variacao_volume_26[,4]/1000
+
+#Setando como uma série temporal
+exporta_uva_volume <- ts(exporta_uva_volume, start=c(2016,1), freq=12)
+
+#Tendencia
+trend_volume <- cmav(exporta_uva_volume, outplot=F)
+trend_volume <- tibble(date, trend_volume)
+
+#Sazonalidade
+decompa<-decompose(exporta_uva_volume, type = 'multiplicative')
+sazonal_volume <- decompa$figure
+sazonal_graph_volume <- tibble(meses, sazonal_volume)
+
+#Comparações com os anos e entre as médias/max/min
+
+exporta_uva_volume_2025 <- window(exporta_uva_volume, end=c(2025,12))
+seas25_vol<-seasplot(exporta_uva_volume_2025, trend=F, outplot = F)
+medias25_vol <- colMeans(seas25_vol$season)
+
+#exporta_uva_volume_2021 <- window(exporta_uva_volume, end=c(2021,12))
+
+exporta_uva_volume_2024 <- window(exporta_uva_volume, end=c(2024,12))
+
+exporta_uva_volume_26 <- as.matrix(tail(exporta_uva_volume,mes)) #ajustar mensalmente
+exporta_uva_volume_2026 <- matrix(NA, nrow=12, ncol=1)
+
+for(i in 1:mes){
+  exporta_uva_volume_2026[i,1] = exporta_uva_volume_26[i,1]
+}
+  
+#Como só se tem até a semana 12
+medias25_vol <- medias25_vol[1:12]
+
+matrix_vol = matrix(NA, nrow=12, ncol=2)
+
+for(i in 1:12){
+  matrix_vol[i,1] = min(seas25_vol$season[,i])
+  matrix_vol[i,2] = max(seas25_vol$season[,i])
+}
+
+#time <- c("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", #"Dezembro")
+#time <-seq(1:12)
+table_volume <- data.frame(meses, round(matrix_vol[,1],0), round(medias25_vol,0), round(matrix_vol[,2],0), round(tail(exporta_uva_volume_2024,12),0),
+round(tail(exporta_uva_volume_2025,12),0), round(exporta_uva_volume_2026[,1],0))
+colnames(table_volume) = c('Meses', 'Mínimo', 'Média', 'Máximo', '2024', '2025', '2026')
+
+tablea_vol <- table_volume[,-c(5:7)]
+tableb_vol <- table_volume[,-c(2,3,4)]
+
+tablea2_vol <- melt(tablea_vol, id.var='Meses')
+tableb2_vol <- melt(tableb_vol, id.var='Meses')
+
+
+#Variação Mensal 2021
+
+variacao_volume_2024 <- as.matrix(variacao_volume_24)
+variacao_volume_2025 <- as.matrix(variacao_volume_25)
+variacao_volume_2026 <- matrix(NA, nrow=12, ncol=1)
+variacao_volume_26 <- as.matrix(variacao_volume_26)
+
+for(i in 1:mes){
+  variacao_volume_2026[i,1] = variacao_volume_26[i,1]
+}
+
+variacao_25 <- ((variacao_volume_2025/variacao_volume_2024) - 1)*100
+variacao_26 <- ((variacao_volume_2026/variacao_volume_2025) - 1)*100
+
+variacao <- data.frame(meses, variacao_25, variacao_26)
+colnames(variacao) = c('Meses', 'Variação 2025 e 2024', 'Variação 2026 e 2025')
+
+variacaom <- melt(variacao, id.var='Meses')
+
+mycolors2 <- c("orange", "lightblue3")
+
+#Dados de Importação
+importacao <- tibble(date, dados7)
+importacao <- melt(importacao, id.var='date')
+```
+
+# O COMPORTAMENTO DAS EXPORTAÇÕES DE UVA DO BRASIL: `r toupper(strftime(atual, format = "%B DE %Y"))`.
+
+<hr>
+
+```{r texto, include=FALSE}
+# Variaveis para o texto automatico do resumo (tudo calculado dos dados)
+anoref <- as.integer(format(atual, "%Y"))
+
+# formata numero em pt-BR (virgula decimal, ponto de milhar)
+vir <- function(x, d = 1) formatC(x, format = "f", digits = d,
+                                  big.mark = ".", decimal.mark = ",")
+
+mval <- function(y, m) as.numeric(window(exporta_uva_valor,  start = c(y, m), end = c(y, m))) # mil US$
+mvol <- function(y, m) as.numeric(window(exporta_uva_volume, start = c(y, m), end = c(y, m))) # t
+ytd  <- function(serie, y) sum(window(serie, start = c(y, 1), end = c(y, mes)))
+
+# Volume (toneladas) - serie ja esta em toneladas
+vol_ref      <- as.numeric(tail(exporta_uva_volume, 1))
+vol_media    <- medias25_vol[mes]
+vol_2024     <- mvol(anoref - 2, mes)
+vol_2025     <- mvol(anoref - 1, mes)
+var_vol_2025 <- (vol_ref / vol_2025 - 1) * 100
+var_vol_2024 <- (vol_ref / vol_2024 - 1) * 100
+vol_ytd      <- ytd(exporta_uva_volume, anoref)
+vol_ytd_24   <- ytd(exporta_uva_volume, anoref - 2)
+vol_ytd_25   <- ytd(exporta_uva_volume, anoref - 1)
+frase_ano_vol <- if (vol_ytd < vol_ytd_25 & vol_ytd < vol_ytd_24) {
+  "menor do que nos dois últimos anos"
+} else if (vol_ytd > vol_ytd_25 & vol_ytd > vol_ytd_24) {
+  "maior do que nos dois últimos anos"
+} else "intermediário em relação aos dois últimos anos"
+
+# Valor (Milhoes US$) - serie esta em Mil US$, divide por 1000
+val_ref   <- as.numeric(tail(exporta_uva_valor, 1)) / 1000
+val_media <- medias25[mes] / 1000
+val_2024  <- mval(anoref - 2, mes) / 1000
+val_2025  <- mval(anoref - 1, mes) / 1000
+
+# Destinos (top 3, exclui "Outros")
+d3 <- dados3[dados3$Paises != "Outros", ]
+d3 <- d3[order(-d3$Participacao), ]
+
+# Via / UF / URF / importacao / cambio
+pct_maritima  <- dados4$Participacao[dados4$Vias == "MARITIMA"][1]
+ufpct <- function(nm) dados5$Participacao[dados5$UF == nm][1]
+dadosurf      <- read.csv2('C:/Users/Lenovo/Dropbox/tempecon/dados_uva/urf_uva.csv',
+                          header = TRUE, sep = ";", dec = ".")
+pct_fortaleza <- dadosurf$percentual[dadosurf$URF == "ALF-Fortaleza"][1]
+
+imp_ult   <- tail(dados7, 1)        # ultimo mes; colunas Chile/Argentina/Peru/Egito
+imp_chile <- as.numeric(imp_ult$Chile)
+imp_arg   <- as.numeric(imp_ult$Argentina)
+
+cambio_esp <- as.numeric(head(dados6$cambio, 1))   # FOCUS vem do mais recente -> head = atual
+```
+
+O objetivo desta análise foi verificar o comportamento das exportações de uva do Brasil. Os dados utilizados são mensais e disponibilizados pelo **Comexstat (MDIC)** para o período de *janeiro de 2016 a `r strftime(atual, format = "%B de %Y")`*;
+
+Em relação aos volumes, em `r strftime(atual, format = "%B de %Y")` foram de `r vir(vol_ref,0)` toneladas (t). A média histórica (até `r anoref-1`) para este mês é de `r vir(vol_media,0)` t. Em `r strftime(atual, format = "%B")` de `r anoref-2` foram exportadas `r vir(vol_2024,0)` t e, em `r strftime(atual, format = "%B")` de `r anoref-1`, foram `r vir(vol_2025,0)` t, ou seja, houve `r ifelse(var_vol_2025>=0,"um aumento","uma redução")` de `r vir(var_vol_2025,2)`% em relação a `r anoref-1` e `r ifelse(var_vol_2024>=0,"um aumento","uma redução")` de `r vir(var_vol_2024,2)`% na comparação com o mesmo período de `r anoref-2`. No ano, o volume de `r vir(vol_ytd,0)` t é `r frase_ano_vol`.
+
+Em termos dos valores das exportações, em `r strftime(atual, format = "%B de %Y")` foram cerca de US\$ `r vir(val_ref,1)` milhões de dólares, `r ifelse(val_ref>=val_media,"acima","abaixo")` da média histórica de US\$ `r vir(val_media,1)` milhões. Em `r strftime(atual, format = "%B")` de `r anoref-2` foram gerados US\$ `r vir(val_2024,1)` milhões em receitas e, em `r strftime(atual, format = "%B")` de `r anoref-1`, um total de US\$ `r vir(val_2025,2)` milhões.
+
+Os principais destinos foram `r d3$Paises[1]` (`r vir(d3$Participacao[1],2)`%), `r d3$Paises[2]` (`r vir(d3$Participacao[2],2)`%) e `r d3$Paises[3]` (`r vir(d3$Participacao[3],2)`%). A principal via de envio foi a marítima (`r vir(pct_maritima,2)`%), com `r vir(pct_fortaleza,2)`% do total despachado pela alfândega de Fortaleza. Os principais estados de origem da uva foram Pernambuco (`r vir(ufpct("Pernambuco"),2)`%) e Bahia (`r vir(ufpct("Bahia"),2)`%). Em `r strftime(atual, format = "%B de %Y")` foram importadas `r vir(imp_chile,1)` t de uvas do Chile.
+
+A taxa de câmbio continua com a apreciação do Real em relação ao Dólar e a taxa esperada pelo mercado para o final do ano de `r anoref` é de R\$`r vir(cambio_esp,2)` para 1 dólar.
+
+<hr>
+
+# 1. Receita de Exportação e Volume Exportado de Uva: 2016 a 2026
+
+::: panel-tabset
+### GRÁFICO
+
+```{r exporta1}
+
+#Gráfico com Ggplot2
+
+mycolor1 <- "gold"
+mycolor2 <- "red"
+
+g1 <- ggplot(data=dados1) +  #estetica vai valer para todos os geom's
+  geom_col(aes(x=Ano, y=Toneladas, fill="Toneladas"), lwd=1)+
+    scale_fill_manual(values=mycolor1)+
+  geom_line(aes(x=Ano, y=Valor, colour="Mil Dólares"), linewidth=2)+
+  scale_colour_manual(values=mycolor2)+
+  labs(y= "US$ Mil / Ton", x= "Anos", title='',
+       caption = "") +
+  scale_y_continuous(limits=c(0, ylim_auto(c(dados1$Valor, dados1$Toneladas))), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_x_continuous(breaks = seq(2016, 2026, by = 1))+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=14, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=1, size=14, margin = margin(l=20)),
+        axis.title.x = element_text(size=14, face = "bold", margin = margin(b=20)),
+        axis.title.y = element_text(size=14, face = "bold", margin = margin(l=20)),
+        plot.title = element_text(hjust = 0.5, size=16, face="italic"),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g1) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.50, 
+                      y=-0.30,
+                      title=''))
+```
+
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+Obs: Dados até o mês de `r strftime(atual, format = "%B de %Y")`.
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA**
+
+```{r exporta2}
+#tableP <-table[,-1]
+#rmarkdown::paged_table(round(tableD,2))
+dados1t <- dados1
+dados1t[,1] <- seq(2016, 2026, by = 1)
+datatable(round(dados1t), option = list(
+  autoWidth = TRUE,
+  pageLength = 12,
+  lengthMenu = c(12, 15),
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+```
+
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+Obs: Dados de 2026 até o mês de `r strftime(atual, format = "%B de %Y")`.
+:::
+
+<br>
+
+# 2. Análise das Receitas das Exportações
+
+<br>
+
+## Evolução da Tendência do Valor das Exportações de uva do Brasil: 2016 a 2026.
+
+```{r exporta3}
+#, results='', fig.cap='', fig.width=10, fig.height=6
+
+g2 <- ggplot(data=trend_valor)+
+  geom_line(aes(x=date, y=trend_valor), color="blue", linewidth=1.5)+
+  scale_y_continuous(limits=c(0, ylim_auto(trend_valor$trend_valor)), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+  scale_x_date(date_breaks = "1 year",
+               labels = date_format("%Y"))+
+  labs(y= "Tendência", x= "Meses de cada Ano", title='',
+       caption = "")+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=14, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
+        axis.title.x = element_text(size=14, face = "bold", margin = margin(b=20)),
+        axis.title.y = element_text(size=14, face = "bold", margin = margin(l=20)),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g2) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.25, 
+                      y=-0.35,
+                      title=''))
+```
+
+Fonte: Observatório de Mercado de uva da Embrapa
+
+<br>
+
+## Evolução da Sazonalidade do Valor das Exportações de uva do Brasil: 2016 a 2026.
+
+```{r exporta4}
+
+#Decompor a Série
+
+g3 <- ggplot(data=sazonal_graph)+
+  geom_line(aes(x=meses, y=sazonal_valor), color="blue", linewidth=1.5)+
+  scale_y_continuous(limits=c(0,5), n.breaks = 5, expand = expansion(add=c(0,0.5)), 
+                     labels=number_format(accuracy = 0.1)) +
+    scale_x_date(date_breaks = "1 month",
+               labels = date_format("%B"))+
+  labs(y= "", x= "Meses de cada Ano", title='',
+       caption = "")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45, hjust=0.5, size=14, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
+        axis.title.y = element_text(size=14, face = "bold"),
+        axis.title.x = element_text(size=14, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g3) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.25, 
+                      y=-0.35,
+                      title=''))
+```
+
+Fonte: Observatório de Mercado de uva da Embrapa
+
+<br>
+
+## Valor das Exportações de uva do Brasil:`r strftime(atual, format = "%B")` de 2026 em comparação com 2016-2025.
+
+::: panel-tabset
+### GRÁFICO
+
+```{r exporta5}
+
+g4 <- ggplot()+
+  geom_col(data=tableb2, aes(x=Meses, y=value, fill=variable), lwd=1,
+           position = "dodge")+
+  scale_fill_manual(values=mycolors)+
+  geom_line(data=tablea2, aes(x=Meses, y=value, colour=variable), linetype = "solid",
+            linewidth = 1)+
+    scale_colour_manual(values = c("red", "chocolate", "darkgreen")) +
+    scale_y_continuous(limits = c(0, ylim_auto(c(tablea2$value, tableb2$value))), n.breaks = 10)+
+    scale_x_date(date_breaks = "1 month",
+               labels = date_format("%B"), expand = expansion(add=c(0,0)))+
+  labs(y= "US$ Mil", x= "Meses do Ano", title='',
+       caption = "")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=25, hjust=0.5, size=11, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
+        axis.title.y = element_text(size=14, face = "bold"),
+        axis.title.x = element_text(size=14, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g4) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.50, 
+                      y=-0.30,
+                      title=''))
+```
+
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa
+
+Obs: Dados de 2026 até o mês de `r strftime(atual, format = "%B")`.
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (US\$ MIL)**
+
+```{r exporta6}
+
+table_valor<-table[,-1]
+datatable(round(table_valor,2), option = list(
+  autoWidth = TRUE,
+  pageLength = 12,
+  lengthMenu = c(12, 15),
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+```
+
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+Obs: Dados de 2026 até o mês de `r strftime(atual, format = "%B")`.
+:::
+
+<br>
+
+# 3. Análise do Volume das Exportações
+
+<br>
+
+## Evolução da Tendência do Volume Exportado de uva do Brasil: 2016 a 2026.
+
+```{r exporta7}
+
+g5 <- ggplot(data=trend_volume)+
+  geom_line(aes(x=date, y=trend_volume), color="blue", linewidth=1.5)+
+  scale_y_continuous(limits=c(0, ylim_auto(trend_volume$trend_volume)), n.breaks = 10, 
+                     expand = expansion(add=c(0,0.5)))+
+  scale_x_date(date_breaks = "1 year",
+               labels = date_format("%Y"))+
+  labs(y= "Tendência", x= "Meses de cada Ano", title='',
+       caption = "")+
+  theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=14, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
+        axis.title.x = element_text(size=14, face = "bold", margin = margin(b=20)),
+        axis.title.y = element_text(size=14, face = "bold", margin = margin(l=20)),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g5) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.25, 
+                      y=-0.35,
+                      title=''))
+
+```
+
+Fonte: Observatório de Mercado de uva da Embrapa
+
+<br>
+
+## Evolução da Sazonalidade do Volume das Exportações de uva do Brasil: 2016 a 2026.
+
+<br>
+
+```{r exporta8}
+
+#Decompor a Série
+
+g6 <- ggplot(data=sazonal_graph_volume)+
+  geom_line(aes(x=meses, y=sazonal_volume), color="blue", linewidth=1.5)+
+  scale_y_continuous(limits=c(0,5), n.breaks = 5, expand = expansion(add=c(0,0.5)), 
+                     labels=number_format(accuracy = 0.1)) +
+    scale_x_date(date_breaks = "1 month",
+               labels = date_format("%B"))+
+  labs(y= "", x= "Meses de cada Ano", title='',
+       caption = "")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45, hjust=0.5, size=14, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
+        axis.title.y = element_text(size=14, face = "bold"),
+        axis.title.x = element_text(size=14, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g6) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.25, 
+                      y=-0.35,
+                      title=''))
+```
+
+Fonte: Observatório de Mercado de uva da Embrapa
+
+<br>
+
+## Volume das Exportações de uva do Brasil: `r strftime(atual, format = "%B")` de 2026 em comparação com 2016-2025
+
+::: panel-tabset
+### GRÁFICO
+
+```{r exporta9}
+g7 <- ggplot()+
+  geom_col(data=tableb2_vol, aes(x=Meses, y=value, fill=variable), lwd=1,
+           position = "dodge")+
+  scale_fill_manual(values=mycolors)+
+  geom_line(data=tablea2_vol, aes(x=Meses, y=value, colour=variable), linetype = "solid",
+            linewidth = 1)+
+    scale_colour_manual(values = c("red", "chocolate", "darkgreen")) +
+    scale_y_continuous(limits = c(0, ylim_auto(c(tablea2_vol$value, tableb2_vol$value))), n.breaks = 10)+
+    scale_x_date(date_breaks = "1 month",
+               labels = date_format("%B"), expand = expansion(add=c(0,0)))+
+  labs(y= "Toneladas", x= "Meses do Ano", title='',
+       caption = "")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=25, hjust=0.5, size=11, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
+        axis.title.y = element_text(size=14, face = "bold"),
+        axis.title.x = element_text(size=14, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g7) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.50, 
+                      y=-0.30,
+                      title=''))
+```
+
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa.
+
+Obs: Dados de 2026 até o mês de `r strftime(atual, format = "%B")`.
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (TONELADAS)**
+
+```{r exporta10}
+
+table_volume<-table_volume[,-1]
+datatable(round(table_volume,3), option = list(
+  autoWidth = TRUE,
+  pageLength = 12,
+  lengthMenu = c(12, 15),
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+```
+
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa.
+
+Obs: Dados de 2026 até o mês de `r strftime(atual, format = "%B")`.
+:::
+
+## Crescimento do Volume Mensal de Exportação: 2025/2024 e 2026/2025.
+
+::: panel-tabset
+### GRÁFICO
+
+```{r exporta11}
+
+g8 <- ggplot()+
+  geom_col(data=variacaom, aes(x=Meses, y=value, fill=variable), lwd=1, position = "dodge")+
+  scale_fill_manual(values=mycolors2)+
+  scale_y_continuous(labels = number_format(accuracy = 0.01, decimal.mark = ","))+
+  scale_x_date(date_breaks = "1 month",
+               labels = date_format("%B"), expand = expansion(add=c(0,0)))+
+  labs(y= "Variação Percentual", x= "Meses do Ano", title='',
+       caption = "")+
+  theme_minimal()+
+   theme(axis.text.x=element_text(angle=25, hjust=0, size=10, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
+        axis.title.y = element_text(size=14, face = "bold"),
+        axis.title.x = element_text(size=14, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+  ggplotly(g8) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.50, 
+                      y=-0.30,
+                      title=''))
+```
+
+Fonte: Observatório de Mercado de uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (VARIAÇÃO PERCENTUAL)**
+
+```{r exporta12}
+
+variacaot<-variacao[,-1]
+datatable(round(variacaot,1), option = list(
+  autoWidth = TRUE,
+  pageLength = 12,
+  lengthMenu = c(12, 15),
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+```
+
+Fonte: Observatório de Mercado de uva da Embrapa
+:::
+
+# 4. Principais destinos de exportação da uva do Brasil em 2026.
+
+::: panel-tabset
+## GRÁFICO
+
+```{r exporta15}
+
+#Gráfico com Ggplot2
+
+mycolor1 <- "gold"
+
+g10 <- ggplot(data=dados3) +  #estetica vai valer para todos os geom's
+  geom_col(aes(x = ordena_outros(Paises, Participacao), y= Participacao, fill="% do Total"), lwd=1)+
+    scale_fill_manual(values=mycolor1) +
+  labs(y= "% do Volume Total Exportados", x= "Países", title='',
+       caption = "")+
+  scale_y_continuous(limits=c(0, ylim_auto(dados3$Participacao, cap = 100)), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+   theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=8, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=1, size=14, margin = margin(l=20)),
+        axis.title.x = element_text(size=14, face = "bold", margin = margin(b=20)),
+        axis.title.y = element_text(size=14, face = "bold", margin = margin(l=40)),
+        plot.title = element_text(hjust = 0.5, size=16, face="italic"),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g10) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.4, 
+                      y=-0.35,
+                      title=''))
+```
+
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa
+
+## TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (% PARTICIPAÇÃO NO TOTAL EXPORTADO)**
+
+```{r exporta16}
+
+datatable(dados3, option = list(
+  autoWidth = TRUE,
+  pageLength = 12,
+  lengthMenu = c(10, 25, 50, 100),
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+```
+
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa
+:::
+
+# 5. Principais vias de exportação da uva do Brasil em 2026.
+
+::: panel-tabset
+## GRÁFICO
+
+```{r exporta17}
+
+#Gráfico com Ggplot2
+
+g11 <- ggplot(data=dados4) +  #estetica vai valer para todos os geom's
+  geom_col(aes(x = ordena_outros(Vias, Participacao), y= Participacao, fill="% do Total"), lwd=1)+
+    scale_fill_manual(values=mycolor1) +
+  labs(y= "% de Exportação", x= "Vias", title='',
+       caption = "")+
+  scale_y_continuous(limits=c(0, ylim_auto(dados4$Participacao, cap = 100)), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+   theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=1, size=14, margin = margin(l=20)),
+        axis.title.x = element_text(size=14, face = "bold", margin = margin(b=20)),
+        axis.title.y = element_text(size=14, face = "bold", margin = margin(l=40)),
+        plot.title = element_text(hjust = 0.5, size=16, face="italic"),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g11) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.4, 
+                      y=-0.2,
+                      title=''))
+```
+
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa
+
+## TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (% VIAS DE EXPORTAÇÃO)**
+
+```{r exporta18}
+
+datatable(dados4, option = list(
+  autoWidth = TRUE,
+  pageLength = 12,
+  lengthMenu = c(10, 25, 50, 100),
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+```
+
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa
+:::
+
+# 6. Unidade da RFB de Despacho Aduaneiro da Uva - 2026.
+
+```{r exporta20z1}
+#Direcionado o R para o Diretorio a ser trabalhado
+setwd('C:/Users/Lenovo/Dropbox/tempecon/dados_uva')
+
+#Inicio do Script
+#Pacotes a serem utilizados 
+library(reshape2)
+
+#Entrando dados no R
+dados21 <- read.csv2('urf_uva.csv', header=T, sep=";", dec = ".")
+
+# Set the custom order for 'regiao' using factor
+dados21$URF <- factor(dados21$URF, levels = c("ALF-Fortaleza", "ALF-Salvador", "Aeroporto de GRU", "ALF-Dionísio Cerqueira", "ALF-Foz do Iguaçu", "Porto de Santos", "Outros"))
+
+dados21a <- melt(dados21, id.var='URF')
+
+mycolors <- "gold"
+
+g8 <- ggplot() +
+  geom_col(data=dados21a, aes(x=URF, y=value, fill=variable), size=2, width = 0.7, position = position_dodge(width = .5, preserve = "total"))+
+  scale_fill_manual(values=mycolors) +
+  scale_y_continuous(n.breaks = 10)+
+  labs(y= "Percentual Despachado (%)", x= "Unidade da Receita Federal do Brasil",
+       caption = "Fonte: COMEXSTAT reprocessado pelos Observatórios de Uva da Embrapa, 2026.")+
+  geom_text(data=dados21a, aes(y=value, x=URF, group=variable, label=value), 
+    position = position_dodge(width = .5, preserve = "total"), 
+    size=4, 
+    hjust=0.5, 
+    vjust=-1.4)+
+  theme_minimal() + #Definindo tema
+  theme(axis.text.x = element_text(angle=45, hjust=1, margin = margin(b=10), size=10), 
+        axis.text.y = element_text(margin = margin(b=10), size=14), 
+        axis.title.x = element_text(size=14, face = "bold", margin = margin(b=10)),
+        axis.title.y = element_text(size=14, face = "bold", margin = margin(l=20)),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), # retirando as linhas
+        plot.caption = element_text(hjust = 0, size=14), #ajuste Fonte
+        legend.title = element_blank(),
+        legend.text=element_text(size=14),
+        legend.position = "none")  # Define legend 
+
+ggplotly(g8) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.5, 
+                      y=-0.3,
+                      title=''))
+```
+
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa
+
+# 7. Unidade da Federação da uva exportada do Brasil em 2026.
+
+::: panel-tabset
+## GRÁFICO
+
+```{r exporta19}
+
+#Gráfico com Ggplot2
+
+g12 <- ggplot(data=dados5) +  #estetica vai valer para todos os geom's
+  geom_col(aes(x = ordena_outros(UF, Participacao), y= Participacao, fill="% do Total"), lwd=1)+
+    scale_fill_manual(values=mycolor1) +
+  labs(y= "% Exportação", x= "Unidade da Federação", title='',
+       caption = "")+
+  scale_y_continuous(limits=c(0, ylim_auto(dados5$Participacao, cap = 100)), n.breaks = 10, expand = expansion(add=c(0,0.5)))+
+   theme_classic()+ #Definindo tema
+  theme(axis.text.x=element_text(angle=0, hjust=0.5, size=12, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=1, size=14, margin = margin(l=20)),
+        axis.title.x = element_text(size=14, face = "bold", margin = margin(b=20)),
+        axis.title.y = element_text(size=14, face = "bold", margin = margin(l=40)),
+        plot.title = element_text(hjust = 0.5, size=16, face="italic"),
+        plot.caption = element_text(hjust = 0, size=12),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g12) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.4, 
+                      y=-0.2,
+                      title=''))
+```
+
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa
+
+## TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (% UNIDADE FEDERAÇÃO)**
+
+```{r exporta20}
+
+datatable(dados5, option = list(
+  autoWidth = TRUE,
+  pageLength = 12,
+  lengthMenu = c(10, 25, 50, 100),
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+```
+
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa
+:::
+
+# 8. Importação de Uva pelo Brasil: 2016-2026.
+
+::: panel-tabset
+## GRÁFICO
+
+```{r importa1}
+mycolors3 <- c("orange", "lightblue3", "red", "darkgreen")
+
+g13 <- ggplot()+
+geom_col(data=importacao, aes(x=date, y=value, fill=variable), lwd=1, position = "dodge")+
+  scale_fill_manual(values=mycolors3)+
+    scale_x_date(date_breaks = "6 months",
+               labels = date_format("%b-%y"),expand = expansion(add=c(0,0)))+
+  labs(y= "Volume (Toneladas)", x= "Meses do Ano", title='',
+       caption = "Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de Uva da Embrapa")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=11, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=10, margin = margin(l=20)),
+        axis.title.y = element_text(size=10, face = "bold"),
+        axis.title.x = element_text(size=10, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=10)) # Definindo posição da legenda
+
+ggplotly(g13) %>%
+  layout(legend = list(
+                      orientation = "h", 
+                      x=0.50, 
+                      y=-0.3,
+                      title=''))
+```
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+## TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA**
+
+```{r importa2}
+importacaot <- dados7
+importacaot$date <- date
+data_importacaot <- format(as.Date(importacaot$date),'%m/%Y')
+importacaot <- tibble(data_importacaot, importacaot)
+importacaot <- importacaot[,-6]
+colnames(importacaot)[1] = 'Data'
+
+datatable(importacaot, option = list(
+  autoWidth = TRUE,
+  pageLength = 12,
+  lengthMenu = c(12, 24, 48, 96, 108, 120),
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+```
+
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de uva da Embrapa
+:::
+
+<br>
+
+# 9. Evolução da Taxa de Câmbio Real
+
+```{python curaca9, echo=FALSE, message=FALSE}
+import pandas as pd
+from numpy import arange
+import math
+from datetime import date
+from dateutil.relativedelta import relativedelta
+import requests
+
+from plotnine import (
+    ggplot, aes, geom_line, geom_point, geom_text, annotate,
+    scale_x_date, scale_y_continuous, labs, theme_minimal, theme
+)
+from plotnine.themes.elements import element_text
+
+# --- Parâmetros de período (últimos 12 meses até hoje) ---
+hoje = date.today()
+inicio = hoje - relativedelta(months=12)
+fmt = "%d/%m/%Y"
+
+# --- Série SGS (PTAX venda diária = 1) ---
+url = (f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados"
+       f"?formato=json&dataInicial={inicio.strftime(fmt)}&dataFinal={hoje.strftime(fmt)}")
+
+# --- Baixa e prepara dados ---
+resp = requests.get(url, timeout=30)
+resp.raise_for_status()
+df = pd.DataFrame(resp.json())
+df["data"]  = pd.to_datetime(df["data"], format="%d/%m/%Y")
+df["valor"] = pd.to_numeric(df["valor"].str.replace(",", ".", regex=False))
+df = df.sort_values("data").reset_index(drop=True)
+
+# --- fun: pega a data disponível mais próxima ---
+def get_nearest(df, date_str):
+    d = pd.to_datetime(date_str)
+    i = (df["data"] - d).abs().idxmin()
+    return df.loc[i, "data"], df.loc[i, "valor"]
+
+# Datas-alvo
+eleicao, v_eleicao = get_nearest(df, "2024-11-05")
+t10, v_t10         = get_nearest(df, "2025-04-02")
+t50, v_t50         = get_nearest(df, "2025-07-09")
+# nova data: posse (toma de posesión)
+tpos, v_tpos = get_nearest(df, "2025-01-20")
+# Último debate antes das eleições (1º de outubro de 2024)
+ult_debate, v_ult_debate = get_nearest(df, "2024-10-01")
+
+# Quebras do eixo Y: de 0,10 em 0,10
+min_break = math.floor(df["valor"].min()*10)/10
+max_break = math.ceil(df["valor"].max()*10)/10
+breaks_ = arange(min_break, max_break+0.1, 0.10)
+
+# Helper p/ formatar decimal com vírgula no label
+fmt_pt = lambda v: f"{v:.2f}".replace(".", ",")
+
+plot = (
+    ggplot(df, aes("data", "valor"))
+    + geom_line(color="red", size=1.2)
+    + scale_x_date(date_breaks="1 month", date_labels="%b/%Y")
+    + scale_y_continuous(
+        breaks=breaks_,
+        labels=lambda l: [fmt_pt(v) for v in l]
+    )
+    + labs(
+        x="Meses do ano",
+        y="Taxa de cambio real (R\$/US\$)",
+        title="",
+        caption='Fonte: Banco Central do Brasil (SGS 1 — PTAX Venda diaria).\n'
+                'Dados reprocessados pelo Observatório de Mercado de Uva da Embrapa.'
+    )
+    + theme_minimal()
+    + theme(
+        axis_title_x=element_text(size=18, face="bold"),
+        axis_title_y=element_text(size=18, face="bold"),
+        axis_text_y=element_text(size=18, face="bold"),
+        axis_text_x=element_text(angle=45, ha='center', size=16),
+        plot_title=element_text(size=14, weight="bold"),
+        plot_caption=element_text(ha='left', size=16),
+        figure_size=(14, 6.5)
+    )
+)
+
+plot.show()
+```
+
+<br>
+
+# 10. Evolução da Taxa de Câmbio Esperada para Dezembro de 2026
+
+<br>
+
+::: panel-tabset
+### GRÁFICO
+
+```{r exporta21}
+#dados6 <- dados6 %>%
+#     mutate(dates = floor_date(dates, unit = "week")) %>%
+#     group_by(dates) %>%
+#     summarise(
+#         cambio = mean(cambio))
+#dados6$dates <- dados6$dates + 1
+#dados6$cambio <- round(dados6$cambio,2)
+
+g13 <- ggplot(data=dados6)+
+  geom_line(aes(x=dates, y=cambio), color="blue", size=1.5)+
+    scale_x_date(date_breaks = "1 week",
+               labels = date_format("%d-%b"))+
+  labs(y= "Câmbio Esperado para Dezembro/2026", x= "Semanas do Ano", title='',
+       caption = "")+
+  theme_classic()+
+  theme(axis.text.x=element_text(angle=35, hjust=0.5, size=11, margin = margin(b=20)),
+        axis.text.y=element_text(hjust=0.5, size=14, margin = margin(l=20)),
+        axis.title.y = element_text(size=12, face = "bold"),
+        axis.title.x = element_text(size=14, face = "bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size=14),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text=element_text(size=12)) # Definindo posição da legenda
+
+ggplotly(g13)
+```
+
+Fonte: FOCUS/BCB reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA**
+
+```{r exporta22}
+
+cambiot <- dados6
+data_cambio <-format(as.Date(cambiot$dates),'%d/%m/%Y')
+cambiot <- cambiot[,-1]
+cambiot <- tibble(data_cambio, round(cambiot,2))
+colnames(cambiot) = c('Data', 'Taxa de Câmbio R$/US$')
+
+datatable(cambiot, option = list(
+  autoWidth = TRUE,
+  pageLength = 12,
+  lengthMenu = c(10, 25, 50, 100),
+  columnDefs = list(list(className = 'dt-center', targets = "_all"))))
+```
+
+Fonte: COMEXSTAT reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+<br>
+
+# INFORMAÇÕES E APOIO
+
+<br> <br>
+
+<center>![](logo_uva.png){width="10cm"}</center>
+
+<br> <br>
+
+<center>João Ricardo F. de Lima</center>
+
+<center>Email Coordenador: joao.ricardo\@embrapa.br</center>
+
+<br>
+
+<center><https://www.embrapa.br/web/semiarido/observatorio-da-uva></center>
+
+<center>[Dashboard Mercado de Uva](https://bit.ly/3OgmyKp)</center>
+
+<br>
+
+<center>Telefones:</center>
+
+<center>87-3866-3667</center>
+
+<center>87-99961-5799</center>
+
+<br>
+
+<center>![](apoio4.png){width="10.5cm"}</center>
+
+<br>
