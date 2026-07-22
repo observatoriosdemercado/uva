@@ -1,0 +1,1305 @@
+---
+title: "Previsão de Preços de Uva com o Ecossistema Nixtla"
+subtitle: "Referencial metodológico e protótipo (Arra 15 e BRS Vitória)"
+author: "João Ricardo F. de Lima"
+date: "today"
+editor: source
+lang: pt
+language:
+  toc-title-document: '<a href="https://observatoriosdemercado.github.io/uva/" target="_blank"><img src="logo_embrapa.jpg" alt="Logotipo Embrapa" width="150"></a>'
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-location: left
+    code-fold: true
+    embed-resources: true
+    page-layout: full
+    fig-width: 12
+    fig-height: 6
+    fig-align: center
+    df-print: paged
+    fontsize: 13pt
+bibliography: referencias.bib
+theme:
+  light: flatly
+execute:
+  echo: true
+  message: false
+  warning: false
+  cache: false
+jupyter: manga-nixtla
+---
+
+# Parte I — Referencial Metodológico
+
+> Esta primeira parte é um material de apoio sobre **modelos de previsão de
+> preços**, escrito para servir de referência didática (os fundamentos gerais —
+> por que preços são difíceis de prever, por que frutas ainda mais — já estão
+> documentados na versão para manga e não são repetidos aqui). A segunda parte
+> aplica tudo isso, na prática, ao preço da uva com o ecossistema **Nixtla**.
+
+## 3. Os canais que movem o preço da uva no Vale do São Francisco
+
+> **Nota de método.** Ao contrário da manga — onde os mecanismos abaixo já
+> tinham sido validados no rolling-origin antes deste documento — para a uva
+> **nada aqui foi testado ainda**. O que segue são **hipóteses de mecanismo**,
+> não achados: candidatos a entrar na fila de exógenas (§12), cada um só fica
+> se pagar aluguel no rolling-origin (§8 em diante). O primeiro teste real já
+> saiu diferente do esperado: o Fourier (sazonalidade determinística) foi
+> **descartado** (§8.2) porque a uva do VSF, ao contrário da manga, não tem
+> calendário biológico fixo — a produção é **programada por poda** (2 ciclos
+> de colheita por ano, decisão do produtor), não disparada por floração natural
+> em época certa. Isso muda onde faz sentido procurar mecanismo: não em
+> defasagens biológicas fixas (tipo "16 semanas da floração"), mas em janelas
+> **curtas e próximas da colheita**, e em canais **não sazonais** (câmbio, ENSO).
+
+### 3.1 Clima local — candidatos
+
+- **Chuva perto da colheita (rachadura de baga / podridão).** Diferente da
+  antracnose na floração da manga, o risco agronômico mais citado para uva de
+  mesa é a chuva **nos dias que antecedem a colheita**: a baga incha, racha, e
+  a podridão descarta cacho. Mecanismo compatível com **lag curto** (0–6
+  semanas), não com meses. Variável candidata: chuva acumulada em janela curta
+  (`total_rainfall`, já carregada em `clima`, lag a determinar).
+- **Calor na maturação (brix/qualidade).** Temperatura elevada na fase final de
+  maturação afeta açúcar e qualidade do cacho — pode empurrar preço em
+  qualquer direção dependendo de estar dentro ou fora do ótimo da variedade;
+  candidata: `hot_days_35`, lag também a determinar (não herdado da manga).
+- Como já não há período fixo (§8.2), o lag de cada variável **precisa ser
+  variado e testado** — não fixado por analogia com outra fruta.
+
+### 3.2 Canal de exportação e câmbio
+
+- **Câmbio.** Real desvalorizado → exportar é mais atrativo → menos uva no
+  mercado interno → preço sobe. Mecanismo esperado mais forte na **Arra 15**
+  (variedade historicamente mais orientada a exportação) do que na Vitória
+  (mercado interno).
+- **Peru como concorrente/parâmetro de calendário.** O Peru é o **maior
+  exportador mundial de uva de mesa** — Piura e Lambayeque (já monitorados em
+  `gerar_clima.py`, junto com Casma e Equador) pesam nesse canal ainda mais do
+  que pesavam para a manga. A hipótese, por analogia ao mecanismo ENSO usado
+  na manga (@ubilava2018), é que anomalias climáticas nessas regiões desloquem
+  a safra peruana e, por essa via, afetem a janela de exportação brasileira —
+  mas o calendário de colheita da uva peruana e a defasagem correta **ainda
+  não foram mapeados** para este projeto (diferente da manga, onde o lag de
+  ~6 meses via Niño 1+2/3.4 já estava estabelecido).
+- Câmbio e Niño (1+2 e 3.4) são as **próximas exógenas da fila** (§12), a
+  testar sem Fourier, cada uma isoladamente contra o piso univariado.
+
+### 3.3 Competição doméstica — a mapear
+
+Na manga, quatro polos (VSF, Livramento/BA, Jaíba, São Paulo) disputavam o
+consumidor interno, com dados de preço e clima para cada um. **Para a uva de
+mesa, essa estrutura de competição regional ainda não foi levantada** — não
+há, neste momento, evidência ou dado que sustente hipótese de mecanismo aqui.
+Fica como item em aberto, não como capítulo a preencher por analogia.
+
+## 4. Modelos de previsão
+
+### 4.1 ARIMA e a sazonalidade por Fourier
+
+Um **ARIMA(p,d,q)** [@box2015] escreve-se, com $L$ o operador de defasagem,
+$$
+\phi(L)\,(1-L)^d y_t = \theta(L)\,\varepsilon_t,
+$$
+$$
+\phi(L)=1-\phi_1 L-\dots-\phi_p L^p,\qquad \theta(L)=1+\theta_1 L+\dots+\theta_q L^q.
+$$
+
+Com regressores externos, temos a **regressão com erros ARIMA** (ARIMAX):
+$$
+y_t = \boldsymbol{\beta}'\mathbf{x}_t + n_t, \qquad \phi(L)(1-L)^d n_t = \theta(L)\varepsilon_t .
+$$
+
+**Sazonalidade.** Em dados semanais o período é $m=52$. Um SARIMA sazonal clássico
+$(P,D,Q)_{52}$ é problemático (a diferenciação sazonal descarta um ano de dados; um
+termo no lag 52 não descreve uma curva anual suave; o espaço de estados fica enorme).
+A alternativa recomendada é a **regressão harmônica dinâmica** [@hyndman2021]:
+sazonalidade determinística por **termos de Fourier** como exógenas,
+$$
+s_t=\sum_{k=1}^{K}\Big[\alpha_k\sin\!\Big(\tfrac{2\pi k\, d_t}{365.25}\Big)+\beta_k\cos\!\Big(\tfrac{2\pi k\, d_t}{365.25}\Big)\Big],
+$$
+com $d_t$ = dia do ano. Poucos harmônicos ($K=1$ ou $2$) costumam bastar.
+
+### 4.2 Modelos de Machine Learning: gradient boosting e XGBoost
+
+Um modelo de **gradient boosting** [@friedman2001] aprende $f$ de forma aditiva,
+somando $M$ árvores de decisão simples (*weak learners*) treinadas em sequência,
+cada uma corrigindo o erro que sobrou da anterior:
+$$
+\hat{y}_i^{(0)} = 0, \qquad \hat{y}_i^{(m)} = \hat{y}_i^{(m-1)} + \eta\, f_m(\mathbf{x}_i), \qquad m = 1,\dots,M,
+$$
+onde $\eta\in(0,1]$ é a **taxa de aprendizagem** (*learning rate*/*shrinkage*):
+passos pequenos exigem mais árvores, mas generalizam melhor (menos overfitting).
+
+O **XGBoost** [@chen2016] formaliza o ajuste de cada árvore $f_m$ como a
+minimização de uma função objetivo **regularizada**,
+$$
+\mathcal{L}^{(m)} = \sum_{i=1}^n \ell\big(y_i,\, \hat{y}_i^{(m-1)} + f_m(\mathbf{x}_i)\big) + \Omega(f_m), \qquad
+\Omega(f) = \gamma T + \tfrac{1}{2}\lambda \sum_{j=1}^{T} w_j^2,
+$$
+com $T$ o número de folhas da árvore, $w_j$ o valor previsto em cada folha, e
+$\gamma,\lambda$ penalizando árvores grandes e pesos extremos — o análogo, em
+ML, à parcimônia que o AIC impõe no ARIMA.
+
+Para otimizar rápido qualquer $\ell$ diferenciável, o XGBoost expande
+$\mathcal{L}^{(m)}$ em **série de Taylor de 2ª ordem** ao redor de $\hat y^{(m-1)}$:
+$$
+\mathcal{L}^{(m)} \approx \sum_{i=1}^n \Big[g_i\, f_m(\mathbf{x}_i) + \tfrac12 h_i\, f_m(\mathbf{x}_i)^2\Big] + \Omega(f_m),
+\qquad g_i = \partial_{\hat y}\ell(y_i,\hat y_i^{(m-1)}),\;\; h_i = \partial^2_{\hat y}\ell(y_i,\hat y_i^{(m-1)}),
+$$
+gradiente e hessiana da perda ($\ell$) — daí o apelido de *Newton boosting*.
+Para erro quadrático, $g_i=\hat y_i^{(m-1)}-y_i$ e $h_i=1$, recuperando o
+gradient boosting clássico como caso particular.
+
+Fixada a estrutura da árvore, com $I_j$ as observações que caem na folha $j$, o
+peso ótimo e o objetivo mínimo têm **forma fechada**:
+$$
+w_j^\ast = -\frac{\sum_{i\in I_j} g_i}{\sum_{i\in I_j} h_i + \lambda}, \qquad
+\mathcal{L}^\ast = -\tfrac12\sum_{j=1}^{T} \frac{\big(\sum_{i\in I_j}g_i\big)^2}{\sum_{i\in I_j}h_i+\lambda} + \gamma T.
+$$
+Essa mesma expressão decide **onde dividir** cada nó: o algoritmo escolhe a
+variável e o limiar que maximizam o **ganho** — a redução de $\mathcal{L}^\ast$
+ao separar o nó pai ($I = I_L \cup I_R$) em dois filhos,
+$$
+\text{Gain} = \tfrac12\left[\frac{(\sum_{I_L}g_i)^2}{\sum_{I_L}h_i+\lambda} + \frac{(\sum_{I_R}g_i)^2}{\sum_{I_R}h_i+\lambda} - \frac{(\sum_{I}g_i)^2}{\sum_{I}h_i+\lambda}\right] - \gamma.
+$$
+Um split só é aceito se o ganho superar $\gamma$ — é assim que o XGBoost **poda**
+divisões que não compensam a complexidade adicionada.
+
+Na prática (ver §8): $M=200$ árvores (`n_estimators`), profundidade máxima 3
+(`max_depth` — limita quantas variáveis interagem por árvore), $\eta=0.05$
+(`learning_rate`), e como atributos as defasagens $y_{t-1}, y_{t-2}, y_{t-4},
+y_{t-52}$ mais as exógenas (Fourier, Niño, câmbio) candidatas a cada split.
+Diferente do ARIMA(X), árvores **não extrapolam** tendência ou sazonalidade
+fora do range visto em treino (preveem médias dentro de partições) — por isso
+os termos de Fourier (determinísticos, logo sempre "conhecidos") são o que dá
+sazonalidade ao XGBoost, e a previsão multi-passo é **recursiva**: cada horizonte
+usa as previsões dos horizontes anteriores como parte dos lags. Isso também
+explica por que XGBoost e AutoARIMA erram de formas diferentes — e por que a
+combinação dos dois (§4.4) tende a reduzir o erro combinado.
+
+### 4.3 Redes neurais para séries temporais: NHITS
+
+O **NHITS** (*Neural Hierarchical Interpolation for Time Series*) [@challu2023]
+é o sucessor do N-BEATS e, ao contrário do que o rótulo "rede neural" sugere,
+não usa recorrência (LSTM) nem atenção (Transformer): é uma pilha de **MLPs
+simples** organizada por duas ideias — decomposição por frequência e
+interpolação hierárquica. A previsão é **direta multi-horizonte**: os $H$
+passos saem de uma só vez, sem realimentar previsão como insumo (ao contrário
+do XGBoost recursivo do §4.2, que propaga erro de um horizonte para o outro).
+
+**Arquitetura em stacks e resíduos.** A rede tem $S$ *stacks* em série. O
+stack $s$ recebe o que sobrou da janela de entrada após os stacks anteriores
+(mecanismo de *backcast* residual, como no boosting: cada estágio modela o
+resíduo do anterior) e produz duas saídas — uma reconstrução do passado
+($\tilde{\mathbf{y}}^{(s)}$, *backcast*) e uma contribuição para o futuro
+($\hat{\mathbf{y}}^{(s)}$, *forecast*):
+
+$$
+\mathbf{r}^{(s)} = \mathbf{r}^{(s-1)} - \tilde{\mathbf{y}}^{(s)}, \qquad
+\hat{\mathbf{y}} = \sum_{s=1}^{S} \hat{\mathbf{y}}^{(s)},
+$$
+
+com $\mathbf{r}^{(0)}$ = janela de entrada (no nosso caso, $L=104$ semanas).
+
+**Decomposição por frequência (amostragem multi-taxa).** Antes do MLP, cada
+stack aplica um *max-pooling* com núcleo $k_s$ sobre sua entrada:
+
+$$
+\mathbf{r}^{(s)}_{\text{pool}} = \mathrm{MaxPool}\big(\mathbf{r}^{(s)},\, k_s\big),
+\qquad k_1 > k_2 > \dots > k_S .
+$$
+
+O primeiro stack (núcleo grande) só enxerga a série "borrada" — movimentos
+lentos, tendência; os seguintes veem resoluções progressivamente mais finas
+(ciclos e, por fim, o detalhe semanal). É o análogo neural de uma decomposição
+tendência + sazonalidade + resto, mas **aprendida dos dados, sem impor período
+fixo** — relevante para a uva do VSF, cuja sazonalidade programada por poda
+desloca de ano para ano (o fracasso do naive sazonal na §8 ilustra o problema
+de impor período 52 rígido).
+
+**Interpolação hierárquica.** Em vez de prever os $H$ horizontes ponto a
+ponto, o MLP do stack $s$ produz apenas $\lceil r_s H\rceil$ "nós"
+($r_s\le 1$ é a *razão de expressividade*), e a trajetória completa é obtida
+por **interpolação** entre eles:
+
+$$
+\hat{y}^{(s)}_{t+h} = \mathrm{Interp}\big(h;\ \boldsymbol{\theta}^{(s)}\big),
+\qquad \boldsymbol{\theta}^{(s)} = \mathrm{MLP}^{(s)}\big(\mathbf{r}^{(s)}_{\text{pool}}\big),
+$$
+
+com $r_s$ pequeno nos stacks de baixa frequência (poucos nós → curva suave) e
+maior nos de alta. Isso força suavidade em cada escala e reduz drasticamente o
+número de parâmetros de saída — uma forma de regularização estrutural
+importante em séries curtas como a nossa (~500 observações), pelo argumento
+clássico de viés × variância.
+
+Duas notas de uso neste projeto: (i) o NHITS é **univariado por padrão** (só o
+histórico do preço), mas aceita exógenas futuras conhecidas
+(`futr_exog_list`), o que permite testá-lo depois com as mesmas variáveis dos
+demais modelos; (ii) treinamento com semente fixa em CPU, e — por custo
+computacional — sem reestimação a cada origem do rolling-origin
+(`refit=False`), desvantagem informacional a lembrar na leitura dos
+resultados da §8.
+
+### 4.4 O mapa das famílias (cada uma resolve uma dor)
+
+| Dor | Família |
+|---|---|
+| Muitas exógenas candidatas / sobreajuste | Regressão regularizada (LASSO/Elastic Net), BSTS |
+| Lags distribuídos e incertos | ADL / Almon / MIDAS |
+| Sazonalidade que muda no tempo | Modelos estruturais (componentes não observados) |
+| Caudas pesadas / heterocedasticidade | GARCH; regressão quantílica |
+| Séries correlacionadas (Arra 15 × BRS Vitória) | VAR / VECM (cointegração) |
+| Regimes de boom-bust | Markov-switching; limiar (TAR/SETAR) |
+
+**Estatística × ML não são rivais — são complementares.** O ARIMAX dá
+interpretação e intervalos; o boosting capta não linearidades. A **combinação de
+previsões** (*ensemble*, média das saídas individuais) costuma bater cada modelo
+isolado, por reduzir variância — resultado clássico desde @bates1969, consolidado
+em @timmermann2006 e confirmado em larga escala na competição M4 [@makridakis2020].
+A escolha de **pesos iguais** (média simples) em vez de pesos "ótimos" estimados
+tem justificativa própria: é o chamado *forecast combination puzzle* — pesos
+estimados carregam erro de estimação e, em amostras curtas, perdem
+sistematicamente para a média simples [@smith2009].
+
+### 4.5 Transformações modelo-específicas (*mixed-transform ensemble*)
+
+Modelos distintos podem se beneficiar de **transformações diferentes da mesma
+variável**. O ARIMA(X) trata a não-estacionariedade internamente (o parâmetro $d$
+diferencia a série), por isso trabalha bem com regressores em **nível**. O gradient
+boosting, ao contrário, não diferencia: em presença de tendência comum entre
+regressor e série, aprende uma relação espúria que colapsa fora da amostra. Nesses
+casos, fornecer o regressor em **primeira diferença** — que remove a tendência —
+melhora a generalização do modelo de ML sem prejudicar o ARIMA.
+
+Na prática, a combinação de previsões agrega as saídas de cada modelo, e cada modelo
+recebe a transformação que minimiza seu erro no rolling-origin. Exemplo **do estudo da
+manga** (câmbio EUR na variedade Palmer — ainda não replicado para a uva, ver §12):
+
+$$
+x^{\text{ARIMA}}_t = \text{EUR}_t \qquad \text{vs.} \qquad x^{\text{XGB}}_t = \Delta \text{EUR}_t = \text{EUR}_t - \text{EUR}_{t-1}
+$$
+
+Essa escolha reduziu o RMSE do XGBoost de 0,920 para 0,833 **na manga** (−9,5%) e o
+da combinação de previsões de 0,807 para 0,769 (−4,7%), sem custo algum para o AutoARIMA. A regra
+geral: **testar nível e diferença para cada modelo separadamente**, em vez de impor
+a mesma transformação a todos — regra que será testada de novo quando o câmbio entrar
+na fila de exógenas da uva.
+
+> **Avaliação, métricas e testes** (viés×variância, rolling-origin, RMSE/MAPE/
+> MASE/acurácia direcional, LASSO, testes DM e PT, o problema das viradas) —
+> ver o referencial completo no documento da manga; aqui aplicamos diretamente.
+
+---
+
+# Parte II — Implementação com Nixtla
+
+O ecossistema **open-source** da Nixtla (gratuito, local) oferece tudo de que
+precisamos: `StatsForecast` (AutoARIMA rápido, com exógenas), `MLForecast`
+(boosting com defasagens), `cross_validation` (rolling-origin de fábrica) e
+**intervalos conformais** (livres de distribuição).
+
+## 7. Dados e variáveis selecionadas
+
+Diferente da manga, a seleção de variáveis da uva é feita **incrementalmente
+neste documento**, e o caminho percorrido fica registrado nas seções: a §8
+estabelece o piso univariado (nenhuma exógena), a §8.1 testa a significância
+das diferenças, e a §8.2 em diante testa as exógenas candidatas **uma a uma**
+contra esse piso. O conjunto abaixo — herdado da manga — é usado apenas no
+**baseline de registro** da §9:
+
+- Fourier ($K=2$) + **Niño** (1+2 e 3.4, lag 26) + **câmbio** EUR (lag 8),
+  igual para as duas variedades. *Nota:* o Fourier foi posteriormente
+  **descartado** pelo teste da §8.2 (piora significativa); o conjunto
+  permanece aqui só para documentar o pipeline herdado.
+
+As variáveis climáticas do VSF (`hot_days_35`, `cold_days_16`,
+`total_rainfall`) já estão carregadas em `clima` para a etapa de exógenas de
+uva, mas **não** entram ainda: o lag de 16 semanas da manga reflete o
+mecanismo de floração e não se aplica à uva, que tem produção programada por
+poda (2 ciclos/ano) — os lags certos precisam ser descobertos, não herdados.
+O AutoARIMA usa o câmbio em **nível** e o XGBoost a **variação semanal**
+(`d_eur`) — câmbio misto, padrão validado na manga (ver §9 e §4.5).
+
+```{python}
+import warnings; warnings.filterwarnings("ignore")
+import numpy as np
+import pandas as pd
+import plotnine as p9
+from great_tables import GT, md
+from statsforecast import StatsForecast
+from statsforecast.models import AutoARIMA, SeasonalNaive
+from statsforecast.utils import ConformalIntervals
+from mlforecast import MLForecast
+from mlforecast.utils import PredictionIntervals
+from statsmodels.tsa.statespace.structural import UnobservedComponents
+import xgboost as xgb
+
+# Parâmetros do estudo
+H, N_WIN, STEP, NIVEL = 8, 20, 4, 60
+
+igpdi = pd.read_csv("dados/igpdi_uva.csv", sep=";", decimal=".")
+exo   = pd.read_csv("dados/df_exogenas.csv", parse_dates=["date"]).set_index("date")
+clima = pd.read_csv("dados/df_climate_weekly.csv", parse_dates=["date"]).set_index("date")
+exo["d_eur"] = exo["eur"].diff()   # variação semanal do câmbio
+
+
+def construir_datas(precos):
+    """52 primeiros sabados de cada ano (convençao dos preços)."""
+    d = []
+    for ano, g in precos.groupby("ano"):
+        d.extend(pd.date_range(f"{ano}-01-01", f"{ano}-12-31", freq="W-SAT")[:len(g)])
+    return pd.DatetimeIndex(d)
+
+
+def imputar_kalman(y):
+    """Imputa buracos (NaN) via suavização de Kalman de um modelo local level —
+    mesmo procedimento de na_kalman(model="StructTS") usado no boletim em R
+    (index_temp.qmd), reimplementado aqui para manter o pipeline em Python."""
+    y = y.astype(float).copy()
+    faltando = y.isna()
+    if not faltando.any():
+        return y
+    mod = UnobservedComponents(y.values, level="local level")
+    suavizado = mod.fit(disp=False).smoother_results.smoothed_state[0]
+    y[faltando.values] = suavizado[faltando.values]
+    return y
+
+
+def carregar(arquivo, uid):
+    """Le precos, imputa buracos (Kalman), deflaciona e junta exógenas (câmbio/Niño) por data."""
+    p = pd.read_csv(arquivo, sep=";", decimal=".")
+    assert len(p) == len(igpdi), f"{arquivo}: preços e IGP-DI com tamanhos diferentes"
+    p["preco"] = imputar_kalman(p["preco"])
+    d = pd.DataFrame({"unique_id": uid, "fecha": construir_datas(p)})
+    d["y"] = (igpdi["igpdi"].iloc[-1] / igpdi["igpdi"].values) * p["preco"].values
+    d = d.join(exo[["eur", "d_eur", "nino12_anom", "nino34_anom"]]
+               .reindex(d["fecha"]).reset_index(drop=True))
+    return d.join(clima[["cold_days_16", "hot_days_35", "total_rainfall"]]
+                  .reindex(d["fecha"]).reset_index(drop=True))
+
+
+df = pd.concat([carregar("dados/dados_uva_arra_semana.csv", "arra_15"),
+                carregar("dados/dados_uva_vitoria_semana.csv", "vitoria")], ignore_index=True)
+df = df.sort_values(["unique_id", "fecha"])
+
+# Termos de Fourier (determinísticos) e exógenas em lags previsíveis (h=8)
+doy = df["fecha"].dt.dayofyear / 365.25
+for k in (1, 2):
+    df[f"sin{k}"] = np.sin(2 * np.pi * k * doy)
+    df[f"cos{k}"] = np.cos(2 * np.pi * k * doy)
+g = df.groupby("unique_id")
+df["nino12_lag26"] = g["nino12_anom"].shift(26)   # El Niño costero (~6 meses)
+df["nino34_lag26"] = g["nino34_anom"].shift(26)   # ENSO central
+df["eur_lag8"]      = g["eur"].shift(8)           # câmbio nível (AutoARIMA), lag 8
+df["d_eur_lag8"]    = g["d_eur"].shift(8)         # câmbio diferença (XGBoost), lag 8
+# Clima do VSF (cold_days_16/hot_days_35/total_rainfall) já está em df, sem lag
+# aplicado ainda — o lag de 16 semanas da manga é específico da floração e não
+# vale para uva (poda programada); mecanismo e lag certos ficam para depois do
+# baseline, testados no rolling-origin (ver §7).
+
+# Tempo INTEIRO alinhado entre as séries (robusto aos "buracos" da 53a semana)
+ds_de_fecha = {d: i for i, d in enumerate(np.sort(df["fecha"].unique()))}
+df["ds"] = df["fecha"].map(ds_de_fecha)
+
+FOUR = ["sin1", "cos1", "sin2", "cos2"]
+NINO = ["nino12_lag26", "nino34_lag26"]
+# Baseline enxuto, igual para as duas variedades (ver §7); AutoARIMA usa
+# câmbio em nível, XGBoost usa diferença (câmbio misto — ver §9)
+EXOG_SF = {"arra_15": FOUR + NINO + ["eur_lag8"],
+           "vitoria": FOUR + NINO + ["eur_lag8"]}
+EXOG_ML = {"arra_15": FOUR + NINO + ["d_eur_lag8"],
+           "vitoria": FOUR + NINO + ["d_eur_lag8"]}
+print("Variáveis por série (AutoARIMA | XGBoost):")
+for uid in ["arra_15", "vitoria"]:
+    print(f"  {uid} — AutoARIMA : {EXOG_SF[uid]}")
+    print(f"  {uid} — XGBoost   : {EXOG_ML[uid]}")
+```
+
+```{python}
+# Visão geral das séries (preço real deflacionado)
+plot = (
+    p9.ggplot(df.dropna(subset=["y"]), p9.aes("fecha", "y", color="unique_id")) +
+    p9.geom_line() +
+    p9.scale_x_date(date_breaks="2 years", date_labels="%Y") +
+    p9.labs(title="Preço real da uva ao produtor — Vale do São Francisco",
+            x="", y="R$/kg (deflacionado pelo IGP-DI)", color="Variedade") +
+    p9.theme(legend_position="top")
+)
+plot.show()
+```
+
+### 7.1 Descrição dos dados e estatísticas
+
+Os preços são **médias semanais recebidas pelo produtor** no polo
+Petrolina-PE/Juazeiro-BA (Vale do São Francisco), por variedade, coletados pelo
+**CEPEA-Esalq/USP** (Centro de Estudos Avançados em Economia Aplicada). Todos os
+valores são **deflacionados pelo IGP-DI** (FGV) para reais da última observação
+— para séries longas, trabalhar em termos reais evita confundir tendência
+inflacionária com dinâmica do mercado de manga. A convenção temporal adota os
+52 primeiros sábados de cada ano (a eventual 53ª semana é tratada pelo índice
+inteiro de tempo, robusto a "buracos" no calendário).
+
+A tabela abaixo reporta estatísticas descritivas e testes de raiz unitária.
+O ADF testa $H_0$: raiz unitária [@dickey1979]; o KPSS testa a hipótese oposta,
+$H_0$: estacionariedade [@kwiatkowski1992] — usá-los em conjunto evita conclusões
+frágeis de um único teste. A decisão de diferenciação no pipeline permanece
+interna ao AutoARIMA (parâmetro $d$, escolhido por testes sequenciais); a tabela
+documenta a evidência que fundamenta essa escolha.
+
+```{python}
+from statsmodels.tsa.stattools import adfuller, kpss
+
+desc = []
+for uid in ["arra_15", "vitoria"]:
+    s = df[df["unique_id"] == uid].dropna(subset=["y"]).set_index("fecha")["y"]
+    adf_p  = adfuller(s, autolag="AIC")[1]
+    kpss_p = kpss(s, regression="c", nlags="auto")[1]
+    adf_d  = adfuller(s.diff().dropna(), autolag="AIC")[1]
+    desc.append({
+        "Variedade": uid, "N": len(s),
+        "Início": s.index.min().strftime("%Y-%m"),
+        "Fim": s.index.max().strftime("%Y-%m"),
+        "Média": s.mean(), "DP": s.std(),
+        "Mín": s.min(), "Máx": s.max(), "CV (%)": 100 * s.std() / s.mean(),
+        "ADF p (nível)": adf_p, "KPSS p (nível)": kpss_p, "ADF p (Δy)": adf_d})
+
+(GT(pd.DataFrame(desc))
+ .tab_header(title="Estatísticas descritivas — preço real (R$/kg)",
+             subtitle="ADF: H0 = raiz unitária | KPSS: H0 = estacionariedade "
+                      "(p do KPSS é limitado ao intervalo tabulado [0,01; 0,10])")
+ .fmt_number(columns=["Média", "DP", "Mín", "Máx", "CV (%)"], decimals=2)
+ .fmt_number(columns=["ADF p (nível)", "KPSS p (nível)", "ADF p (Δy)"], decimals=3))
+```
+
+## 8. Ponto de partida: comparação univariada (sem exógenas)
+
+Antes de qualquer exógena, estabelecemos o **piso univariado**: o que cada
+família de modelo consegue extrair **só do histórico do próprio preço**. É a
+régua contra a qual toda variável adicional terá de "pagar aluguel" no
+rolling-origin. Competidores, todos sob o **mesmo protocolo** (h=8, 20 origens,
+passo 4):
+
+- **Benchmarks**: *Naive* (random walk — repete o último preço) e *naive
+  sazonal* (repete o preço da mesma semana do ano anterior);
+- **ARIMA** (AutoARIMA, $m=1$): sem termos de Fourier, só enxerga sazonalidade
+  pelo que a parte AR alcançar — esperamos que sofra em h=8;
+- **SARIMA-52** (AutoARIMA, $m=52$): a forma clássica de sazonalidade em ARIMA;
+  incluído aqui como teste empírico, apesar das reservas teóricas (§4.1). A
+  busca stepwise irrestrita é computacionalmente proibitiva com $m=52$ (mais de
+  40 min sem concluir as 20 origens), o que já é, por si, um resultado
+  operacional relevante; usamos busca restrita ($P,D,Q\le 1$; $p,q\le 3$;
+  aproximação CSS na seleção) para viabilizar a comparação;
+- **Machine Learning**: **XGBoost** e **LightGBM**, ambos apenas com as
+  defasagens $y_{t-1}, y_{t-2}, y_{t-4}, y_{t-52}$ (hiperparâmetros do §4.2);
+- **Redes neurais**: **NHITS** (arquitetura detalhada na §4.3) e
+  **MLP** (`neuralforecast`, CPU, seed fixa), janela de entrada de 104 semanas
+  (2 anos). Por custo computacional, as redes treinam **uma única vez** na
+  primeira origem (`refit=False`) e preveem as demais janelas sem reestimação —
+  leve desvantagem informacional frente aos modelos reestimados a cada origem,
+  a ser lembrada na leitura.
+
+```{python}
+#| warning: false
+import logging
+import lightgbm as lgb
+from statsforecast.models import Naive
+logging.getLogger("pytorch_lightning").setLevel(logging.ERROR)
+from neuralforecast import NeuralForecast
+from neuralforecast.models import NHITS, MLP
+
+base = df[["unique_id", "ds", "y"]].copy()
+refy_u = {uid: g.set_index("ds")["y"] for uid, g in base.groupby("unique_id")}
+esc_u  = {uid: float(g["y"].diff(52).abs().mean()) for uid, g in base.groupby("unique_id")}
+
+def metr_uni(cv, modelo, uid):
+    s = cv[cv["unique_id"] == uid].copy()
+    s["yc"] = s["cutoff"].map(refy_u[uid])
+    y, p, yc = s["y"].values, s[modelo].values, s["yc"].values
+    err = p - y
+    return {"Variedade": uid, "Modelo": modelo,
+            "RMSE": float(np.sqrt((err ** 2).mean())),
+            "MAPE (%)": float((np.abs(err) / y).mean() * 100),
+            "MASE": float(np.abs(err).mean() / esc_u[uid]),
+            "Dir.Acc (%)": float((np.sign(p - yc) == np.sign(y - yc)).mean() * 100)}
+
+# Estatísticos. O SARIMA-52 com busca stepwise irrestrita é computacionalmente
+# proibitivo (a rodada completa passou de 40 min sem terminar); a busca aqui é
+# restrita (P,D,Q <= 1; p,q <= 3; approximation=True) — restrição registrada
+# na leitura dos resultados.
+sf_uni = StatsForecast(models=[Naive(), SeasonalNaive(season_length=52),
+                               AutoARIMA(season_length=1,  alias="ARIMA"),
+                               AutoARIMA(season_length=52, max_p=3, max_q=3,
+                                         max_P=1, max_D=1, max_Q=1,
+                                         approximation=True, alias="SARIMA-52")],
+                       freq=1, n_jobs=1)
+cv_sfu = sf_uni.cross_validation(df=base, h=H, n_windows=N_WIN, step_size=STEP)
+
+# ML: mesmas defasagens e hiperparâmetros do pipeline, sem exógenas
+ml_uni = MLForecast(models={
+    "XGBoost":  xgb.XGBRegressor(n_estimators=200, max_depth=3, learning_rate=0.05,
+                                 verbosity=0, random_state=42),
+    "LightGBM": lgb.LGBMRegressor(n_estimators=200, max_depth=3, learning_rate=0.05,
+                                  verbosity=-1, random_state=42)},
+    freq=1, lags=[1, 2, 4, 52])
+cv_mlu = ml_uni.cross_validation(df=base, h=H, n_windows=N_WIN, step_size=STEP,
+                                 static_features=[])
+
+# Redes neurais: treinadas uma vez na primeira origem (refit=False)
+nf_uni = NeuralForecast(models=[
+    NHITS(h=H, input_size=104, max_steps=500, random_seed=42,
+          scaler_type="robust", enable_progress_bar=False, logger=False),
+    MLP(h=H, input_size=104, max_steps=500, random_seed=42,
+        scaler_type="robust", enable_progress_bar=False, logger=False)], freq=1)
+cv_nfu = nf_uni.cross_validation(df=base, n_windows=N_WIN, step_size=STEP, refit=False)
+
+met_uni = []
+for uid in ["arra_15", "vitoria"]:
+    for cv_, modelos in [(cv_sfu, ["Naive", "SeasonalNaive", "ARIMA", "SARIMA-52"]),
+                         (cv_mlu, ["XGBoost", "LightGBM"]),
+                         (cv_nfu, ["NHITS", "MLP"])]:
+        for m in modelos:
+            met_uni.append(metr_uni(cv_, m, uid))
+
+resumo_uni = (pd.DataFrame(met_uni)
+              .sort_values(["Variedade", "RMSE"]).reset_index(drop=True))
+(GT(resumo_uni)
+ .tab_header(title="Comparação univariada — nenhuma exógena",
+             subtitle=f"h={H} semanas, {N_WIN} origens, passo {STEP} "
+                      "(MASE < 1 = bate o naive sazonal)")
+ .fmt_number(columns=["RMSE", "MAPE (%)", "MASE", "Dir.Acc (%)"], decimals=2))
+```
+
+Esta tabela define o **piso**: das seções seguintes em diante, as exógenas
+(Fourier, Niño, câmbio — e depois clima de uva) só entram se melhorarem o que
+os melhores modelos univariados já entregam.
+
+### 8.1 As diferenças univariadas são significativas? (DM e PT)
+
+Com 20 origens, diferenças pequenas de RMSE podem ser sorte. Aplicamos
+**Diebold-Mariano** (perda quadrática, correção de Harvey-Leybourne-Newbold,
+variância HAC — os erros multi-passo são autocorrelacionados até $h-1=7$; como
+as janelas se sobrepõem parcialmente, os p-valores são aproximações
+conservadoras) às comparações que importam para a decisão de arquitetura: o
+**NHITS** (vencedor nas duas variedades) contra cada rival relevante, e os
+modelos de ML contra o random walk. A acurácia direcional dos quatro melhores
+é testada com **Pesaran-Timmermann**.
+
+```{python}
+from scipy import stats
+
+
+def dm_hln(e1, e2, h):
+    """Diebold-Mariano (perda quadrática) com correção HLN e HAC-Bartlett."""
+    d = e1**2 - e2**2
+    n = len(d)
+    dbar = float(d.mean())
+    dc = d - dbar
+    var = float(dc @ dc) / n
+    for k in range(1, h):
+        var += 2 * (1 - k / h) * float(dc[k:] @ dc[:-k]) / n
+    dm = dbar / np.sqrt(var / n)
+    hln = dm * np.sqrt((n + 1 - 2 * h + h * (h - 1) / n) / n)
+    return float(hln), float(2 * stats.t.sf(abs(hln), df=n - 1))
+
+
+def pt_test(pred, real, yc):
+    """Pesaran-Timmermann (unilateral) para direção vs. último observado."""
+    x = (pred > yc).astype(float)
+    y = (real > yc).astype(float)
+    n = len(x)
+    px, py = x.mean(), y.mean()
+    phat = float((x == y).mean())
+    pstar = px * py + (1 - px) * (1 - py)
+    v_hat = pstar * (1 - pstar) / n
+    v_star = ((2 * py - 1)**2 * px * (1 - px) + (2 * px - 1)**2 * py * (1 - py)
+              + 4 * px * py * (1 - px) * (1 - py) / n) / n
+    if v_hat - v_star <= 0:
+        return np.nan, np.nan
+    z = (phat - pstar) / np.sqrt(v_hat - v_star)
+    return float(z), float(stats.norm.sf(z))
+
+
+# erros alinhados janela a janela (mesmos cutoffs nos três cross-validations)
+cv_uni = (cv_sfu
+          .merge(cv_mlu[["unique_id", "ds", "cutoff", "XGBoost", "LightGBM"]],
+                 on=["unique_id", "ds", "cutoff"])
+          .merge(cv_nfu[["unique_id", "ds", "cutoff", "NHITS", "MLP"]],
+                 on=["unique_id", "ds", "cutoff"]))
+
+COMP_UNI = [("NHITS", "XGBoost"), ("NHITS", "MLP"), ("NHITS", "ARIMA"),
+            ("NHITS", "Naive"), ("XGBoost", "Naive"), ("XGBoost", "LightGBM")]
+dm_uni, pt_uni = [], []
+for uid in ["arra_15", "vitoria"]:
+    cvu = cv_uni[cv_uni["unique_id"] == uid].sort_values(["cutoff", "ds"]).reset_index(drop=True)
+    cvu["yc"] = cvu["cutoff"].map(refy_u[uid])
+    for m1, m2 in COMP_UNI:
+        e1 = (cvu[m1] - cvu["y"]).values
+        e2 = (cvu[m2] - cvu["y"]).values
+        t, p = dm_hln(e1, e2, H)
+        dm_uni.append({"Variedade": uid, "Comparação": f"{m1} vs {m2}",
+                       "DM (HLN)": t, "p-valor": p,
+                       "Conclusão": ("primeiro melhor" if t < 0 else "segundo melhor")
+                                    + (" *" if p < 0.10 else " (n.s.)")})
+    for m in ["NHITS", "MLP", "XGBoost", "LightGBM"]:
+        z, p = pt_test(cvu[m].values, cvu["y"].values, cvu["yc"].values)
+        pt_uni.append({"Variedade": uid, "Modelo": m, "PT (z)": z, "p-valor": p,
+                       "Conteúdo direcional": "sim *" if p < 0.10 else "não comprovado"})
+
+(GT(pd.DataFrame(dm_uni))
+ .tab_header(title="DM (HLN) — comparação univariada",
+             subtitle="DM < 0 favorece o primeiro modelo; * = significativo a 10%")
+ .fmt_number(columns=["DM (HLN)", "p-valor"], decimals=3))
+```
+
+```{python}
+(GT(pd.DataFrame(pt_uni))
+ .tab_header(title="Pesaran-Timmermann — comparação univariada",
+             subtitle="H0: direção prevista independente da realizada; * = significativo a 10%")
+ .fmt_number(columns=["PT (z)", "p-valor"], decimals=3))
+```
+
+**Leitura dos testes (decisões tomadas a partir daqui):**
+
+1. **Na Arra 15, nenhum modelo bate o random walk em RMSE com significância**
+   — nem o NHITS (p=0,42), nem o XGBoost (p=0,24). O sinal univariado da Arra
+   é fraco em magnitude; ganho real, se vier, virá de exógenas (o canal
+   exportação/Peru é o candidato natural para essa variedade).
+2. **A direção é outra história**: NHITS e MLP têm conteúdo direcional
+   fortíssimo nas duas variedades (PT com $z$ entre 4,3 e 7,0; p<0,001),
+   inclusive na Arra — onde o XGBoost não comprova direção alguma (p=0,20).
+   Para um boletim semanal, acertar o *sentido* com 69–77% de taxa genuína já
+   é valor entregável, mesmo onde a magnitude empata com o naive.
+3. **Na Vitória a hierarquia é real**: NHITS e XGBoost batem os clássicos
+   (ARIMA, Naive) a 10% de significância; entre os dois, empate técnico
+   (p=0,14, favorável ao NHITS).
+4. **XGBoost ≈ LightGBM** (p>0,6 nas duas): não há razão para manter ambos —
+   seguimos com o XGBoost, padrão do pipeline.
+
+Consequência para a arquitetura: o **NHITS entra como candidato firme ao
+ensemble** (não como campeão solitário — o DM não autoriza tanto), e a dupla
+NHITS+XGBoost é atraente porque erram de formas diferentes (§4.3). Os
+experimentos seguintes (§8.2 em diante) testam exógenas **uma a uma** sobre
+esses dois vencedores.
+
+### 8.2 Primeira exógena candidata: Fourier (K=2 vs K=3) — testada e descartada
+
+A primeira candidata da fila era a sazonalidade determinística por termos de
+Fourier (§4.1) — espinha dorsal do modelo da manga, onde `AutoARIMA(m=1)` +
+Fourier superou com folga o SARIMA-52. A hipótese específica da uva era que a
+sazonalidade **bimodal** (2 podas/ano) pedisse $K=2$ ou $K=3$ harmônicos.
+Desenho do teste: **três famílias** — XGBoost e NHITS (os dois vencedores da
+§8.1) e também o **AutoARIMA(m=1)** (a regressão harmônica dinâmica é a
+especificação campeã da manga, e o ARIMA é o único competidor *sem nenhum
+mecanismo sazonal próprio*: sem lag 52 e sem decomposição, é nele que o
+Fourier teria mais chance de ajudar) — cada um em três versões: univariado
+(controle), +Fourier $K=2$ e +Fourier $K=3$, no mesmo protocolo (h=8, 20
+origens, passo 4, seed fixa), com **DM pareado janela a janela** entre cada
+variante e seu controle. No XGBoost os termos sin/cos entram como atributos
+junto às defasagens; no NHITS, via `futr_exog_list` (exógenas futuras
+conhecidas — determinísticas, sem vazamento); no AutoARIMA, como regressores
+externos (ARIMAX, §4.1). *(SARIMA+Fourier não se testa: seria duplicar o
+mecanismo sazonal — o Fourier é a alternativa ao SARIMA, não um complemento.)*
+
+```{python}
+#| warning: false
+# Fourier K=3 (K=1,2 já construídos na §7)
+for k in (3,):
+    df[f"sin{k}"] = np.sin(2 * np.pi * k * doy)
+    df[f"cos{k}"] = np.cos(2 * np.pi * k * doy)
+F2 = ["sin1", "cos1", "sin2", "cos2"]
+F3 = F2 + ["sin3", "cos3"]
+base_f = df[["unique_id", "ds", "y"] + F3].copy()
+
+# XGBoost: univariado (controle), +F2, +F3
+def xgb_novo():
+    return xgb.XGBRegressor(n_estimators=200, max_depth=3, learning_rate=0.05,
+                            verbosity=0, random_state=42)
+cvs_fx = {}
+for nome, cols in [("XGB_univ", []), ("XGB_F2", F2), ("XGB_F3", F3)]:
+    mlf_f = MLForecast(models={nome: xgb_novo()}, freq=1, lags=[1, 2, 4, 52])
+    cvs_fx[nome] = mlf_f.cross_validation(df=base_f[["unique_id", "ds", "y"] + cols],
+                                          h=H, n_windows=N_WIN, step_size=STEP,
+                                          static_features=[])
+
+# NHITS: univariado (controle), +F2, +F3 — uma chamada, três aliases
+def nhits_f(alias, cols):
+    return NHITS(h=H, input_size=104, max_steps=500, random_seed=42,
+                 scaler_type="robust", enable_progress_bar=False, logger=False,
+                 futr_exog_list=cols if cols else None, alias=alias)
+nf_f = NeuralForecast(models=[nhits_f("NHITS_univ", None),
+                              nhits_f("NHITS_F2", F2),
+                              nhits_f("NHITS_F3", F3)], freq=1)
+cv_nff = nf_f.cross_validation(df=base_f, n_windows=N_WIN, step_size=STEP, refit=False)
+
+def metr_erro(cv, m, uid):
+    s = cv[cv["unique_id"] == uid].sort_values(["cutoff", "ds"])
+    s = s.assign(yc=s["cutoff"].map(refy_u[uid]))
+    y, p, yc = s["y"].values, s[m].values, s["yc"].values
+    err = p - y
+    return ({"Variedade": uid, "Modelo": m,
+             "RMSE": float(np.sqrt((err ** 2).mean())),
+             "MASE": float(np.abs(err).mean() / esc_u[uid]),
+             "Dir.Acc (%)": float((np.sign(p - yc) == np.sign(y - yc)).mean() * 100)},
+            err)
+
+# AutoARIMA(m=1): univariado (controle), +F2, +F3 — Fourier como regressor (ARIMAX)
+cvs_fa = {}
+for nome, cols in [("ARIMA_univ", []), ("ARIMA_F2", F2), ("ARIMA_F3", F3)]:
+    sf_f = StatsForecast(models=[AutoARIMA(season_length=1, alias=nome)], freq=1, n_jobs=1)
+    cvs_fa[nome] = sf_f.cross_validation(df=base_f[["unique_id", "ds", "y"] + cols],
+                                         h=H, n_windows=N_WIN, step_size=STEP)
+
+linhas_f, erros_f = [], {}
+for uid in ["arra_15", "vitoria"]:
+    for nome, cv_ in {**cvs_fx, **cvs_fa}.items():
+        r, e = metr_erro(cv_, nome, uid); linhas_f.append(r); erros_f[(uid, nome)] = e
+    for nome in ["NHITS_univ", "NHITS_F2", "NHITS_F3"]:
+        r, e = metr_erro(cv_nff, nome, uid); linhas_f.append(r); erros_f[(uid, nome)] = e
+
+(GT(pd.DataFrame(linhas_f).sort_values(["Variedade", "RMSE"]).reset_index(drop=True))
+ .tab_header(title="Fourier sobre os vencedores univariados",
+             subtitle="Controles (univ) vs +Fourier K=2 e K=3 — mesmo rolling-origin da §8")
+ .fmt_number(columns=["RMSE", "MASE", "Dir.Acc (%)"], decimals=2))
+```
+
+```{python}
+COMP_F = [("XGB_F2", "XGB_univ"), ("XGB_F3", "XGB_univ"), ("XGB_F3", "XGB_F2"),
+          ("NHITS_F2", "NHITS_univ"), ("NHITS_F3", "NHITS_univ"), ("NHITS_F3", "NHITS_F2"),
+          ("ARIMA_F2", "ARIMA_univ"), ("ARIMA_F3", "ARIMA_univ"), ("ARIMA_F3", "ARIMA_F2")]
+dm_f = []
+for uid in ["arra_15", "vitoria"]:
+    for m1, m2 in COMP_F:
+        t, p = dm_hln(erros_f[(uid, m1)], erros_f[(uid, m2)], H)
+        dm_f.append({"Variedade": uid, "Comparação": f"{m1} vs {m2}",
+                     "DM (HLN)": t, "p-valor": p,
+                     "Conclusão": ("primeiro melhor" if t < 0 else "segundo melhor")
+                                  + (" *" if p < 0.10 else " (n.s.)")})
+(GT(pd.DataFrame(dm_f))
+ .tab_header(title="DM (HLN) — o Fourier paga aluguel?",
+             subtitle="DM > 0 = a variante com Fourier perde do controle; * = significativo a 10%")
+ .fmt_number(columns=["DM (HLN)", "p-valor"], decimals=3))
+```
+
+**Resultado: o Fourier não paga aluguel na uva em nenhuma das três famílias —
+e onde a diferença é significativa, é sempre contra ele.** Na rodada de
+referência (2026-07-22), das 18 comparações DM, nenhuma favoreceu a variante
+com Fourier com significância; as significativas foram todas na direção
+oposta:
+
+- **NHITS**: +F2 perde do controle univariado na Vitória com p=0,011 (+F3:
+  p=0,010); RMSE 2,03 → 2,63 (Arra) e 1,49 → 2,10 (Vitória).
+- **XGBoost**: +F3 perde do controle na Arra (p=0,093) e do próprio F2
+  (p=0,004); a acurácia direcional despenca na Vitória (71% → 57%).
+- **AutoARIMA** — o caso mais informativo: na **Arra o Fourier destrói o
+  modelo** (RMSE 2,23 → 2,71/2,86; DM p<0,001; DirAcc de 56% para 26–33%).
+  Na **Vitória** ele até melhora o ponto (2,15 → 2,02), única melhora
+  observada no experimento, mas sem significância (p≈0,41–0,45) — e o melhor
+  ARIMA+Fourier ainda fica muito atrás do NHITS univariado (1,49) e do
+  XGBoost (1,86). Nem no único modelo sem mecanismo sazonal próprio, onde o
+  Fourier teria mais a oferecer, ele paga o aluguel.
+
+A leitura econômica fecha com a evidência da §8: **a sazonalidade da uva do
+VSF não é um ciclo de calendário fixo**. Com produção programada por poda, a
+janela de oferta desloca de ano para ano — o naive sazonal já havia falhado
+(MASE > 1) e o Fourier, que impõe uma curva anual determinística, falha pelo
+mesmo motivo, só que pior: injeta um sinal de calendário *enganoso* que os
+modelos univariados, livres dele, não sofrem. A assimetria entre variedades
+reforça o mecanismo: a Arra 15 (voltada à exportação, poda calibrada pela
+janela comercial externa) é a que mais desloca o calendário — e é onde o
+Fourier mais destrói; a Vitória (mercado interno) tem calendário um pouco
+mais estável — e lá o dano é menor (ou nulo, no ARIMA). O contraste com a
+manga (floração natural, calendário estável, Fourier essencial) não poderia
+ser mais nítido — e é exatamente o tipo de diferença entre culturas que o
+protocolo incremental existe para revelar.
+
+**Decisões:** (i) Fourier **descartado** para as duas variedades, nas três
+famílias de modelo; (ii) o baseline herdado da manga (§9), que embute
+Fourier, fica mantido apenas como **registro metodológico** — está
+contaminado por uma exógena agora sabidamente nociva; (iii) as próximas
+candidatas (Niño lag 26, câmbio lag 8) serão testadas **sem Fourier**, cada
+uma contra o controle univariado.
+
+## 9. Modelos e validação rolling-origin (com exógenas — baseline)
+
+::: {.callout-warning}
+**Seção mantida como registro metodológico — baseline herdado da manga.**
+Esta seção e as seguintes (§10–§11) rodam o pipeline completo herdado do
+projeto da manga, com o conjunto provisório Fourier + Niño + câmbio. O
+experimento da §8.2 mostrou que o **Fourier prejudica** os modelos de uva —
+portanto os números desta seção **não representam a especificação final**;
+servem para documentar o pipeline (validação, DM/PT, conformal) que será
+reaproveitado quando o caminho incremental (§8.2 em diante) definir o conjunto
+de exógenas da uva.
+:::
+
+Quatro competidores por variedade: **naive sazonal** (baseline), **AutoARIMA** (com
+as exógenas selecionadas), **XGBoost** (defasagens + exógenas) e a **combinação de
+previsões** (*ensemble*, média de AutoARIMA e XGBoost). AutoARIMA e XGBoost recebem conjuntos de exógenas
+ligeiramente distintos: o câmbio entra em **nível** no AutoARIMA e em **diferença
+semanal** no XGBoost (câmbio misto — cada modelo usa a transformação que melhor
+generaliza fora da amostra). Tudo avaliado por `cross_validation` (origem móvel),
+com RMSE, MAPE e **acurácia direcional**.
+
+A validação usa **20 janelas de avaliação**, com horizonte de **8 semanas** cada e
+passo de **4 semanas** entre origens — cobrindo, ao todo, aproximadamente os
+últimos 84 semanas (~21 meses) da série. Em cada janela o modelo é **reestimado do
+zero** com toda a informação disponível até aquela origem e prevê as 8 semanas
+seguintes sem ver os dados futuros, exatamente como ocorreria em uso real semana a
+semana. O diagrama abaixo resume a estrutura; os parâmetros desta
+avaliação mapeiam diretamente para ele:
+
+```
+treino até semana T   |■■■■■■■■|  ← janela 1 (h=8 semanas)
+treino até semana T+4      |■■■■■■■■|  ← janela 2
+treino até semana T+8           |■■■■■■■■|  ← janela 3
+... (20 janelas no total, passo=4)
+```
+
+Os RMSE, MAPE e acurácia direcional reportados na tabela abaixo são a **média
+sobre essas 20 avaliações fora da amostra** — não de uma única divisão
+treino/teste, que seria estatisticamente ruidosa.
+
+```{python}
+def metr(y, p, yc, escala_mase):
+    err = p - y
+    return (float(np.sqrt((err ** 2).mean())),
+            float((np.abs(err) / y).mean() * 100),
+            float(np.abs(err).mean() / escala_mase),
+            float((np.sign(p - yc) == np.sign(y - yc)).mean() * 100))
+
+
+def exog_futuro(sub, sf_cols, ml_cols):
+    """Exógenas das próximas H semanas (todas conhecidas no horizonte h=8)."""
+    lf, lds = sub["fecha"].max(), int(sub["ds"].max())
+    fechas = pd.date_range(lf + pd.Timedelta(days=7), periods=H, freq="W-SAT")
+    linhas = []
+    for i, fc in enumerate(fechas, 1):
+        dd = fc.dayofyear / 365.25
+        linhas.append({
+            "unique_id": sub["unique_id"].iloc[0], "ds": lds + i, "fecha": fc,
+            "sin1": np.sin(2*np.pi*dd), "cos1": np.cos(2*np.pi*dd),
+            "sin2": np.sin(4*np.pi*dd), "cos2": np.cos(4*np.pi*dd),
+            "nino12_lag26":    exo["nino12_anom"].asof(fc - pd.Timedelta(weeks=26)),
+            "nino34_lag26":    exo["nino34_anom"].asof(fc - pd.Timedelta(weeks=26)),
+            "eur_lag8":        exo["eur"].asof(fc - pd.Timedelta(weeks=8)),
+            "d_eur_lag8":      exo["d_eur"].asof(fc - pd.Timedelta(weeks=8)),
+            "hot_days_lag16":  float(clima["hot_days_35"].asof(fc - pd.Timedelta(weeks=16))),
+            "cold_days_lag16": float(clima["cold_days_16"].asof(fc - pd.Timedelta(weeks=16))),
+            "rainfall_lag16":  float(clima["total_rainfall"].asof(fc - pd.Timedelta(weeks=16))),
+        })
+    return pd.DataFrame(linhas)
+
+
+metricas, previsoes, cvs, escalas = [], [], {}, {}
+for uid in ["arra_15", "vitoria"]:
+    sf_cols = EXOG_SF[uid]
+    ml_cols = EXOG_ML[uid]
+    all_cols = list(dict.fromkeys(sf_cols + ml_cols))
+    sub = df[df["unique_id"] == uid].dropna(subset=all_cols + ["y"]).reset_index(drop=True)
+    refy = sub.set_index("ds")["y"]
+    # escala do MASE: MAE do naive sazonal (m=52) dentro da amostra
+    escalas[uid] = float(sub["y"].diff(52).abs().mean())
+
+    # --- rolling-origin ---
+    sf = StatsForecast(models=[SeasonalNaive(season_length=52), AutoARIMA(season_length=1)],
+                       freq=1, n_jobs=1)
+    cv_sf = sf.cross_validation(df=sub[["unique_id", "ds", "y"] + sf_cols],
+                                h=H, n_windows=N_WIN, step_size=STEP)
+    mlf = MLForecast(models={"XGBoost": xgb.XGBRegressor(
+        n_estimators=200, max_depth=3, learning_rate=0.05, verbosity=0,
+        random_state=42)},
+        freq=1, lags=[1, 2, 4, 52])
+    cv_ml = mlf.cross_validation(df=sub[["unique_id", "ds", "y"] + ml_cols],
+                                 h=H, n_windows=N_WIN, step_size=STEP, static_features=[])
+    cv = cv_sf.merge(cv_ml[["unique_id", "ds", "cutoff", "XGBoost"]],
+                     on=["unique_id", "ds", "cutoff"])
+    cv["Ensemble"] = (cv["AutoARIMA"] + cv["XGBoost"]) / 2
+    cv["yc"] = cv["cutoff"].map(refy)
+    cvs[uid] = cv        # guardado para os testes DM/PT (§10.2) e calibração (§11)
+    for m in ["SeasonalNaive", "AutoARIMA", "XGBoost", "Ensemble"]:
+        r = metr(cv["y"].values, cv[m].values, cv["yc"].values, escalas[uid])
+        metricas.append({"Variedade": uid, "Modelo": m, "RMSE": r[0],
+                         "MAPE (%)": r[1], "MASE": r[2], "Dir.Acc (%)": r[3]})
+
+    # --- previsão fora da amostra + intervalos conformais ---
+    Xf = exog_futuro(sub, sf_cols, ml_cols)
+    sf.fit(df=sub[["unique_id", "ds", "y"] + sf_cols],
+           prediction_intervals=ConformalIntervals(n_windows=N_WIN, h=H))
+    fsf = sf.predict(h=H, X_df=Xf[["unique_id", "ds"] + sf_cols], level=[60, 80])
+    mlf.fit(sub[["unique_id", "ds", "y"] + ml_cols], static_features=[],
+            prediction_intervals=PredictionIntervals(n_windows=N_WIN, h=H))
+    fml = mlf.predict(h=H, X_df=Xf[["unique_id", "ds"] + ml_cols], level=[60, 80])
+    f = fsf.merge(fml, on=["unique_id", "ds"]).merge(Xf[["ds", "fecha"]], on="ds")
+    f["Ensemble"] = (f["AutoARIMA"] + f["XGBoost"]) / 2
+    previsoes.append(f)
+
+resumo = pd.DataFrame(metricas).sort_values(["Variedade", "RMSE"]).reset_index(drop=True)
+(GT(resumo)
+ .tab_header(title="Acurácia em rolling-origin (exógenas por variedade)",
+             subtitle=f"h={H} semanas, {N_WIN} origens, passo {STEP} "
+                      "(menor RMSE/MAPE/MASE = melhor; MASE < 1 = bate o naive sazonal)")
+ .fmt_number(columns=["RMSE", "MAPE (%)", "MASE", "Dir.Acc (%)"], decimals=2))
+```
+
+## 10. Resultados e interpretação
+
+```{python}
+# Ganho de cada modelo vs naive sazonal (RMSE)
+piv = resumo.pivot(index="Variedade", columns="Modelo", values="RMSE")
+ganho = (1 - piv[["AutoARIMA", "XGBoost", "Ensemble"]].div(piv["SeasonalNaive"], axis=0)) * 100
+ganho = ganho.round(1).reset_index()
+(GT(ganho).tab_header(title="Redução de RMSE vs. naive sazonal (%)",
+                      subtitle="maior = melhor")
+ .fmt_number(columns=["AutoARIMA", "XGBoost", "Ensemble"], decimals=1))
+```
+
+::: {.callout-warning}
+**Leitura destes números: cautela.** Este baseline usa Fourier — que a §8.2
+mostrou ser **prejudicial** para a uva (piora significativa em três famílias
+de modelo, nas duas variedades). A tabela acima é gerada com dados e código
+reais de uva, mas herda essa contaminação: qualquer ganho do AutoARIMA/XGBoost
+sobre o naive sazonal aqui **mistura** o efeito de Niño/câmbio (ainda não
+testados isoladamente) com o efeito do Fourier (já sabidamente negativo). Não
+tirar conclusões sobre "qual exógena vence" a partir desta tabela — essa
+resposta virá dos testes isolados da fila em §12 (Niño, depois câmbio, cada
+um contra o piso univariado da §8, sem Fourier). O parágrafo abaixo, herdado
+do relatório da manga, descrevia achados **daquele** estudo (Palmer/Tommy) e
+foi removido daqui por não se aplicar à uva — mantém-se só o registro do
+pipeline (código, métricas de fábrica, testes DM/PT) para reaproveito futuro
+quando o conjunto de exógenas da uva estiver definido.
+:::
+
+### 10.1 Diagnóstico de ajuste dentro da amostra
+
+Os gráficos abaixo sobrepõem o preço observado com o ajuste de cada modelo
+**dentro da amostra** (previsão um passo à frente, usando defasagens reais
+observadas). Um bom ajuste in-sample é necessário, mas não suficiente — o que
+valida o modelo é o *rolling-origin* (§9). A comparação revela dois padrões
+opostos:
+
+- **Sobreajuste (*overfitting*):** ajuste quase perfeito na amostra de treino,
+  mas desempenho pior fora. O XGBoost, com acesso a `lag_1` (preço da semana
+  imediatamente anterior), é o mais suscetível: com esse regressor, ele consegue
+  "enxergar" o nível atual da série e tende a colar na curva observada.
+- **Subajuste (*underfitting*):** modelo que não captura padrões sistemáticos —
+  por exemplo, ignorar a sazonalidade anual. Manifesta-se como uma curva suave
+  e deslocada dos picos e vales sazonais.
+
+```{python}
+# Ajuste dentro da amostra — diagnóstico de over/underfitting por variedade
+fits = []
+for uid in ["arra_15", "vitoria"]:
+    sf_cols = EXOG_SF[uid]
+    ml_cols = EXOG_ML[uid]
+    all_cols = list(dict.fromkeys(sf_cols + ml_cols))
+    sub = df[df["unique_id"] == uid].dropna(subset=all_cols + ["y"]).reset_index(drop=True)
+    ds_to_fecha = sub.set_index("ds")["fecha"].to_dict()
+
+    # AutoARIMA: forecast(fitted=True) armazena ajuste in-sample; X_next é placeholder
+    next_ds = int(sub["ds"].max()) + 1
+    next_fc = sub["fecha"].max() + pd.Timedelta(weeks=1)
+    dd_next = next_fc.dayofyear / 365.25
+    X_next = pd.DataFrame([{"unique_id": uid, "ds": next_ds,
+                             "sin1": np.sin(2*np.pi*dd_next), "cos1": np.cos(2*np.pi*dd_next),
+                             "sin2": np.sin(4*np.pi*dd_next), "cos2": np.cos(4*np.pi*dd_next),
+                             **{c: float(sub[c].dropna().iloc[-1])
+                                for c in sf_cols if c not in ["sin1","cos1","sin2","cos2"]}}])
+    sf_is = StatsForecast(models=[AutoARIMA(season_length=1)], freq=1, n_jobs=1)
+    sf_is.forecast(df=sub[["unique_id", "ds", "y"] + sf_cols],
+                   h=1, fitted=True, X_df=X_next[["unique_id", "ds"] + sf_cols])
+    isf = sf_is.forecast_fitted_values()
+    isf["fecha"] = isf["ds"].map(ds_to_fecha)
+    isf = isf.rename(columns={"AutoARIMA": "ajuste"})
+    isf["modelo"] = "AutoARIMA"
+    fits.append(isf[["unique_id", "fecha", "ajuste", "modelo"]].dropna(subset=["ajuste"]))
+
+    mlf_is = MLForecast(
+        models={"XGBoost": xgb.XGBRegressor(
+            n_estimators=200, max_depth=3, learning_rate=0.05, verbosity=0,
+            random_state=42)},
+        freq=1, lags=[1, 2, 4, 52])
+    mlf_is.fit(sub[["unique_id", "ds", "y"] + ml_cols], static_features=[], fitted=True)
+    iml = mlf_is.forecast_fitted_values()
+    iml["fecha"] = iml["ds"].map(ds_to_fecha)
+    iml = iml.rename(columns={"XGBoost": "ajuste"})
+    iml["modelo"] = "XGBoost"
+    fits.append(iml[["unique_id", "fecha", "ajuste", "modelo"]].dropna(subset=["ajuste"]))
+
+fits_df = pd.concat(fits, ignore_index=True)
+obs_all = df[["unique_id", "fecha", "y"]].dropna(subset=["y"])
+
+for uid in ["arra_15", "vitoria"]:
+    obs_u = obs_all[obs_all["unique_id"] == uid]
+    fit_u = fits_df[fits_df["unique_id"] == uid]
+    plot = (
+        p9.ggplot()
+        + p9.geom_line(obs_u, p9.aes("fecha", "y"), color="black", size=0.4, alpha=0.8)
+        + p9.geom_line(fit_u, p9.aes("fecha", "ajuste", color="modelo"), size=0.5, alpha=0.85)
+        + p9.scale_color_manual(values={"AutoARIMA": "#2166ac", "XGBoost": "#d6604d"})
+        + p9.scale_x_date(date_breaks="2 years", date_labels="%Y")
+        + p9.labs(
+            title=f"Ajuste dentro da amostra — {uid.capitalize()}",
+            caption="Linha preta: preço observado  |  Azul: AutoARIMA  |  Vermelho: XGBoost",
+            x="", y="R$/kg", color="Modelo")
+        + p9.theme(legend_position="top")
+    )
+    plot.show()
+```
+
+### 10.2 Significância estatística das diferenças (DM e PT)
+
+As diferenças de RMSE da tabela do §9 são formalmente testadas com
+**Diebold-Mariano** (correção de Harvey-Leybourne-Newbold, variância HAC com
+defasagem $h-1=7$ — os erros multi-passo são autocorrelacionados por construção;
+como as janelas se sobrepõem parcialmente, os p-valores devem ser lidos como
+aproximações conservadoras). A **acurácia direcional** é testada com
+**Pesaran-Timmermann** contra a hipótese de ausência de conteúdo direcional.
+
+```{python}
+# dm_hln e pt_test definidos na §8.1
+COMPARACOES = [("AutoARIMA", "SeasonalNaive"), ("XGBoost", "SeasonalNaive"),
+               ("Ensemble", "SeasonalNaive"), ("Ensemble", "AutoARIMA")]
+linhas_dm, linhas_pt = [], []
+for uid in ["arra_15", "vitoria"]:
+    cv = cvs[uid].sort_values(["cutoff", "ds"]).reset_index(drop=True)
+    for m1, m2 in COMPARACOES:
+        e1 = (cv[m1] - cv["y"]).values
+        e2 = (cv[m2] - cv["y"]).values
+        t, p = dm_hln(e1, e2, H)
+        linhas_dm.append({"Variedade": uid, "Comparação": f"{m1} vs {m2}",
+                          "DM (HLN)": t, "p-valor": p,
+                          "Conclusão": ("primeiro melhor" if t < 0 else "segundo melhor")
+                                       + (" *" if p < 0.10 else " (n.s.)")})
+    for m in ["AutoARIMA", "XGBoost", "Ensemble"]:
+        z, p = pt_test(cv[m].values, cv["y"].values, cv["yc"].values)
+        linhas_pt.append({"Variedade": uid, "Modelo": m, "PT (z)": z, "p-valor": p,
+                          "Conteúdo direcional": "sim *" if p < 0.10 else "não comprovado"})
+
+(GT(pd.DataFrame(linhas_dm))
+ .tab_header(title="Teste de Diebold-Mariano (perda quadrática, HLN)",
+             subtitle="DM < 0 favorece o primeiro modelo; * = significativo a 10%")
+ .fmt_number(columns=["DM (HLN)", "p-valor"], decimals=3))
+```
+
+```{python}
+(GT(pd.DataFrame(linhas_pt))
+ .tab_header(title="Teste de Pesaran-Timmermann (acurácia direcional)",
+             subtitle="H0: direção prevista independente da realizada; * = significativo a 10%")
+ .fmt_number(columns=["PT (z)", "p-valor"], decimals=3))
+```
+
+Com apenas 20 origens, o poder dos testes é limitado — diferenças pequenas de
+RMSE dificilmente serão significativas, e isso é informativo por si só: ganhos
+que não passam no DM não devem ser vendidos como superioridade de modelo, e é
+por esse critério que variantes testadas (cobweb, momentum, quantílico) foram
+descartadas nos §12.
+
+## 11. Previsão fora da amostra
+
+Reestimado com toda a amostra; intervalos **conformais** — livres de distribuição,
+com garantia de cobertura sob a hipótese de trocabilidade dos erros [@vovk2005].
+Para os modelos individuais usam-se as implementações nativas do ecossistema
+Nixtla; para a **combinação de previsões**, o intervalo é obtido por
+**conformalização direta dos erros do próprio ensemble** no rolling-origin do §9
+(quantis por horizonte dos erros absolutos fora da amostra) — e não pela média
+das bandas individuais, que não teria garantia formal.
+
+Coerente com a discussão sobre viradas (doc. da manga) — o modelo não acerta o ponto, e fingir que acerta
+("o preço da semana 752 será R\$ 2,05") é uma falsa precisão. Por isso a entrega
+abaixo é o **intervalo**, não o ponto. O gráfico apresenta duas faixas: a **banda
+interna (60%)** é a **faixa central da distribuição** de previsão — em três de
+cada cinco semanas históricas análogas, o preço real ficou dentro dessa faixa; a
+**banda externa (80%)** é mais conservadora e cobre quatro em cada cinco
+realizações históricas. Em preços de perecíveis, intervalos de 95% tendem a ser
+tão amplos que perdem utilidade prática para a tomada de decisão. A tabela abaixo
+reporta a faixa de 60% por modelo.
+
+```{python}
+fc = pd.concat(previsoes, ignore_index=True)
+hist = (df.dropna(subset=["y"]).groupby("unique_id").tail(52)
+        [["unique_id", "fecha", "y"]].rename(columns={"y": "valor"}))
+
+# Bandas da combinação: conformalização direta dos erros do ensemble no CV
+# (quantil por horizonte do erro absoluto fora da amostra — split-conformal)
+fc["h"] = fc.groupby("unique_id").cumcount() + 1
+for uid in ["arra_15", "vitoria"]:
+    cv = cvs[uid]
+    err = np.abs(cv["Ensemble"] - cv["y"])
+    horiz = (cv["ds"] - cv["cutoff"]).astype(int)
+    for nivel in (60, 80):
+        q = err.groupby(horiz).quantile(nivel / 100)
+        m = fc["unique_id"] == uid
+        fc.loc[m, f"Ens-lo-{nivel}"] = fc.loc[m, "Ensemble"] - fc.loc[m, "h"].map(q)
+        fc.loc[m, f"Ens-hi-{nivel}"] = fc.loc[m, "Ensemble"] + fc.loc[m, "h"].map(q)
+
+prev = fc[["unique_id", "fecha", "Ensemble",
+           "Ens-lo-60", "Ens-hi-60", "Ens-lo-80", "Ens-hi-80"]].copy()
+prev.columns = ["unique_id", "fecha", "valor", "lo60", "hi60", "lo80", "hi80"]
+
+plot = (
+    p9.ggplot()
+    + p9.geom_ribbon(prev, p9.aes(x="fecha", ymin="lo80", ymax="hi80"),
+                     alpha=0.15, fill="steelblue")
+    + p9.geom_ribbon(prev, p9.aes(x="fecha", ymin="lo60", ymax="hi60"),
+                     alpha=0.35, fill="steelblue")
+    + p9.geom_line(hist, p9.aes("fecha", "valor"))
+    + p9.geom_line(prev, p9.aes("fecha", "valor"), color="steelblue", size=0.9)
+    + p9.facet_wrap("unique_id", scales="free_y", ncol=1)
+    + p9.scale_x_date(date_breaks="2 months", date_labels="%b/%y")
+    + p9.labs(title=f"Combinação de previsões — próximas {H} semanas",
+              caption="Banda interna: faixa central 60%  |  Banda externa: faixa central 80%  (intervalos conformais)",
+              x="", y="R$/kg")
+    + p9.theme(axis_text_x=p9.element_text(angle=45, hjust=1))
+)
+plot.show()
+```
+
+```{python}
+def faixa(lo, hi):
+    return [f"{a:.2f} – {b:.2f}" for a, b in zip(lo, hi)]
+
+# último preço observado por variedade — referência para a direção da semana 1
+ultimo_obs = df.dropna(subset=["y"]).groupby("unique_id")["y"].last()
+
+tab = fc[["unique_id", "fecha"]].copy()
+tab["fecha"] = tab["fecha"].dt.strftime("%Y-%m-%d")
+tab["AutoARIMA"] = faixa(fc[f"AutoARIMA-lo-{NIVEL}"], fc[f"AutoARIMA-hi-{NIVEL}"])
+tab["XGBoost"]   = faixa(fc[f"XGBoost-lo-{NIVEL}"],   fc[f"XGBoost-hi-{NIVEL}"])
+# banda da combinação: conformal direta dos erros do ensemble no rolling-origin
+tab["Combinacao"] = faixa(fc[f"Ens-lo-{NIVEL}"], fc[f"Ens-hi-{NIVEL}"])
+
+# direção semana a semana (opção B):
+#   semana 1 → compara com último preço observado
+#   semanas 2–8 → compara com a semana anterior da própria previsão
+dirs = []
+for uid, grp in tab.groupby("unique_id", sort=False):
+    pts = fc.loc[grp.index, "Ensemble"].values
+    prev = np.concatenate([[ultimo_obs[uid]], pts[:-1]])
+    dirs.extend(["↑" if p > r else "↓" for p, r in zip(pts, prev)])
+tab["Direção"] = dirs
+
+(GT(tab.rename(columns={
+        "unique_id":  "Variedade",
+        "fecha":      "Semana",
+        "AutoARIMA":  f"AutoARIMA (intervalo {NIVEL}%)",
+        "XGBoost":    f"XGBoost (intervalo {NIVEL}%)",
+        "Combinacao": f"Combinação (intervalo {NIVEL}%)",
+        "Direção":    "Direção"}))
+ .tab_header(title=f"Previsões fora da amostra — intervalo de {NIVEL}%",
+             subtitle=f"Próximas {H} semanas — R$/kg"))
+```
+
+### 11.1 Calibração empírica dos intervalos
+
+Intervalo declarado precisa ser intervalo cumprido: a banda de 60% só é honesta
+se, fora da amostra, ela contiver o preço realizado em ≈60% das vezes. A
+verificação abaixo usa validação *leave-one-window-out* no rolling-origin do §9:
+para cada janela, o quantil conformal é calibrado **apenas com os erros das
+outras 19 janelas** (por horizonte) e testado nos erros da janela excluída —
+nenhuma janela participa da própria calibração. Cobertura empírica próxima da
+nominal valida o mecanismo conformal usado no §11.
+
+```{python}
+def cobertura_loo(cv, modelo, nivel):
+    err   = np.abs(cv[modelo] - cv["y"]).values
+    horiz = (cv["ds"] - cv["cutoff"]).astype(int).values
+    corte = cv["cutoff"].values
+    dentro = []
+    for w in np.unique(corte):
+        for k in np.unique(horiz):
+            cal = err[(corte != w) & (horiz == k)]
+            tst = err[(corte == w) & (horiz == k)]
+            if len(cal) and len(tst):
+                dentro.extend(tst <= np.quantile(cal, nivel / 100))
+    return 100 * float(np.mean(dentro))
+
+
+cob = []
+for uid in ["arra_15", "vitoria"]:
+    for m in ["AutoARIMA", "XGBoost", "Ensemble"]:
+        cob.append({"Variedade": uid, "Modelo": m,
+                    "Cobertura 60% (%)": cobertura_loo(cvs[uid], m, 60),
+                    "Cobertura 80% (%)": cobertura_loo(cvs[uid], m, 80)})
+
+(GT(pd.DataFrame(cob))
+ .tab_header(title="Cobertura empírica dos intervalos conformais (leave-one-window-out)",
+             subtitle="Valores próximos de 60 e 80 indicam intervalos bem calibrados")
+ .fmt_number(columns=["Cobertura 60% (%)", "Cobertura 80% (%)"], decimals=1))
+```
+
+## 12. Próximos passos
+
+O projeto da uva está no **início do caminho incremental**: o piso univariado
+(§8) está estabelecido, e o pipeline com exógenas (§9–§11) roda como herança
+metodológica da manga, ainda com o baseline provisório (Fourier + Niño +
+câmbio). A sequência planejada:
+
+1. ~~**Significância da comparação univariada (DM/PT).**~~ **Feito** — ver
+   §8.1. Síntese: na Arra 15 nenhum modelo bate o random walk em RMSE com
+   significância (o sinal univariado é fraco em magnitude); na Vitória, NHITS
+   e XGBoost batem os clássicos a 10%; NHITS × XGBoost é empate técnico nas
+   duas; NHITS e MLP têm conteúdo direcional forte (PT p<0,001) nas duas
+   variedades, inclusive na Arra, onde o XGBoost não comprova direção;
+   XGBoost ≈ LightGBM (mantido só o XGBoost).
+2. **NHITS como candidato a membro do ensemble.** Venceu as duas variedades no
+   cenário univariado *mesmo* treinando uma única vez (`refit=False`) — o
+   oposto do resultado da manga, onde um NHITS com refit por origem ficou atrás
+   de todos (RMSE 0,98/1,13 vs. 0,77/0,85 do AutoARIMA; série mais longa, mas
+   competindo contra modelos já municiados de exógenas maduras). Pendências:
+   medir o custo/ganho do `refit=True`, testar sensibilidade a `input_size` e
+   `max_steps`, e decidir se entra na combinação com AutoARIMA/XGBoost.
+3. **Exógenas, uma a uma, pagando aluguel.** Cada variável só fica se melhorar
+   o rolling-origin sobre o melhor univariado — que agora é a régua, não o
+   naive sazonal. Andamento:
+   - ~~**Fourier (K=2 vs. K=3).**~~ **Testado e descartado** (§8.2) — piora
+     RMSE e direção nas **três famílias** (NHITS, XGBoost e AutoARIMA/ARIMAX)
+     e nas duas variedades, com significância no DM (NHITS na Vitória:
+     p≈0,01; ARIMA na Arra: p<0,001, com DirAcc caindo de 56% para 26–33%).
+     A sazonalidade programada por poda desloca o calendário entre anos;
+     curva anual determinística injeta sinal enganoso. A regressão harmônica
+     dinâmica — campeã na manga — não se transfere para a uva.
+   - **Niño (1+2 e 3.4, lag 26)** — próximo da fila, sem Fourier junto.
+   - **Câmbio (lag 8)** — depois, testando o padrão misto nível/diferença
+     validado na manga (ver §4.5).
+4. **Canais de oferta específicos da uva (§3 ainda por escrever).** Não herdar
+   o lag 16 da manga: a produção no VSF é programada por poda (2 ciclos/ano).
+   Candidatos com mecanismo: **chuva perto da colheita** (rachadura de baga e
+   podridão — lags curtos, 0–6 semanas), **calor na maturação** (brix/
+   qualidade), e o **canal Peru/câmbio** para a Arra 15 (variedade orientada a
+   exportação; Piura/Lambayeque pesam mais na uva do que na manga — o Peru é o
+   maior exportador mundial de uva de mesa). Selecionar lags do zero no
+   rolling-origin.
+5. **Sazonalidade instável no tempo.** O naive sazonal foi o pior modelo da §8
+   (MASE > 1 nas duas variedades) — evidência de que o calendário de oferta
+   desloca de ano para ano, coerente com a poda programada. Isso sugere testar
+   Bai-Perron [@bai2003] para quebras na relação preço-sazonalidade e,
+   se for o caso, janela de estimação encurtada ou pesos decrescentes.
+6. **Conformal e operação.** Quando o ensemble estiver definido, validar a
+   cobertura empírica dos intervalos 60/80% (mecanismo da §11 já pronto) e
+   montar a rotina semanal de publicação (repositório próprio da uva, nos
+   moldes do `observatoriosdemercado/manga`).
+
+::: {.callout-note}
+**Ambiente.** Este documento usa o kernel `manga-nixtla` (Python 3.12 isolado em
+`LOCALAPPDATA`, criado com `uv`). O Python 3.14 do sistema não tem wheels para o
+ecossistema científico. As bases são geradas por `python gerar_clima.py --aplicar`
+(clima) e `python gerar_exogenas.py --aplicar` (câmbio + Niño + anomalia Peru).
+O XGBoost usa `random_state=42`; as versões abaixo garantem reprodutibilidade.
+:::
+
+```{python}
+#| code-fold: true
+import sys, statsforecast, mlforecast, plotnine, statsmodels, scipy
+print(f"Python       {sys.version.split()[0]}")
+for pacote in (np, pd, statsforecast, mlforecast, xgb, plotnine, statsmodels, scipy):
+    print(f"{pacote.__name__:<12} {pacote.__version__}")
+```
+
+## Referências
+
+::: {#refs}
+:::
