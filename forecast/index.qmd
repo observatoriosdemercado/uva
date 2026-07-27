@@ -43,9 +43,12 @@ jupyter: manga-nixtla
 
 > **Nota de método.** Ao contrário da manga — onde os mecanismos abaixo já
 > tinham sido validados no rolling-origin antes deste documento — para a uva
-> **nada aqui foi testado ainda**. O que segue são **hipóteses de mecanismo**,
-> não achados: candidatos a entrar na fila de exógenas (§12), cada um só fica
-> se pagar aluguel no rolling-origin (§8 em diante). O primeiro teste real já
+> **nenhum destes canais foi testado no rolling-origin ainda**. O que segue são
+> **hipóteses de mecanismo**, acompanhadas, quando existem, de evidência
+> exploratória (climatologia, correlações simples) que serve para *orientar o
+> sinal esperado* — nunca como validação. São candidatos a entrar na fila de
+> exógenas (§12), e cada um só fica se pagar aluguel no rolling-origin
+> (§8 em diante). O primeiro teste real já
 > saiu diferente do esperado: o Fourier (sazonalidade determinística) foi
 > **descartado** (§8.2) porque a uva do VSF, ao contrário da manga, não tem
 > calendário biológico fixo — a produção é **programada por poda** (2 ciclos
@@ -54,20 +57,75 @@ jupyter: manga-nixtla
 > defasagens biológicas fixas (tipo "16 semanas da floração"), mas em janelas
 > **curtas e próximas da colheita**, e em canais **não sazonais** (câmbio, ENSO).
 
-### 3.1 Clima local — candidatos
+### 3.1 Clima local: a chuva na colheita
 
-- **Chuva perto da colheita (rachadura de baga / podridão).** Diferente da
-  antracnose na floração da manga, o risco agronômico mais citado para uva de
-  mesa é a chuva **nos dias que antecedem a colheita**: a baga incha, racha, e
-  a podridão descarta cacho. Mecanismo compatível com **lag curto** (0–6
-  semanas), não com meses. Variável candidata: chuva acumulada em janela curta
-  (`total_rainfall`, já carregada em `clima`, lag a determinar).
-- **Calor na maturação (brix/qualidade).** Temperatura elevada na fase final de
-  maturação afeta açúcar e qualidade do cacho — pode empurrar preço em
-  qualquer direção dependendo de estar dentro ou fora do ótimo da variedade;
-  candidata: `hot_days_35`, lag também a determinar (não herdado da manga).
-- Como já não há período fixo (§8.2), o lag de cada variável **precisa ser
-  variado e testado** — não fixado por analogia com outra fruta.
+Na uva do VSF há um mecanismo climático dominante, e ele é **estreito no
+tempo**: a chuva só importa **na colheita ou perto dela**. Fora dessa janela,
+o parreiral irrigado é indiferente à precipitação — a água vem da irrigação,
+não do céu. Mas chover sobre cacho maduro ou quase maduro é grave: a baga
+absorve água, incha e **racha**; a lesão abre porta para **podridão**, que
+progride no cacho e na caixa. Perde-se quantidade *e* qualidade.
+
+**Por que o sinal esperado é negativo (ao contrário da manga).** Na manga, a
+chuva atingia a **floração**: menos pegamento → menos fruta meses depois →
+preço **sobe**. Na uva, a chuva atinge o **produto pronto**. E uva é
+perecível sem estoque: a fruta danificada **não pode ser retida** à espera de
+mercado melhor — ela desce de categoria e é vendida assim mesmo. O canal
+dominante deixa de ser escassez e passa a ser **deterioração da qualidade
+média ofertada**, que empurra o preço **para baixo**. Mesmo fenômeno físico,
+sinal oposto ao da manga, porque o momento do ciclo é outro.
+
+**Colhe-se o ano todo, mas com pico em outubro–novembro.** A poda programada
+espalha a colheita pelo calendário, com concentração em out/nov. E é
+justamente aí que o VSF sai da estação seca: nas séries NASA POWER
+(2012–2026), a chuva semanal média sobe de **0,8 mm em setembro** e **2,5 mm
+em outubro** para **8,1 mm em novembro** e **10,8 mm em dezembro**. O pico de
+colheita coincide com a virada para o período chuvoso — a exposição é
+estrutural, não acidental.
+
+**O que torna isso um candidato preditivo é a variabilidade interanual.** O
+acumulado de outubro+novembro no VSF variou, nesse período, de **6 mm (2015)
+a 130 mm (2020)** — uma razão de mais de 20×, com desvio-padrão (40 mm)
+quase do tamanho da média (46 mm). É exatamente o tipo de sinal que um termo
+determinístico **não** captura: o calendário do risco é fixo, mas a
+**intensidade** muda radicalmente de ano para ano. Isso reconcilia este
+candidato com a rejeição do Fourier (§8.2) — não estamos reintroduzindo
+sazonalidade média, e sim o desvio anual dentro de uma janela crítica.
+
+**Evidência exploratória (fraca, mas do sinal esperado).** Correlacionando o
+acumulado out+nov com o preço real médio de out–dez do mesmo ano
+($n=9$ safras): $r=-0{,}61$ na BRS Vitória ($p=0{,}08$) e $r=-0{,}33$ na
+Arra 15 ($p=0{,}38$). O sinal é negativo nas duas, como o mecanismo de
+qualidade prevê — mas **nada aqui é conclusivo**: com nove observações o
+poder é ínfimo; na Arra o Spearman colapsa para $+0{,}02$, revelando que a
+correlação de Pearson é carregada pelos anos extremos; e os anos mais
+chuvosos (2020–2021) coincidem com o choque de demanda da COVID, um
+confundidor evidente. Vale como *orientação de sinal*, não como resultado.
+
+**A restrição séria: o lag do mecanismo é mais curto que o horizonte.** O dano
+é contemporâneo — chove na semana $t$ e o estrago aparece no preço de $t$ a
+$t+2$. Como não conhecemos a chuva de seis semanas à frente, a variável **não
+é utilizável em $h=6$ na forma direta**. Três saídas testáveis:
+
+1. **Persistência do choque.** Se a chuva do pico de colheita destrói lotes,
+   o efeito sobre o mercado pode durar semanas — então chuva acumulada em
+   lags 4–6 pode carregar sinal mesmo com o dano já consumado.
+2. **Modelo de horizonte curto.** Uma especificação separada para $h\le4$, em
+   que a chuva recente é observável e o mecanismo está no alcance. Faz
+   sentido operacional: o boletim é semanal, e a decisão de curto prazo é a
+   mais frequente.
+3. **Previsão meteorológica como insumo.** Substituir a chuva observada por
+   previsão de precipitação no horizonte — muda a natureza do dado (e traz o
+   erro do modelo meteorológico junto), mas é o único caminho para usar o
+   mecanismo em sua forma contemporânea.
+
+**Calor na maturação (secundário).** Temperatura alta na fase final afeta
+açúcar e firmeza; o efeito sobre preço é ambíguo *a priori* (depende de estar
+dentro ou fora do ótimo da variedade). Candidata: `hot_days_35`, com lag a
+determinar. Sem hipótese direcional forte, entra depois da chuva na fila.
+
+Em todos os casos vale a regra da §8.2: **o lag é para descobrir, não para
+herdar** — nenhuma defasagem da manga se transfere.
 
 ### 3.2 Canal de exportação e câmbio
 
@@ -87,13 +145,53 @@ jupyter: manga-nixtla
 - Câmbio e Niño (1+2 e 3.4) são as **próximas exógenas da fila** (§12), a
   testar sem Fourier, cada uma isoladamente contra o piso univariado.
 
-### 3.3 Competição doméstica — a mapear
+### 3.3 Competição doméstica
 
-Na manga, quatro polos (VSF, Livramento/BA, Jaíba, São Paulo) disputavam o
-consumidor interno, com dados de preço e clima para cada um. **Para a uva de
-mesa, essa estrutura de competição regional ainda não foi levantada** — não
-há, neste momento, evidência ou dado que sustente hipótese de mecanismo aqui.
-Fica como item em aberto, não como capítulo a preencher por analogia.
+Quatro polos concentram a produção brasileira de **uva de mesa** e disputam o
+consumidor interno:
+
+| Polo | UF | Regime de produção |
+|---|---|---|
+| **Vale do São Francisco** (Petrolina/Juazeiro) | PE/BA | Irrigado, semiárido — **produção programada por poda**, 2 ciclos/ano |
+| **Pirapora** | MG | Irrigado, norte de Minas — também com poda programada |
+| **Jales** | SP | Noroeste paulista — ciclo mais preso à estação natural |
+| **Marialva** | PR | Norte do Paraná — ciclo subtropical, colheita de verão |
+
+A distinção que importa para a modelagem **não é geográfica, é de regime**: VSF
+e Pirapora podem *escolher* quando colher (a poda define a data); Jales e
+Marialva têm janela mais amarrada ao ciclo natural da videira. Isso divide os
+concorrentes em dois grupos com implicações preditivas diferentes.
+
+**Por que a competição não aparece como sazonalidade.** Se a oferta do Sul/
+Sudeste chegasse sempre na mesma época *e* com peso relevante, os termos de
+Fourier teriam capturado esse efeito — e não capturaram: o Fourier foi
+**rejeitado** em três famílias de modelo (§8.2). Restam duas leituras, ambas
+compatíveis com o achado: (i) o efeito médio de calendário é fraco no preço do
+VSF; ou (ii) o *timing* é estável mas a **intensidade varia ano a ano** (área
+colhida, quebra por clima, volume efetivo) — e uma curva anual determinística,
+por construção, não representa variação de intensidade.
+
+A segunda leitura é a que abre espaço preditivo, e ela aponta para o mesmo
+tipo de variável que usamos no canal externo: **anomalia**, não nível. O sinal
+candidato é o desvio do clima de cada polo concorrente em relação à sua
+própria normal — um ano de quebra em Marialva ou Jales desloca oferta para o
+mercado nacional em magnitude atípica, e é essa atipicidade (não o calendário
+médio) que teria conteúdo além do que o preço passado já traz.
+
+**Por que clima e não preço regional.** Usar o preço de outro polo como
+regressor é **endógeno**: os preços das regiões são determinados
+simultaneamente no mesmo mercado nacional, e a regressão captaria correlação
+contemporânea sem direção causal. O clima regional é **predeterminado** (não
+responde ao preço da uva no VSF) e, portanto, admissível como preditor.
+
+**Estado dos dados — o que falta.** O `gerar_clima.py` herdado da manga cobre
+polos que **não** correspondem a estas regiões: Livramento/BA, Jaíba/MG e
+Monte Alto/SP são polos de manga. Só o VSF (Petrolina) coincide. Para testar
+este canal é preciso primeiro adicionar as coordenadas de **Pirapora/MG**,
+**Jales/SP** e **Marialva/PR** ao gerador e baixar as séries NASA POWER
+correspondentes. Enquanto isso não for feito, o canal permanece **não
+testado** — não entra na fila de exógenas (§12) por falta de dado, não por
+decisão metodológica.
 
 ## 4. Modelos de previsão
 
@@ -339,7 +437,7 @@ from statsmodels.tsa.statespace.structural import UnobservedComponents
 import xgboost as xgb
 
 # Parâmetros do estudo
-H, N_WIN, STEP, NIVEL = 8, 20, 4, 60
+H, N_WIN, STEP, NIVEL = 6, 20, 4, 60
 
 igpdi = pd.read_csv("dados/igpdi_uva.csv", sep=";", decimal=".")
 exo   = pd.read_csv("dados/df_exogenas.csv", parse_dates=["date"]).set_index("date")
@@ -386,7 +484,7 @@ df = pd.concat([carregar("dados/dados_uva_arra_semana.csv", "arra_15"),
                 carregar("dados/dados_uva_vitoria_semana.csv", "vitoria")], ignore_index=True)
 df = df.sort_values(["unique_id", "fecha"])
 
-# Termos de Fourier (determinísticos) e exógenas em lags previsíveis (h=8)
+# Termos de Fourier (determinísticos) e exógenas em lags previsíveis (h=6)
 doy = df["fecha"].dt.dayofyear / 365.25
 for k in (1, 2):
     df[f"sin{k}"] = np.sin(2 * np.pi * k * doy)
@@ -480,13 +578,13 @@ for uid in ["arra_15", "vitoria"]:
 Antes de qualquer exógena, estabelecemos o **piso univariado**: o que cada
 família de modelo consegue extrair **só do histórico do próprio preço**. É a
 régua contra a qual toda variável adicional terá de "pagar aluguel" no
-rolling-origin. Competidores, todos sob o **mesmo protocolo** (h=8, 20 origens,
+rolling-origin. Competidores, todos sob o **mesmo protocolo** (h=6, 20 origens,
 passo 4):
 
 - **Benchmarks**: *Naive* (random walk — repete o último preço) e *naive
   sazonal* (repete o preço da mesma semana do ano anterior);
 - **ARIMA** (AutoARIMA, $m=1$): sem termos de Fourier, só enxerga sazonalidade
-  pelo que a parte AR alcançar — esperamos que sofra em h=8;
+  pelo que a parte AR alcançar — esperamos que sofra em h=6;
 - **SARIMA-52** (AutoARIMA, $m=52$): a forma clássica de sazonalidade em ARIMA;
   incluído aqui como teste empírico, apesar das reservas teóricas (§4.1). A
   busca stepwise irrestrita é computacionalmente proibitiva com $m=52$ (mais de
@@ -712,7 +810,7 @@ Desenho do teste: **três famílias** — XGBoost e NHITS (os dois vencedores da
 especificação campeã da manga, e o ARIMA é o único competidor *sem nenhum
 mecanismo sazonal próprio*: sem lag 52 e sem decomposição, é nele que o
 Fourier teria mais chance de ajudar) — cada um em três versões: univariado
-(controle), +Fourier $K=2$ e +Fourier $K=3$, no mesmo protocolo (h=8, 20
+(controle), +Fourier $K=2$ e +Fourier $K=3$, no mesmo protocolo (h=6, 20
 origens, passo 4, seed fixa), com **DM pareado janela a janela** entre cada
 variante e seu controle. No XGBoost os termos sin/cos entram como atributos
 junto às defasagens; no NHITS, via `futr_exog_list` (exógenas futuras
@@ -875,18 +973,18 @@ correlacionados é o mecanismo clássico de redução de variância (§4.4). Tud
 avaliado por `cross_validation` (origem móvel), com RMSE, MAPE, MASE e
 **acurácia direcional**.
 
-A validação usa **20 janelas de avaliação**, com horizonte de **8 semanas** cada e
+A validação usa **20 janelas de avaliação**, com horizonte de **6 semanas** cada e
 passo de **4 semanas** entre origens — cobrindo, ao todo, aproximadamente os
 últimos 84 semanas (~21 meses) da série. Em cada janela o modelo é **reestimado do
-zero** com toda a informação disponível até aquela origem e prevê as 8 semanas
+zero** com toda a informação disponível até aquela origem e prevê as 6 semanas
 seguintes sem ver os dados futuros, exatamente como ocorreria em uso real semana a
 semana. O diagrama abaixo resume a estrutura; os parâmetros desta
 avaliação mapeiam diretamente para ele:
 
 ```
-treino até semana T   |■■■■■■■■|  ← janela 1 (h=8 semanas)
-treino até semana T+4      |■■■■■■■■|  ← janela 2
-treino até semana T+8           |■■■■■■■■|  ← janela 3
+treino até semana T   |■■■■■■|  ← janela 1 (h=6 semanas)
+treino até semana T+4      |■■■■■■|  ← janela 2
+treino até semana T+8           |■■■■■■|  ← janela 3
 ... (20 janelas no total, passo=4)
 ```
 
@@ -1289,22 +1387,38 @@ próximas etapas. A sequência planejada:
      calendário entre anos; curva anual determinística injeta sinal enganoso.
      A regressão harmônica dinâmica — campeã na manga — não se transfere.
    - **Niño (1+2 e 3.4, lag 26)** — próximo da fila, sem Fourier junto.
-   - **Câmbio (lag 8)** — depois, testando o padrão misto nível/diferença
+   - **Câmbio (lag $\ge h$)** — depois, testando o padrão misto nível/diferença
      validado na manga (ver §4.5).
-4. **Canais de oferta específicos da uva (§3 ainda por escrever).** Não herdar
-   o lag 16 da manga: a produção no VSF é programada por poda (2 ciclos/ano).
-   Candidatos com mecanismo: **chuva perto da colheita** (rachadura de baga e
-   podridão — lags curtos, 0–6 semanas), **calor na maturação** (brix/
-   qualidade), e o **canal Peru/câmbio** para a Arra 15 (variedade orientada a
-   exportação; Piura/Lambayeque pesam mais na uva do que na manga — o Peru é o
-   maior exportador mundial de uva de mesa). Selecionar lags do zero no
-   rolling-origin.
-5. **Sazonalidade instável no tempo.** O naive sazonal foi o pior modelo da §8
+4. **Chuva na colheita — o mecanismo local mais promissor (§3.1).** Sinal
+   esperado **negativo** (dano de qualidade em produto perecível, que não pode
+   ser retido), oposto ao da manga. Exposição estrutural: o pico de colheita
+   (out/nov) coincide com a virada para o período chuvoso no VSF, e o
+   acumulado out+nov varia mais de 20× entre anos — variabilidade que um termo
+   determinístico não capta, o que mantém o candidato compatível com a
+   rejeição do Fourier. **Obstáculo a resolver primeiro:** o dano é
+   contemporâneo (lag 0–2) e o horizonte é $h=6$. Testar, nesta ordem:
+   (a) chuva acumulada em lags 4–6, apostando na **persistência** do choque de
+   oferta/qualidade; (b) uma especificação separada de **horizonte curto**
+   ($h\le4$), onde o mecanismo é observável — útil por si só para o boletim
+   semanal; (c) previsão meteorológica como insumo, se (a) e (b) falharem.
+   Calor na maturação (`hot_days_35`) entra depois, sem hipótese direcional
+   forte. O **canal Peru/câmbio** para a Arra 15 segue como candidato
+   independente (§3.2).
+5. **Competição doméstica — coletar o dado antes de testar (§3.3).** Os quatro
+   polos de uva de mesa são VSF (PE/BA), **Pirapora/MG**, **Jales/SP** e
+   **Marialva/PR**. O `gerar_clima.py` herdado cobre polos de *manga*
+   (Livramento/BA, Jaíba/MG, Monte Alto/SP) — só o VSF coincide. Passo
+   necessário: acrescentar as coordenadas dos três polos de uva ao gerador,
+   baixar as séries NASA POWER e só então testar **anomalias** climáticas
+   regionais (o nível/calendário médio já se mostrou sem valor preditivo pela
+   rejeição do Fourier). Preço de outra região está descartado por
+   endogeneidade.
+6. **Sazonalidade instável no tempo.** O naive sazonal foi o pior modelo da §8
    (MASE > 1 nas duas variedades) — evidência de que o calendário de oferta
    desloca de ano para ano, coerente com a poda programada. Isso sugere testar
    Bai-Perron [@bai2003] para quebras na relação preço-sazonalidade e,
    se for o caso, janela de estimação encurtada ou pesos decrescentes.
-6. **Conformal e operação.** Quando o ensemble estiver definido, validar a
+7. **Conformal e operação.** Quando o ensemble estiver definido, validar a
    cobertura empírica dos intervalos 60/80% (mecanismo da §11 já pronto) e
    montar a rotina semanal de publicação (repositório próprio da uva, nos
    moldes do `observatoriosdemercado/manga`).
