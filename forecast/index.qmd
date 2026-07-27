@@ -438,6 +438,7 @@ import xgboost as xgb
 
 # Parâmetros do estudo
 H, N_WIN, STEP, NIVEL = 6, 20, 4, 60
+INPUT_SIZE = 104          # janela de entrada das redes (2 anos)
 
 igpdi = pd.read_csv("dados/igpdi_uva.csv", sep=";", decimal=".")
 exo   = pd.read_csv("dados/df_exogenas.csv", parse_dates=["date"]).set_index("date")
@@ -648,9 +649,9 @@ cv_mlu = ml_uni.cross_validation(df=base, h=H, n_windows=N_WIN, step_size=STEP,
 
 # Redes neurais: treinadas uma vez na primeira origem (refit=False)
 nf_uni = NeuralForecast(models=[
-    NHITS(h=H, input_size=104, max_steps=500, random_seed=42,
+    NHITS(h=H, input_size=INPUT_SIZE, max_steps=500, random_seed=42,
           scaler_type="robust", enable_progress_bar=False, logger=False),
-    MLP(h=H, input_size=104, max_steps=500, random_seed=42,
+    MLP(h=H, input_size=INPUT_SIZE, max_steps=500, random_seed=42,
         scaler_type="robust", enable_progress_bar=False, logger=False)], freq=1)
 cv_nfu = nf_uni.cross_validation(df=base, n_windows=N_WIN, step_size=STEP, refit=False)
 
@@ -841,7 +842,7 @@ for nome, cols in [("XGB_univ", []), ("XGB_F2", F2), ("XGB_F3", F3)]:
 
 # NHITS: univariado (controle), +F2, +F3 — uma chamada, três aliases
 def nhits_f(alias, cols):
-    return NHITS(h=H, input_size=104, max_steps=500, random_seed=42,
+    return NHITS(h=H, input_size=INPUT_SIZE, max_steps=500, random_seed=42,
                  scaler_type="robust", enable_progress_bar=False, logger=False,
                  futr_exog_list=cols if cols else None, alias=alias)
 nf_f = NeuralForecast(models=[nhits_f("NHITS_univ", None),
@@ -1038,7 +1039,7 @@ mlf_final = MLForecast(models={"XGBoost": xgb.XGBRegressor(
 mlf_final.fit(base[["unique_id", "ds", "y"]], static_features=[])
 f_ml = mlf_final.predict(h=H)
 
-nf_final = NeuralForecast(models=[NHITS(h=H, input_size=104, max_steps=500,
+nf_final = NeuralForecast(models=[NHITS(h=H, input_size=INPUT_SIZE, max_steps=500,
                                         random_seed=42, scaler_type="robust",
                                         enable_progress_bar=False, logger=False)], freq=1)
 nf_final.fit(df=base[["unique_id", "ds", "y"]])
@@ -1132,6 +1133,21 @@ opostos:
   por exemplo, ignorar a sazonalidade anual. Manifesta-se como uma curva suave
   e deslocada dos picos e vales sazonais.
 
+::: {.callout-note}
+**Por que a linha do NHITS começa depois da do XGBoost.** A rede precisa de
+`INPUT_SIZE` = 104 semanas (2 anos) de histórico para formar sua janela de
+entrada. Nas origens iniciais esse histórico não existe, e o
+`predict_insample` completa a janela **com zeros** (`ConstantPad1d`) — o
+"ajuste" daí resultante mede o padding, não o modelo. O efeito é grande e
+mensurável: nesta série, o erro absoluto médio do NHITS é ~4,4 nas 26
+primeiras semanas e ~0,02 depois da 104ª; no primeiro ponto, com a janela
+inteiramente zerada, a saída da rede vai a praticamente zero. Por isso as
+104 primeiras origens são **descartadas** do gráfico: mantê-las sugeriria um
+subajuste grosseiro que é artefato de janela vazia, não comportamento do
+modelo. O XGBoost não tem esse problema porque suas defasagens máximas são de
+52 semanas e o `mlforecast` simplesmente não gera linha antes disso.
+:::
+
 ```{python}
 # Ajuste dentro da amostra (um passo à frente) — NHITS e XGBoost univariados
 ds_to_fecha = {(u, d): f for u, d, f in zip(df["unique_id"], df["ds"], df["fecha"])}
@@ -1146,10 +1162,15 @@ iml = mlf_is.forecast_fitted_values().rename(columns={"XGBoost": "ajuste"})
 iml["modelo"] = "XGBoost"
 fits.append(iml[["unique_id", "ds", "ajuste", "modelo"]])
 
-# NHITS: predict_insample devolve previsões por origem; h=1 isola o passo à frente
+# NHITS: predict_insample devolve previsões por origem; h=1 isola o passo à frente.
+# As INPUT_SIZE primeiras origens são descartadas: sem histórico suficiente, a rede
+# preenche a janela de entrada com zeros (ConstantPad1d) e o "ajuste" resultante
+# reflete o padding, não o modelo — em ds=0 a janela é toda zero e a saída vai a ~0.
+# Medido nesta série: MAE ~4,4 nas 26 primeiras semanas vs ~0,02 após a 104ª.
 ins = nf_final.predict_insample(step_size=1)
 ins = ins.reset_index() if "unique_id" not in ins.columns else ins
 ins = ins[(ins["ds"] - ins["cutoff"]) == 1].rename(columns={"NHITS": "ajuste"})
+ins = ins[ins["ds"] >= INPUT_SIZE]          # descarta janelas com padding
 ins["modelo"] = "NHITS"
 fits.append(ins[["unique_id", "ds", "ajuste", "modelo"]])
 
