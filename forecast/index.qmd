@@ -1374,6 +1374,123 @@ for uid in ["arra_15", "vitoria"]:
  .fmt_number(columns=["Cobertura 60% (%)", "Cobertura 80% (%)"], decimals=1))
 ```
 
+### 11.2 Acompanhamento contínuo (previsto × observado, semana a semana)
+
+A calibração da §11.1 é **interna ao rolling-origin**: mede a cobertura sobre
+janelas retiradas da própria amostra histórica. Ela é necessária, mas não
+substitui o teste mais duro possível — confrontar a previsão publicada com o
+preço que **de fato ocorreu depois**, semana após semana, sem nenhuma chance
+de contaminação.
+
+Esta seção mantém esse registro. O mecanismo é deliberadamente simples e à
+prova de reescrita: **a cada render, o documento grava sua própria previsão**
+em `forecast/historico_previsoes.csv` — origem, semana-alvo, horizonte, ponto
+e bandas de 60/80% — e só depois procura o preço observado correspondente.
+Uma previsão registrada nunca é recalculada; quando o dado chega, ele é
+comparado ao que estava gravado. Isso importa por uma razão prática
+descoberta na montagem desta seção: **não conseguimos reproduzir exatamente,
+fora do documento, a previsão que ele havia publicado** (o NHITS é
+determinístico dentro de uma mesma sessão, mas o valor gerado no fluxo
+completo do render não foi replicado num script isolado). Registrar no ato do
+render contorna o problema por construção — o histórico é, por definição, o
+que foi publicado.
+
+*Nota sobre o início da série:* o registro começa na previsão para a semana
+31/2026, primeira publicada já sob a especificação vigente (combinação
+NHITS + XGBoost univariada, $h=6$). As bandas de 80% dessa primeira linha não
+constam da tabela publicada e ficam vazias; a partir daí o registro é
+completo.
+
+```{python}
+#| warning: false
+import os
+HIST = "forecast/historico_previsoes.csv"
+
+# --- 1. registra a previsão desta rodada (todos os horizontes) ---
+ult_igp = float(igpdi["igpdi"].iloc[-1])
+novas = []
+for uid in ["arra_15", "vitoria"]:
+    g = fc[fc["unique_id"] == uid]
+    origem = df[df["unique_id"] == uid]["fecha"].max()
+    for _, r in g.iterrows():
+        novas.append({"origem_fecha": origem.strftime("%Y-%m-%d"),
+                      "alvo_fecha": r["fecha"].strftime("%Y-%m-%d"),
+                      "h": int(r["h"]), "variedade": uid,
+                      "previsto": round(float(r["Ensemble"]), 4),
+                      "lo60": round(float(r["Ensemble-lo-60"]), 4),
+                      "hi60": round(float(r["Ensemble-hi-60"]), 4),
+                      "lo80": round(float(r["Ensemble-lo-80"]), 4),
+                      "hi80": round(float(r["Ensemble-hi-80"]), 4),
+                      "igpdi_base": ult_igp,
+                      "spec": "NHITS+XGB univariado h=6"})
+hist = pd.concat([pd.read_csv(HIST), pd.DataFrame(novas)], ignore_index=True) \
+       if os.path.exists(HIST) else pd.DataFrame(novas)
+# uma previsão por (origem, alvo, variedade): mantém a primeira gravada
+hist = hist.drop_duplicates(subset=["origem_fecha", "alvo_fecha", "variedade"],
+                            keep="first").sort_values(["alvo_fecha", "variedade", "h"])
+hist.to_csv(HIST, index=False)
+
+# --- 2. junta o preço observado, deflacionado na MESMA base da previsão ---
+obs = df[["unique_id", "fecha", "y"]].dropna(subset=["y"]).copy()
+obs["alvo_fecha"] = obs["fecha"].dt.strftime("%Y-%m-%d")
+obs = obs.rename(columns={"unique_id": "variedade", "y": "observado"})
+av = hist.merge(obs[["variedade", "alvo_fecha", "observado"]],
+                on=["variedade", "alvo_fecha"], how="left")
+# a base do deflator pode ter mudado desde a previsão: reescala para comparar
+av["observado"] = av["observado"] * (av["igpdi_base"] / ult_igp)
+av = av.dropna(subset=["observado"])
+
+if len(av) == 0:
+    print("Ainda não há semana-alvo com preço observado. O registro começa na "
+          "próxima atualização.")
+else:
+    av["erro"] = av["observado"] - av["previsto"]
+    av["dentro60"] = (av["observado"] >= av["lo60"]) & (av["observado"] <= av["hi60"])
+    # bandas de 80% podem nao existir nas linhas historicas recuperadas dos
+    # HTMLs arquivados (a tabela publicada so trazia a de 60%). Comparar com
+    # NaN devolveria False e contaria como "fora"; marcamos como ausente para
+    # que a media simplesmente ignore essas linhas.
+    m80 = av["lo80"].notna() & av["hi80"].notna()
+    av["dentro80"] = np.nan
+    av.loc[m80, "dentro80"] = ((av.loc[m80, "observado"] >= av.loc[m80, "lo80"]) &
+                               (av.loc[m80, "observado"] <= av.loc[m80, "hi80"])).astype(float)
+    tabela = av.sort_values(["alvo_fecha", "variedade"]).copy()
+    tabela["Faixa 60%"] = [f"{a:.2f} – {b:.2f}" for a, b in zip(tabela["lo60"], tabela["hi60"])]
+    tabela["Acerto"] = np.where(tabela["dentro60"], "dentro", "FORA")
+    # display() explicito: expressao dentro de bloco if/else NAO e auto-exibida
+    display((GT(tabela[["alvo_fecha", "variedade", "h", "previsto", "Faixa 60%",
+                "observado", "erro", "Acerto"]]
+        .rename(columns={"alvo_fecha": "Semana-alvo", "variedade": "Variedade",
+                         "h": "h", "previsto": "Previsto", "observado": "Observado",
+                         "erro": "Erro"}))
+     .tab_header(title="Previsto × observado — histórico acumulado",
+                 subtitle="Cada linha foi registrada ANTES de o preço ser conhecido")
+     .fmt_number(columns=["Previsto", "Observado", "Erro"], decimals=2)))
+```
+
+```{python}
+if len(av) > 0:
+    resumo_ac = (av.groupby("variedade")
+                 .agg(**{"N semanas": ("erro", "size"),
+                         "MAE": ("erro", lambda s: s.abs().mean()),
+                         "Cobertura 60% (%)": ("dentro60", lambda s: 100 * s.mean()),
+                         "N (80%)": ("dentro80", "count"),
+                         "Cobertura 80% (%)": ("dentro80", lambda s: 100 * s.mean())})
+                 .reset_index().rename(columns={"variedade": "Variedade"}))
+    display((GT(resumo_ac)
+             .tab_header(title="Desempenho acumulado fora da amostra",
+                         subtitle="Cobertura deve convergir para 60% e 80% "
+                                  "à medida que o histórico cresce")
+             .fmt_number(columns=["MAE", "Cobertura 60% (%)", "Cobertura 80% (%)"],
+                         decimals=2)))
+    n = len(av)
+    print(f"\nRegistro atual: {n} observação(ões) confrontada(s). "
+          f"Com amostra tão pequena, a cobertura observada ainda não é "
+          f"informativa — ela só ganha sentido depois de algumas dezenas de "
+          f"semanas. O valor desta seção hoje é o registro em si: cada linha "
+          f"foi gravada antes de o preço existir.")
+```
+
 ## 12. Próximos passos
 
 A especificação vigente é a **combinação NHITS + XGBoost, univariada**
