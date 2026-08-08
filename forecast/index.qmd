@@ -945,6 +945,226 @@ especificação vigente; (iii) o AutoARIMA sai da combinação principal: sem
 Fourier e sem exógenas, ele não se distingue do random walk nesta série
 (§10).
 
+### 8.3 Hiperparâmetro herdado: a janela de entrada do NHITS — hipótese refutada
+
+O `input_size` do NHITS (104 semanas, 2 anos) veio do template da manga e
+nunca havia sido examinado. A hipótese que motivou este teste nasceu de um
+erro observado ao vivo: em três semanas consecutivas de agosto de 2026 a rede
+projetou **alta** para a BRS Vitória enquanto o preço caía de forma
+sustentada (§11.2). O raciocínio era que uma janela de dois anos ancoraria a
+rede num patamar de preço já superado — a série da Vitória vinha de ~13 e
+estava perto de 8 — e que encurtá-la aceleraria a adaptação ao novo nível.
+
+Havia um argumento adicional a favor de encurtar: três resultados deste
+documento indicam que **não existe estrutura anual estável** nesta série (o
+Fourier é nocivo, §8.2; o naive sazonal é o pior modelo, §8; o calendário de
+colheita desloca por causa da poda programada). Se não há padrão anual a
+aprender, 104 semanas seriam sobretudo ruído — e 2,6 milhões de parâmetros
+para ~500 observações é uma razão desconfortável.
+
+```{python}
+#| warning: false
+def nhits_janela(k, alias):
+    return NHITS(h=H, input_size=k, max_steps=500, random_seed=42,
+                 scaler_type="robust", enable_progress_bar=False,
+                 logger=False, alias=alias)
+
+JANELAS = [26, 52, 104, 156]
+cv_jan = {}
+for k in JANELAS:
+    nf_k = NeuralForecast(models=[nhits_janela(k, f"NHITS_{k}")], freq=1)
+    c = nf_k.cross_validation(df=base, n_windows=N_WIN, step_size=STEP, refit=False)
+    c = c.reset_index() if "unique_id" not in c.columns else c
+    m = (cv_mlu[["unique_id", "ds", "cutoff", "y", "XGBoost"]]
+         .merge(c[["unique_id", "ds", "cutoff", f"NHITS_{k}"]],
+                on=["unique_id", "ds", "cutoff"]))
+    m["Comb"] = (m["XGBoost"] + m[f"NHITS_{k}"]) / 2
+    m["yc"] = [refy_u[u].loc[int(cc)] for u, cc in zip(m["unique_id"], m["cutoff"])]
+    cv_jan[k] = m
+
+lin_jan, err_jan = [], {}
+for k in JANELAS:
+    for rot, col in [("NHITS", f"NHITS_{k}"), ("Combinação", "Comb")]:
+        for uid in ["arra_15", "vitoria"]:
+            s = cv_jan[k][cv_jan[k]["unique_id"] == uid].sort_values(["cutoff", "ds"])
+            e = (s[col] - s["y"]).values
+            err_jan[(k, rot, uid)] = e
+            lin_jan.append({"Janela": k, "Modelo": rot, "Variedade": uid,
+                "RMSE": float(np.sqrt((e ** 2).mean())),
+                "Dir.Acc (%)": float((np.sign(s[col]-s["yc"]) == np.sign(s["y"]-s["yc"])).mean()*100),
+                # viés = quanto o modelo projeta de variação a mais que a realizada
+                "Viés": float((s[col]-s["yc"]).mean() - (s["y"]-s["yc"]).mean())})
+
+(GT(pd.DataFrame(lin_jan).sort_values(["Modelo", "Variedade", "Janela"]))
+ .tab_header(title="Janela de entrada do NHITS (input_size)",
+             subtitle="104 é a especificação vigente; viés > 0 = projeta alta a mais que a realizada")
+ .fmt_number(columns=["RMSE", "Dir.Acc (%)", "Viés"], decimals=3))
+```
+
+```{python}
+dm_jan = []
+for rot in ["NHITS", "Combinação"]:
+    for uid in ["arra_15", "vitoria"]:
+        for k in [26, 52, 156]:
+            t, p = dm_hln(err_jan[(k, rot, uid)], err_jan[(104, rot, uid)], H)
+            dm_jan.append({"Modelo": rot, "Variedade": uid,
+                           "Comparação": f"{k} vs 104",
+                           "DM (HLN)": t, "p-valor": p,
+                           "Conclusão": ("janela alternativa melhor" if t < 0 else "104 melhor")
+                                        + (" *" if p < 0.10 else " (n.s.)")})
+(GT(pd.DataFrame(dm_jan))
+ .tab_header(title="DM (HLN) — janelas alternativas contra o controle de 104 semanas",
+             subtitle="DM > 0 favorece a janela de 104; * = significativo a 10%")
+ .fmt_number(columns=["DM (HLN)", "p-valor"], decimals=3))
+```
+
+**Resultado: a hipótese está errada, e de forma inequívoca.** A janela de 104
+semanas vence em RMSE e em acurácia direcional nas duas variedades. Onde há
+significância no DM, é sempre contra as janelas curtas — na rodada de
+referência (2026-08-08), a Vitória rejeitou 26 semanas com $p=0{,}009$ e 52
+semanas com $p=0{,}099$ no NHITS isolado, e $p=0{,}002$ e $p=0{,}064$ na
+combinação. Ampliar para 156 semanas também não ajuda: empata com 104 e é
+ligeiramente pior na combinação, sem significância. O ótimo é um **platô em
+torno de dois anos**.
+
+O mecanismo que propus também não se sustenta: se a janela longa ancorasse a
+rede num patamar velho, o viés cresceria com o tamanho da janela. Não é o que
+se observa — o viés **não é monotônico**, e a janela de 52 semanas é a mais
+enviesada de todas, não a de 104.
+
+**Por que isso não contradiz a rejeição do Fourier.** À primeira vista há
+tensão: dizemos que não existe sazonalidade estável, mas a rede se beneficia
+de dois anos de memória. A conciliação está em *como* cada mecanismo usa o
+tempo. O Fourier impõe uma curva anual **presa ao calendário** — obriga o
+modelo a esperar o mesmo comportamento na semana 40 de todo ano. O NHITS com
+janela longa aprende a **forma** dos ciclos sem alinhá-los a datas fixas. A
+uva do VSF tem, sim, estrutura cíclica (a poda gera ~2 ciclos por ano), mas
+de **fase deslocada** entre anos. Fase variável derruba o termo determinístico
+e não impede a rede flexível de aprender. Os dois resultados descrevem o mesmo
+fenômeno por ângulos diferentes.
+
+**Decisão:** manter `input_size = 104`. A hipótese fica registrada como
+testada e refutada, e o valor herdado passa de "não examinado" a
+"empiricamente validado".
+
+### 8.4 Janela de treino e mudança de regime — hipótese refutada
+
+Uma análise paralela deste grupo, sobre o **cronograma de colheita** de uma
+propriedade do VSF, encontrou indícios de que o padrão sazonal da uva mudou:
+separando "padrão antigo" (2017–2020) de "padrão novo" (2021–2025), a
+otimização de calendário construída com a janela recente superou a da série
+completa em cada um dos quatro últimos anos. Se o regime mudou, treinar os
+modelos de previsão com nove anos de história poderia estar misturando dois
+mundos — e essa é uma explicação candidata para o viés de alta persistente na
+Vitória (§11.2): a rede continuaria esperando uma recuperação que pertencia
+ao regime anterior.
+
+Antes do teste, uma distinção que é fácil perder de vista e que separa esta
+seção da anterior:
+
+| Parâmetro | O que controla | Status |
+|---|---|---|
+| `input_size` (§8.3) | quanto o modelo **olha para trás** ao gerar cada previsão | 104 validado |
+| **Janela de treino** (esta seção) | de **quais exemplos históricos** o modelo aprende | em teste |
+
+São independentes: um modelo pode olhar dois anos para trás em cada previsão
+e ainda assim ter aprendido com exemplos de 2017.
+
+```{python}
+#| warning: false
+CORTES = [2017, 2019, 2021]      # 2017 = série completa (controle)
+base_ano = base.merge(df[["unique_id", "ds", "fecha"]], on=["unique_id", "ds"])
+base_ano["ano"] = base_ano["fecha"].dt.year
+
+cv_cor, lin_cor, err_cor = {}, [], {}
+for corte in CORTES:
+    b = (base_ano[base_ano["ano"] >= corte][["unique_id", "ds", "y"]]
+         .reset_index(drop=True))
+    mlf_c = MLForecast(models={"XGBoost": xgb.XGBRegressor(n_estimators=200,
+        max_depth=3, learning_rate=0.05, verbosity=0, random_state=42)},
+        freq=1, lags=[1, 2, 4, 52])
+    cx = mlf_c.cross_validation(df=b, h=H, n_windows=N_WIN, step_size=STEP,
+                                static_features=[])
+    nf_c = NeuralForecast(models=[NHITS(h=H, input_size=INPUT_SIZE, max_steps=500,
+        random_seed=42, scaler_type="robust", enable_progress_bar=False,
+        logger=False)], freq=1)
+    cn = nf_c.cross_validation(df=b, n_windows=N_WIN, step_size=STEP, refit=False)
+    cn = cn.reset_index() if "unique_id" not in cn.columns else cn
+    m = cx.merge(cn[["unique_id", "ds", "cutoff", "NHITS"]], on=["unique_id", "ds", "cutoff"])
+    m["Comb"] = (m["XGBoost"] + m["NHITS"]) / 2
+    m["yc"] = [refy_u[u].loc[int(cc)] for u, cc in zip(m["unique_id"], m["cutoff"])]
+    cv_cor[corte] = m
+    n_sem = len(b) // 2
+    for rot, col in [("NHITS", "NHITS"), ("XGBoost", "XGBoost"), ("Combinação", "Comb")]:
+        for uid in ["arra_15", "vitoria"]:
+            s = m[m["unique_id"] == uid].sort_values(["cutoff", "ds"])
+            e = (s[col] - s["y"]).values
+            err_cor[(corte, rot, uid)] = e
+            lin_cor.append({"Treino desde": corte, "Semanas": n_sem, "Modelo": rot,
+                "Variedade": uid, "RMSE": float(np.sqrt((e ** 2).mean())),
+                "Dir.Acc (%)": float((np.sign(s[col]-s["yc"]) == np.sign(s["y"]-s["yc"])).mean()*100),
+                "Viés": float((s[col]-s["yc"]).mean() - (s["y"]-s["yc"]).mean())})
+
+# as origens de avaliação têm de ser idênticas nos três cortes, senão o DM
+# compararia pontos diferentes; a asserção falha alto se isso deixar de valer
+chaves = {c: set(map(tuple, cv_cor[c][["unique_id", "ds", "cutoff"]].values)) for c in CORTES}
+assert all(chaves[c] == chaves[2017] for c in CORTES), "origens divergem entre cortes"
+
+(GT(pd.DataFrame(lin_cor).sort_values(["Modelo", "Variedade", "Treino desde"]))
+ .tab_header(title="Janela de treino: série completa vs. cortes em 2019 e 2021",
+             subtitle="Mesmas origens de avaliação nos três casos")
+ .fmt_number(columns=["RMSE", "Dir.Acc (%)", "Viés"], decimals=3))
+```
+
+```{python}
+dm_cor = []
+for rot in ["NHITS", "XGBoost", "Combinação"]:
+    for uid in ["arra_15", "vitoria"]:
+        for c in [2019, 2021]:
+            t, p = dm_hln(err_cor[(c, rot, uid)], err_cor[(2017, rot, uid)], H)
+            dm_cor.append({"Modelo": rot, "Variedade": uid,
+                           "Comparação": f"desde {c} vs completa",
+                           "DM (HLN)": t, "p-valor": p,
+                           "Conclusão": ("corte melhor" if t < 0 else "série completa melhor")
+                                        + (" *" if p < 0.10 else " (n.s.)")})
+(GT(pd.DataFrame(dm_cor))
+ .tab_header(title="DM (HLN) — janelas de treino truncadas contra a série completa",
+             subtitle="DM > 0 favorece treinar com a série completa; * = significativo a 10%")
+ .fmt_number(columns=["DM (HLN)", "p-valor"], decimals=3))
+```
+
+**Resultado: truncar o treino não ajuda — e o corte em 2021 atrapalha.** Na
+rodada de referência, a série completa venceu o corte de 2021 na Vitória com
+significância, tanto no XGBoost ($p=0{,}015$) quanto na combinação
+($p=0{,}053$). O corte de 2019 é um empate: melhora o NHITS na Arra
+($p=0{,}048$) e piora a Vitória, sem efeito líquido claro. E o **viés**, que
+era o sintoma que motivou a investigação, mais que triplica com o corte de
+2021 — exatamente o oposto do previsto.
+
+**Por que o regime mudou lá e não aqui.** A conciliação está no que cada
+análise usa. O trabalho de cronograma depende do **padrão sazonal**: qual
+semana do ano rende mais para cada variedade. Esse padrão mudou, e por isso a
+janela recente produz recomendações melhores naquele problema. Os modelos
+deste documento, porém, **não usam sazonalidade de calendário** — foi
+precisamente o que rejeitamos na §8.2. Eles aprendem dinâmica de curto prazo
+(defasagens no XGBoost, forma dos ciclos no NHITS), e essa dinâmica parece ter
+permanecido estável mesmo com o calendário de colheita deslocando. As duas
+conclusões não se contradizem: falam de objetos diferentes.
+
+**Limitação que impede uma conclusão forte.** Este teste **confunde dois
+efeitos**: "regime diferente" e "menos dados". Cortar em 2021 deixa ~182
+amostras de treino para uma rede de 2,6 milhões de parâmetros, e o salto no
+viés tem a assinatura de estimação pobre, não necessariamente de regime certo.
+O teste limpo seria **pesos decrescentes no tempo** — que reduz a influência
+do passado remoto sem descartar observação alguma. É viável no XGBoost
+(`sample_weight`) e trabalhoso no NHITS; fica registrado no §12 como
+candidato.
+
+**Decisão:** manter o treino com a **série completa**. Segunda hipótese
+testada e refutada nesta frente — o que, somado à §8.3, delimita bastante o
+espaço de explicações para o viés de alta da Vitória: não é a janela de
+entrada nem a janela de treino.
+
 ## 9. Modelos e validação rolling-origin (com exógenas — baseline)
 
 Esta é a **especificação vigente do projeto**, definida pelo caminho incremental
@@ -1491,6 +1711,50 @@ if len(av) > 0:
           f"foi gravada antes de o preço existir.")
 ```
 
+#### Notas de leitura acumuladas
+
+**Uma banda de 60% deve falhar.** Por construção, o intervalo de 60% precisa
+deixar o preço de fora em cerca de 40% das semanas. Uma sequência sem nenhuma
+falha indicaria banda larga demais — intervalo mal calibrado, não modelo bom.
+O critério de saúde é a **convergência** da cobertura observada para o
+nominal, não a ausência de erros.
+
+**Semana 32/2026 (alvo 2026-08-08) — a primeira falha.** A Vitória ficou fora
+da banda de 60% (observado 7,83 contra faixa 8,10–8,92), embora dentro da de
+80%; a Arra ficou dentro, com a direção correta. A decomposição por modelo é
+instrutiva e reforça a escolha de combinar:
+
+| Variedade | NHITS (60%) | XGBoost (60%) | Combinação | Observado |
+|---|---|---|---|---|
+| Arra 15 | 13,61 – 14,68 ✔ | 13,77 – 15,04 ✘ | 13,63 – 14,92 ✔ | 13,76 |
+| BRS Vitória | 8,46 – 9,36 ✘ | 7,80 – 8,43 ✔ | 8,10 – 8,92 ✘ | 7,83 |
+
+Os dois modelos falharam em variedades **opostas**. Na Arra, o XGBoost errou
+por um centavo e o NHITS acertou; na Vitória, o inverso, com o NHITS bem
+acima. A combinação salvou a Arra e foi arrastada para fora na Vitória. É a
+evidência prática do argumento de §4.4: erros pouco correlacionados é o que
+faz a média valer a pena — e também o motivo de a média não ser imune quando
+um componente erra muito.
+
+**O padrão que motivou §8.3 e §8.4.** Nas semanas em que a acompanhamos, o
+NHITS projetou **alta** para a Vitória enquanto a série caía de forma
+sustentada (9,20 → 9,08 → 8,40 → 8,16 → 7,90 → 8,07 → 7,76, com repique
+apenas na semana 31). Duas explicações candidatas foram testadas e **ambas
+refutadas**: janela de entrada longa demais (§8.3) e mistura de regimes no
+treino (§8.4). A causa do viés permanece em aberto.
+
+**Revisão do deflator e por que o histórico resistiu.** Em 2026-08-08 o IGP-DI
+das semanas 27 a 31 foi revisado de 1202,299 para 1192,015 — aquelas semanas
+vinham repetindo o último valor conhecido e receberam o número oficial. Como a
+convenção deste documento é deflacionar para reais da **última** observação,
+uma mudança no último valor reescala **toda** a série real (aqui, −0,85%). Se
+o histórico guardasse apenas o valor previsto, a comparação passaria a
+confrontar previsão e observação em bases diferentes. É por isso que cada
+linha grava também o `igpdi_base` usado, e o observado é reexpresso nessa
+base na hora da comparação. Efeito concreto: o registro da semana 31 passou de
+14,26/8,07 para 14,38/8,14 entre um render e outro — não porque o preço mudou,
+mas porque a unidade de conta foi corrigida.
+
 ## 12. Próximos passos
 
 A especificação vigente é a **combinação NHITS + XGBoost, univariada**
@@ -1527,7 +1791,26 @@ próximas etapas. A sequência planejada:
    - **Niño (1+2 e 3.4, lag 26)** — próximo da fila, sem Fourier junto.
    - **Câmbio (lag $\ge h$)** — depois, testando o padrão misto nível/diferença
      validado na manga (ver §4.5).
-4. **Chuva na colheita — o mecanismo local mais promissor (§3.1).** Sinal
+4. **Hiperparâmetros e janela de treino — duas hipóteses testadas e
+   refutadas.** Motivadas pelo viés de alta do NHITS na Vitória observado no
+   acompanhamento contínuo (§11.2):
+   - ~~**Janela de entrada (`input_size`).**~~ **Refutada** (§8.3) — 104
+     semanas vence 26 e 52 com significância; 156 não acrescenta. O valor
+     herdado da manga passa de "não examinado" a validado. O viés não varia
+     monotonicamente com a janela, derrubando o mecanismo proposto.
+   - ~~**Janela de treino / mudança de regime.**~~ **Refutada** (§8.4) —
+     truncar o treino em 2021 (ponto sugerido pela análise de cronograma do
+     grupo) **piora** a Vitória com significância e triplica o viés; o corte
+     em 2019 é um empate. A mudança de regime documentada naquela análise
+     afeta o **padrão sazonal**, que estes modelos não utilizam (§8.2).
+   - **Pendente — pesos decrescentes no tempo.** O teste de §8.4 confunde
+     "regime diferente" com "menos dados". Ponderar as observações por
+     recência preserva a amostra e isola o primeiro efeito. Viável no XGBoost
+     (`sample_weight`), trabalhoso no NHITS.
+   - **Pendente — `refit=True` no rolling-origin.** Hoje a rede treina uma
+     única vez na avaliação (a previsão publicada usa toda a amostra), o que
+     a desfavorece nas métricas. Medir custo/ganho.
+5. **Chuva na colheita — o mecanismo local mais promissor (§3.1).** Sinal
    esperado **negativo** (dano de qualidade em produto perecível, que não pode
    ser retido), oposto ao da manga. Exposição estrutural: o pico de colheita
    (out/nov) coincide com a virada para o período chuvoso no VSF, e o
@@ -1542,7 +1825,7 @@ próximas etapas. A sequência planejada:
    Calor na maturação (`hot_days_35`) entra depois, sem hipótese direcional
    forte. O **canal Peru/câmbio** para a Arra 15 segue como candidato
    independente (§3.2).
-5. **Competição doméstica — coletar o dado antes de testar (§3.3).** Os quatro
+6. **Competição doméstica — coletar o dado antes de testar (§3.3).** Os quatro
    polos de uva de mesa são VSF (PE/BA), **Pirapora/MG**, **Jales/SP** e
    **Marialva/PR**. O `gerar_clima.py` herdado cobre polos de *manga*
    (Livramento/BA, Jaíba/MG, Monte Alto/SP) — só o VSF coincide. Passo
@@ -1551,12 +1834,12 @@ próximas etapas. A sequência planejada:
    regionais (o nível/calendário médio já se mostrou sem valor preditivo pela
    rejeição do Fourier). Preço de outra região está descartado por
    endogeneidade.
-6. **Sazonalidade instável no tempo.** O naive sazonal foi o pior modelo da §8
+7. **Sazonalidade instável no tempo.** O naive sazonal foi o pior modelo da §8
    (MASE > 1 nas duas variedades) — evidência de que o calendário de oferta
    desloca de ano para ano, coerente com a poda programada. Isso sugere testar
    Bai-Perron [@bai2003] para quebras na relação preço-sazonalidade e,
    se for o caso, janela de estimação encurtada ou pesos decrescentes.
-7. **Conformal e operação.** Quando o ensemble estiver definido, validar a
+8. **Conformal e operação.** Quando o ensemble estiver definido, validar a
    cobertura empírica dos intervalos 60/80% (mecanismo da §11 já pronto) e
    montar a rotina semanal de publicação (repositório próprio da uva, nos
    moldes do `observatoriosdemercado/manga`).
