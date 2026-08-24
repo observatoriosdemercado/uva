@@ -680,7 +680,7 @@ os melhores modelos univariados já entregam.
 
 Com 20 origens, diferenças pequenas de RMSE podem ser sorte. Aplicamos
 **Diebold-Mariano** (perda quadrática, correção de Harvey-Leybourne-Newbold,
-variância HAC — os erros multi-passo são autocorrelacionados até $h-1=7$; como
+variância HAC — os erros multi-passo são autocorrelacionados até $h-1=5$; como
 as janelas se sobrepõem parcialmente, os p-valores são aproximações
 conservadoras) às comparações que importam para a decisão de arquitetura: o
 **NHITS** (primeiro colocado da tabela acima na maioria das rodadas) contra
@@ -1188,7 +1188,7 @@ Cinco competidores por variedade, todos univariados:
 A escolha de combinar **NHITS + XGBoost** (e não AutoARIMA + XGBoost, como na
 manga) decorre diretamente da §8.1: o AutoARIMA univariado não se distingue do
 random walk nesta série, enquanto as duas famílias escolhidas erram de formas
-diferentes — o NHITS prevê os 8 horizontes de uma vez, com trajetória suave; o
+diferentes — o NHITS prevê os 6 horizontes de uma vez, com trajetória suave; o
 XGBoost prevê recursivamente e tende a achatar. Combinar erros pouco
 correlacionados é o mecanismo clássico de redução de variância (§4.4). Tudo
 avaliado por `cross_validation` (origem móvel), com RMSE, MAPE, MASE e
@@ -1309,18 +1309,29 @@ qualitativas têm se mantido estáveis):
   compõem: RMSE 1,84 na Arra 15 (contra 1,91 do XGBoost e 2,14 do NHITS) e
   1,53 na Vitória (contra 1,85 e 1,71). É o resultado clássico de combinação
   de previsões (§4.4) aparecendo de forma limpa: os erros das duas famílias
-  são pouco correlacionados — o NHITS prevê os 8 horizontes de uma vez, o
+  são pouco correlacionados — o NHITS prevê os 6 horizontes de uma vez, o
   XGBoost recursivamente —, e a média cancela parte deles. O ganho é
   **estatisticamente significativo** onde mais importa (§10.2): a combinação
   supera o NHITS isolado na Arra (p=0,021) e o XGBoost isolado na Vitória
   (p=0,034).
 - **Bater o naive sazonal não é o teste difícil** — todos os modelos o fazem
   com folga (redução de RMSE de 31% a 53%; MASE bem abaixo de 1). A régua
-  honesta é o **random walk** (*Naive*), e aqui está o avanço em relação ao
-  diagnóstico da §8.1: a **combinação supera o random walk nas duas
-  variedades com significância** (Arra p=0,093; Vitória p=0,013), algo que
-  nenhum modelo isolado conseguia na Arra. É o principal argumento a favor da
-  especificação atual.
+  honesta é o **random walk** (*Naive*), e é nela que está o avanço em relação
+  ao diagnóstico da §8.1 — mas o avanço é **desigual entre as variedades**, e
+  vale registrar isso com precisão:
+  - Na **Vitória**, a combinação supera o random walk com significância de
+    forma estável (p entre 0,005 e 0,013 nas rodadas acompanhadas), e os dois
+    componentes isolados também o batem.
+  - Na **Arra 15**, o resultado **oscila com a rodada**: chegou a p=0,093 com
+    dados até a semana 30/2026 e recuou para p=0,162 — não significativo — com
+    dados até a semana 33/2026, ainda que o sinal do DM continue favorável à
+    combinação em todas elas.
+
+  A leitura honesta, portanto, é que a superioridade sobre o random walk está
+  estabelecida na Vitória e **ainda não está** na Arra: nesta, a combinação é
+  a melhor especificação disponível pelo RMSE, sem que a diferença passe no
+  teste formal. Com 20 origens o poder é baixo, e a própria instabilidade do
+  p-valor entre rodadas é um resultado a reportar — não um detalhe a omitir.
 - **A família ARIMA continua sem tração nesta série**: o AutoARIMA univariado
   fica atrás do próprio random walk nas duas variedades. Combinado ao
   descarte do Fourier (§8.2), isso mostra que a estrutura que o ARIMA sabe
@@ -1421,7 +1432,7 @@ for uid in ["arra_15", "vitoria"]:
 
 As diferenças de RMSE da tabela do §9 são formalmente testadas com
 **Diebold-Mariano** (correção de Harvey-Leybourne-Newbold, variância HAC com
-defasagem $h-1=7$ — os erros multi-passo são autocorrelacionados por construção;
+defasagem $h-1=5$ — os erros multi-passo são autocorrelacionados por construção;
 como as janelas se sobrepõem parcialmente, os p-valores devem ser lidos como
 aproximações conservadoras). A **acurácia direcional** é testada com
 **Pesaran-Timmermann** contra a hipótese de ausência de conteúdo direcional.
@@ -1482,13 +1493,17 @@ garantia formal.
 
 O modelo não acerta o ponto, e fingir que acerta ("o preço da próxima semana
 será R\$ 14,28") é falsa precisão. Por isso a entrega é o **intervalo**, não o
-ponto. O gráfico apresenta duas faixas: a **banda interna (60%)** é a faixa
-central da distribuição de previsão — em três de cada cinco semanas históricas
-análogas, o preço real ficou dentro dessa faixa; a **banda externa (80%)** é
-mais conservadora e cobre quatro em cada cinco realizações. Em preços de
-perecíveis, intervalos de 95% tendem a ser tão amplos que perdem utilidade
-prática para a decisão. A tabela reporta a faixa de 60% por modelo, e a
-§11.1 verifica se essas coberturas se cumprem de fato.
+ponto. O gráfico apresenta a **faixa central de 60%**: em três de cada cinco
+semanas históricas análogas, o preço real ficou dentro dela.
+
+**Só a banda de 60% é reportada.** Faixas mais largas (80%, 95%) são
+progressivamente mais fáceis de cumprir e progressivamente menos úteis para
+decidir — em preço de perecível, ficam tão amplas que deixam de restringir
+qualquer escolha. O critério de avaliação do projeto (§11.2) usa apenas
+**direção** e **cobertura de 60%**, e a apresentação segue esse critério. Os
+limites de 80% continuam sendo calculados e gravados no histórico — custam
+nada e preservam a opção de revisitar —, mas não entram em gráfico nem em
+tabela. A §11.1 verifica se a cobertura de 60% se cumpre de fato.
 
 ```{python}
 hist = (df.dropna(subset=["y"]).groupby("unique_id").tail(52)
@@ -1501,8 +1516,6 @@ prev.columns = ["unique_id", "fecha", "valor", "lo60", "hi60", "lo80", "hi80"]
 
 plot = (
     p9.ggplot()
-    + p9.geom_ribbon(prev, p9.aes(x="fecha", ymin="lo80", ymax="hi80"),
-                     alpha=0.15, fill="steelblue")
     + p9.geom_ribbon(prev, p9.aes(x="fecha", ymin="lo60", ymax="hi60"),
                      alpha=0.35, fill="steelblue")
     + p9.geom_line(hist, p9.aes("fecha", "valor"))
@@ -1510,7 +1523,7 @@ plot = (
     + p9.facet_wrap("unique_id", scales="free_y", ncol=1)
     + p9.scale_x_date(date_breaks="2 months", date_labels="%b/%y")
     + p9.labs(title=f"Combinação de previsões — próximas {H} semanas",
-              caption="Banda interna: faixa central 60%  |  Banda externa: faixa central 80%  (intervalos conformais)",
+              caption="Faixa central de 60% (intervalo conformal)",
               x="", y="R$/kg")
     + p9.theme(axis_text_x=p9.element_text(angle=45, hjust=1))
 )
@@ -1562,9 +1575,8 @@ outras 19 janelas** (por horizonte) e testado nos erros da janela excluída —
 nenhuma janela participa da própria calibração. Cobertura empírica próxima da
 nominal valida o mecanismo conformal usado no §11. Na rodada de referência, a
 calibração ficou boa para os três modelos: ~59–60% de cobertura para a banda
-nominal de 60% e ~76–78% para a de 80% — ou seja, os intervalos publicados
-cumprem, na prática, aproximadamente o que prometem (com leve
-conservadorismo na banda de 80%).
+nominal de 60% — ou seja, o intervalo publicado cumpre, na prática, o que
+promete.
 
 ```{python}
 def cobertura_loo(cv, modelo, nivel):
@@ -1586,12 +1598,12 @@ for uid in ["arra_15", "vitoria"]:
     for m in ["NHITS", "XGBoost", "Ensemble"]:
         cob.append({"Variedade": uid, "Modelo": m,
                     "Cobertura 60% (%)": cobertura_loo(cvs[uid], m, 60),
-                    "Cobertura 80% (%)": cobertura_loo(cvs[uid], m, 80)})
+                    })
 
 (GT(pd.DataFrame(cob))
  .tab_header(title="Cobertura empírica dos intervalos conformais (leave-one-window-out)",
-             subtitle="Valores próximos de 60 e 80 indicam intervalos bem calibrados")
- .fmt_number(columns=["Cobertura 60% (%)", "Cobertura 80% (%)"], decimals=1))
+             subtitle="Valor próximo de 60 indica intervalo bem calibrado")
+ .fmt_number(columns=["Cobertura 60% (%)"], decimals=1))
 ```
 
 ### 11.2 Acompanhamento contínuo (previsto × observado, semana a semana)
@@ -1602,10 +1614,31 @@ substitui o teste mais duro possível — confrontar a previsão publicada com o
 preço que **de fato ocorreu depois**, semana após semana, sem nenhuma chance
 de contaminação.
 
+**Os dois critérios de sucesso.** A avaliação semanal deste projeto não
+persegue a estimativa pontual exata — em preço de perecível, isso seria
+prometer o que o fenômeno não permite (§4.1). O que se cobra do modelo são
+duas coisas, e só elas:
+
+1. **Direção** — o preço subiu ou caiu em relação à semana em que a previsão
+   foi feita, e o modelo apontou o sentido certo?
+2. **Cobertura de 60%** — o preço observado caiu dentro da banda interna?
+
+O MAE continua sendo reportado, como informação secundária; a banda de 80%
+não é reportada (ver §11). A consequência prática é que **errar a magnitude
+sem errar a direção nem a banda não conta como falha**: o modelo pode subestimar o
+tamanho de uma queda e ainda assim ter cumprido seu papel, que é orientar a
+decisão de quando vender.
+
+Vale lembrar o que a segunda métrica implica: uma banda de 60% **deve** deixar
+o preço de fora em cerca de 40% das semanas. O alvo é a convergência da
+cobertura observada para o nominal, não a ausência de falhas — uma sequência
+sem nenhum erro indicaria banda larga demais, ou seja, intervalo mal
+calibrado e inútil para decidir.
+
 Esta seção mantém esse registro. O mecanismo é deliberadamente simples e à
 prova de reescrita: **a cada render, o documento grava sua própria previsão**
 em `forecast/historico_previsoes.csv` — origem, semana-alvo, horizonte, ponto
-e bandas de 60/80% — e só depois procura o preço observado correspondente.
+e bandas — e só depois procura o preço observado correspondente.
 Uma previsão registrada nunca é recalculada; quando o dado chega, ele é
 comparado ao que estava gravado. Isso importa por uma razão prática
 descoberta na montagem desta seção: **não conseguimos reproduzir exatamente,
@@ -1617,9 +1650,7 @@ que foi publicado.
 
 *Nota sobre o início da série:* o registro começa na previsão para a semana
 31/2026, primeira publicada já sob a especificação vigente (combinação
-NHITS + XGBoost univariada, $h=6$). As bandas de 80% dessa primeira linha não
-constam da tabela publicada e ficam vazias; a partir daí o registro é
-completo.
+NHITS + XGBoost univariada, $h=6$).
 
 ```{python}
 #| warning: false
@@ -1658,7 +1689,15 @@ av = hist.merge(obs[["variedade", "alvo_fecha", "observado"]],
                 on=["variedade", "alvo_fecha"], how="left")
 # a base do deflator pode ter mudado desde a previsão: reescala para comparar
 av["observado"] = av["observado"] * (av["igpdi_base"] / ult_igp)
-av = av.dropna(subset=["observado"])
+
+# valor na ORIGEM: preço observado na semana em que a previsão foi feita, na
+# mesma base de deflator — é a referência contra a qual se define "subiu" ou
+# "caiu", tanto para o previsto quanto para o realizado.
+orig = (obs[["variedade", "alvo_fecha", "observado"]]
+        .rename(columns={"alvo_fecha": "origem_fecha", "observado": "origem"}))
+av = av.merge(orig, on=["variedade", "origem_fecha"], how="left")
+av["origem"] = av["origem"] * (av["igpdi_base"] / ult_igp)
+av = av.dropna(subset=["observado", "origem"])
 
 if len(av) == 0:
     print("Ainda não há semana-alvo com preço observado. O registro começa na "
@@ -1666,43 +1705,54 @@ if len(av) == 0:
 else:
     av["erro"] = av["observado"] - av["previsto"]
     av["dentro60"] = (av["observado"] >= av["lo60"]) & (av["observado"] <= av["hi60"])
-    # bandas de 80% podem nao existir nas linhas historicas recuperadas dos
-    # HTMLs arquivados (a tabela publicada so trazia a de 60%). Comparar com
-    # NaN devolveria False e contaria como "fora"; marcamos como ausente para
-    # que a media simplesmente ignore essas linhas.
-    m80 = av["lo80"].notna() & av["hi80"].notna()
-    av["dentro80"] = np.nan
-    av.loc[m80, "dentro80"] = ((av.loc[m80, "observado"] >= av.loc[m80, "lo80"]) &
-                               (av.loc[m80, "observado"] <= av.loc[m80, "hi80"])).astype(float)
+    # os dois criterios de sucesso adotados no projeto (ver texto acima)
+    av["dir_prev"] = np.where(av["previsto"]  > av["origem"], "alta", "queda")
+    av["dir_real"] = np.where(av["observado"] > av["origem"], "alta", "queda")
+    av["acertou_dir"] = av["dir_prev"] == av["dir_real"]
     tabela = av.sort_values(["alvo_fecha", "variedade"]).copy()
     tabela["Faixa 60%"] = [f"{a:.2f} – {b:.2f}" for a, b in zip(tabela["lo60"], tabela["hi60"])]
-    tabela["Acerto"] = np.where(tabela["dentro60"], "dentro", "FORA")
+    tabela["Banda 60%"] = np.where(tabela["dentro60"], "dentro", "FORA")
+    tabela["Direção"] = np.where(tabela["acertou_dir"], "✔ " + tabela["dir_real"],
+                                 "✘ previu " + tabela["dir_prev"])
     # display() explicito: expressao dentro de bloco if/else NAO e auto-exibida
-    display((GT(tabela[["alvo_fecha", "variedade", "h", "previsto", "Faixa 60%",
-                "observado", "erro", "Acerto"]]
+    display((GT(tabela[["alvo_fecha", "variedade", "h", "origem", "previsto",
+                "Faixa 60%", "observado", "Direção", "Banda 60%"]]
         .rename(columns={"alvo_fecha": "Semana-alvo", "variedade": "Variedade",
-                         "h": "h", "previsto": "Previsto", "observado": "Observado",
-                         "erro": "Erro"}))
+                         "h": "h", "origem": "Origem", "previsto": "Previsto",
+                         "observado": "Observado"}))
      .tab_header(title="Previsto × observado — histórico acumulado",
                  subtitle="Cada linha foi registrada ANTES de o preço ser conhecido")
-     .fmt_number(columns=["Previsto", "Observado", "Erro"], decimals=2)))
+     .fmt_number(columns=["Origem", "Previsto", "Observado"], decimals=2)))
 ```
 
 ```{python}
 if len(av) > 0:
-    resumo_ac = (av.groupby("variedade")
-                 .agg(**{"N semanas": ("erro", "size"),
-                         "MAE": ("erro", lambda s: s.abs().mean()),
-                         "Cobertura 60% (%)": ("dentro60", lambda s: 100 * s.mean()),
-                         "N (80%)": ("dentro80", "count"),
-                         "Cobertura 80% (%)": ("dentro80", lambda s: 100 * s.mean())})
-                 .reset_index().rename(columns={"variedade": "Variedade"}))
-    display((GT(resumo_ac)
+    # separar por horizonte: misturar h=1 com h=6 num numero so distorce, pois
+    # horizonte longo erra mais por construcao. h=1 e a checagem semanal.
+    def _resumo(d, rot):
+        r = (d.groupby("variedade")
+             .agg(**{"N": ("erro", "size"),
+                     "Direcao correta (%)": ("acertou_dir", lambda s: 100 * s.mean()),
+                     "Dentro do 60% (%)": ("dentro60", lambda s: 100 * s.mean()),
+                     "MAE (R$/kg)": ("erro", lambda s: s.abs().mean())})
+             .reset_index().rename(columns={"variedade": "Variedade"}))
+        r.insert(1, "Horizonte", rot)
+        return r
+
+    partes = [_resumo(av[av["h"] == 1], "h=1 (proxima semana)")]
+    if (av["h"] > 1).any():
+        partes.append(_resumo(av[av["h"] > 1], "h>=2 (demais)"))
+    display((GT(pd.concat(partes, ignore_index=True))
              .tab_header(title="Desempenho acumulado fora da amostra",
-                         subtitle="Cobertura deve convergir para 60% e 80% "
-                                  "à medida que o histórico cresce")
-             .fmt_number(columns=["MAE", "Cobertura 60% (%)", "Cobertura 80% (%)"],
-                         decimals=2)))
+                         subtitle="Criterios do projeto: direcao e cobertura de 60%; "
+                                  "h=1 e a checagem semanal")
+             .fmt_number(columns=["Direcao correta (%)", "Dentro do 60% (%)",
+                                  "MAE (R$/kg)"], decimals=1)))
+    a1 = av[av["h"] == 1]
+    print(f"\nChecagem semanal (h=1), {len(a1)} confrontos: direcao correta em "
+          f"{a1['acertou_dir'].sum()}/{len(a1)} ({a1['acertou_dir'].mean()*100:.0f}%) "
+          f"e observado dentro da banda de 60% em {a1['dentro60'].sum()}/{len(a1)} "
+          f"({a1['dentro60'].mean()*100:.0f}%).")
     n = len(av)
     print(f"\nRegistro atual: {n} observação(ões) confrontada(s). "
           f"Com amostra tão pequena, a cobertura observada ainda não é "
@@ -1720,8 +1770,8 @@ O critério de saúde é a **convergência** da cobertura observada para o
 nominal, não a ausência de erros.
 
 **Semana 32/2026 (alvo 2026-08-08) — a primeira falha.** A Vitória ficou fora
-da banda de 60% (observado 7,83 contra faixa 8,10–8,92), embora dentro da de
-80%; a Arra ficou dentro, com a direção correta. A decomposição por modelo é
+da banda de 60% (observado 7,83 contra faixa 8,10–8,92) e ainda errou a
+direção; a Arra ficou dentro, com a direção correta. A decomposição por modelo é
 instrutiva e reforça a escolha de combinar:
 
 | Variedade | NHITS (60%) | XGBoost (60%) | Combinação | Observado |
@@ -1840,7 +1890,7 @@ próximas etapas. A sequência planejada:
    Bai-Perron [@bai2003] para quebras na relação preço-sazonalidade e,
    se for o caso, janela de estimação encurtada ou pesos decrescentes.
 8. **Conformal e operação.** Quando o ensemble estiver definido, validar a
-   cobertura empírica dos intervalos 60/80% (mecanismo da §11 já pronto) e
+   cobertura empírica do intervalo de 60% (mecanismo da §11 já pronto) e
    montar a rotina semanal de publicação (repositório próprio da uva, nos
    moldes do `observatoriosdemercado/manga`).
 
