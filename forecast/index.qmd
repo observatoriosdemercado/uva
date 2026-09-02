@@ -1727,25 +1727,22 @@ else:
 
 ```{python}
 if len(av) > 0:
-    # separar por horizonte: misturar h=1 com h=6 num numero so distorce, pois
-    # horizonte longo erra mais por construcao. h=1 e a checagem semanal.
-    def _resumo(d, rot):
-        r = (d.groupby("variedade")
-             .agg(**{"N": ("erro", "size"),
-                     "Direcao correta (%)": ("acertou_dir", lambda s: 100 * s.mean()),
-                     "Dentro do 60% (%)": ("dentro60", lambda s: 100 * s.mean()),
-                     "MAE (R$/kg)": ("erro", lambda s: s.abs().mean())})
-             .reset_index().rename(columns={"variedade": "Variedade"}))
-        r.insert(1, "Horizonte", rot)
-        return r
-
-    partes = [_resumo(av[av["h"] == 1], "h=1 (proxima semana)")]
-    if (av["h"] > 1).any():
-        partes.append(_resumo(av[av["h"] > 1], "h>=2 (demais)"))
-    display((GT(pd.concat(partes, ignore_index=True))
-             .tab_header(title="Desempenho acumulado fora da amostra",
-                         subtitle="Criterios do projeto: direcao e cobertura de 60%; "
-                                  "h=1 e a checagem semanal")
+    # Placar por HORIZONTE. O h=1 continua sendo a checagem semanal, mas a
+    # degradacao ao longo do horizonte so aparece com cada h contado em
+    # separado: o balde "h>=2" misturava h=2 (bom) com h=4 (ruim) e escondia
+    # exatamente o gradiente que se quer monitorar.
+    resumo_ac = (av.groupby(["variedade", "h"])
+                 .agg(**{"N": ("erro", "size"),
+                         "Direcao correta (%)": ("acertou_dir", lambda s: 100 * s.mean()),
+                         "Dentro do 60% (%)": ("dentro60", lambda s: 100 * s.mean()),
+                         "MAE (R$/kg)": ("erro", lambda s: s.abs().mean())})
+                 .reset_index()
+                 .rename(columns={"variedade": "Variedade",
+                                  "h": "Horizonte (semanas)"}))
+    display((GT(resumo_ac)
+             .tab_header(title="Desempenho acumulado fora da amostra, por horizonte",
+                         subtitle="Cada semana acrescenta uma observacao em cada "
+                                  "horizonte; os h maiores ainda tem amostra pequena")
              .fmt_number(columns=["Direcao correta (%)", "Dentro do 60% (%)",
                                   "MAE (R$/kg)"], decimals=1)))
     a1 = av[av["h"] == 1]
