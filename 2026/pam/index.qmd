@@ -26,6 +26,7 @@ execute:
 
 ```{r setup, include=FALSE}
 source("pam_funcoes.R", encoding = "UTF-8")
+source("pam_cultura.R", encoding = "UTF-8")
 
 # ---- ÚNICA LINHA A MUDAR A CADA ANO -----------------------------------------
 # Subpasta de tempecon/dados_uva com as planilhas do SIDRA (tabela 5457) baixadas.
