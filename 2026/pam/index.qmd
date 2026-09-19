@@ -5,7 +5,7 @@ date: "today"
 editor: source
 lang: pt
 language:
-  toc-title-document: '<a href="https://observatoriosdemercado.github.io/manga/" target="_blank"><img src="https://github.com/observatoriosdemercado/manga/blob/main/logo_embrapa.jpg?raw=true" alt="Logotipo Embrapa" width="150"></a>'
+  toc-title-document: '<a href="https://observatoriosdemercado.github.io/uva/" target="_blank"><img src="https://github.com/observatoriosdemercado/uva/blob/main/logo_embrapa.jpg?raw=true" alt="Logotipo Embrapa" width="150"></a>'
 format:
   html:
     toc: true
