@@ -1,0 +1,9 @@
+Os dados utilizados são da Pesquisa Agrícola Municipal (PAM) do IBGE e relativos ao período de `r txt$ini` a `r txt$fim`, excluindo o estado do Rio Grande do Sul (que possui a maior parte de sua uva para produção de vinho e suco) dado que o interesse aqui é com uva de mesa.
+
+Em `r txt$fim`, a área plantada no Brasil foi de aproximadamente `r txt$area_br` mil hectares (ha). As três regiões que concentram a produção nacional são `r txt$area_regioes`. Os estados de `r txt$area_estados` são os seis estados que concentram a maior parte da área de uva fina de mesa no país. `r txt$area_vale` Em relação às cidades, `r txt$area_cidades`.
+
+Em termos de volumes, em `r txt$fim`, o Brasil colheu cerca de `r txt$quanti_br` toneladas (t), com o Nordeste participando com aproximadamente `r txt$quanti_ne`% de todo este volume. Os seis estados com maiores volumes de produção são, respectivamente, `r txt$quanti_estados`. `r txt$quanti_vale`
+
+Sobre a produtividade, em `r txt$fim`, a média anual da região Nordeste (`r txt$prod_ne` t/ha) é `r txt$prod_comp` do que a média nacional (`r txt$prod_br` t/ha). Segundo o IBGE (`r txt$fim + 1`), o estado de `r txt$prod_estado1` possui a maior produtividade média (`r txt$prod_estados[1]`), seguido de `r txt$prod_seguido`. `r txt$prod_vale`
+
+A uva gerou mais de `r txt$valor_br` bilhões de reais em valor da produção no Brasil, sendo que aproximadamente `r txt$valor_vale_pct`% deste total, `r txt$valor_vale` bilhões de reais, foi originado no Vale do São Francisco.

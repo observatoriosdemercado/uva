@@ -1,0 +1,433 @@
+---
+title: "OBSERVATÓRIO DO MERCADO DE UVA DA EMBRAPA SEMIÁRIDO"
+author: "João Ricardo F. de Lima"
+date: "today"
+editor: source
+lang: pt
+language:
+  toc-title-document: '<a href="https://observatoriosdemercado.github.io/manga/" target="_blank"><img src="https://github.com/observatoriosdemercado/manga/blob/main/logo_embrapa.jpg?raw=true" alt="Logotipo Embrapa" width="150"></a>'
+format:
+  html:
+    toc: true
+    toc-location: left
+    embed-resources: true
+    page-layout: full
+    fig-width: 10
+    fig-height: 8
+    fig-align: center
+    df-print: paged
+theme:
+  light: flatly
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+```{r setup, include=FALSE}
+source("pam_funcoes.R", encoding = "UTF-8")
+
+# ---- ÚNICA LINHA A MUDAR A CADA ANO -----------------------------------------
+# Subpasta de tempecon/dados_uva com as planilhas do SIDRA (tabela 5457) baixadas.
+# O ano final dos dados (ex.: 2025) é detectado automaticamente nas planilhas.
+pam_pasta <- "2026"
+# -----------------------------------------------------------------------------
+
+pam_dir <- pam_dir_dados(pam_pasta)
+
+area   <- pam_carregar("area")     # hectares
+quanti <- pam_carregar("quanti")   # toneladas
+valor  <- pam_carregar("valor")    # mil reais
+prod   <- pam_produtividade(area, quanti)   # t/ha (estados em kg/ha)
+txt    <- pam_texto(area, quanti, valor, prod)   # números da introdução (_intro.qmd)
+```
+
+<hr>
+
+# ATUALIZAÇÕES DAS INFORMAÇÕES SOBRE A CULTURA DA UVA COM DADOS DA PAM/IBGE ATÉ `r txt$fim`.
+
+<hr>
+
+{{< include _intro.qmd >}}
+
+<br>
+
+# 1. ATUALIZAÇÃO DADOS SOBRE ÁREA DA CULTURA DA UVA.
+
+## 1.1 ÁREA NO BRASIL E REGIÕES PRODUTORAS
+
+::: panel-tabset
+### GRÁFICO
+
+```{r area-regioes}
+pam_plotly(pam_grafico(area$regioes, "Área Plantada de Uva (1000 ha)", "Brasil e Regiões", 1000))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (HECTARES)**
+
+```{r area-regioes-tab}
+pam_tabela(area$regioes, "Região")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## 1.2 ÁREA NOS PRINCIPAIS ESTADOS PRODUTORES
+
+::: panel-tabset
+### GRÁFICO
+
+```{r area-estados}
+pam_plotly(pam_grafico(area$estados, "Área Plantada de Uva (1000 ha)", "Estados do Brasil", 1000))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (HECTARES)**
+
+```{r area-estados-tab}
+pam_tabela(area$estados, "Estado")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## 1.3 ÁREA NAS PRINCIPAIS CIDADES PRODUTORAS
+
+::: panel-tabset
+### GRÁFICO
+
+```{r area-cidades}
+pam_plotly(pam_grafico(area$cidades, "Área Plantada de Uva (ha)", "Cidades do Brasil", tipo = "cidade"), "cidade")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (HECTARES)**
+
+```{r area-cidades-tab}
+pam_tabela(area$cidades, "Cidade")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## 1.4 ÁREA NO VALE DO S. FRANCISCO
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r area-vale}
+pam_plotly(pam_grafico(area$vale, "Área Plantada de Uva (mil ha)", "Vale do São Francisco", 1000, "vale", "Área de Uva (mil ha)"), "vale")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (HECTARES)**
+
+```{r area-vale-tab}
+pam_tabela(area$vale, "Mesorregião")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+:::
+
+# 2. ATUALIZAÇÃO DADOS SOBRE PRODUÇÃO DA CULTURA DA UVA.
+
+## 2.1 QUANTIDADE NO BRASIL E REGIÕES
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r quanti-regioes}
+pam_plotly(pam_grafico(quanti$regioes, "Quantidade Produzida de Uva (Mil t)", "Brasil e Regiões", 1000))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (TONELADAS)**
+
+```{r quanti-regioes-tab}
+pam_tabela(quanti$regioes, "Região")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+:::
+
+## 2.2 QUANTIDADE NOS PRINCIPAIS ESTADOS PRODUTORES
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r quanti-estados}
+pam_plotly(pam_grafico(quanti$estados, "Quantidade Produzida de Uva (Mil t)", "Estados do Brasil", 1000))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (TONELADAS)**
+
+```{r quanti-estados-tab}
+pam_tabela(quanti$estados, "Estado")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+:::
+
+## 2.3 QUANTIDADE NAS PRINCIPAIS CIDADES PRODUTORAS
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r quanti-cidades}
+pam_plotly(pam_grafico(quanti$cidades, "Quantidade Produzida de Uva (Mil t)", "Cidades do Brasil", 1000, "cidade"), "cidade")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (TONELADAS)**
+
+```{r quanti-cidades-tab}
+pam_tabela(quanti$cidades, "Cidade")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa.
+
+:::
+
+## 2.4 QUANTIDADE NO VALE DO S. FRANCISCO
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r quanti-vale}
+pam_plotly(pam_grafico(quanti$vale, "Quantidade Produzida de Uva (Mil t)", "Vale do São Francisco", 1000, "vale", "Quantidade de Uva (mil t)"), "vale")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (TONELADAS)**
+
+```{r quanti-vale-tab}
+pam_tabela(quanti$vale, "Mesorregião")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa.
+
+:::
+
+# 3. ATUALIZAÇÃO DADOS SOBRE PRODUTIVIDADE DA CULTURA DA UVA.
+
+## 3.1 PRODUTIVIDADE NO BRASIL E PRINCIPAIS REGIÕES PRODUTORAS
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r prod-regioes}
+pam_plotly(pam_grafico(prod$regioes, "Produtividade da Uva (t/ha)", "Brasil e Regiões"))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (T/HA)**
+
+```{r prod-regioes-tab}
+pam_tabela(prod$regioes, "Região")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+:::
+
+## 3.2 PRODUTIVIDADE NOS PRINCIPAIS ESTADOS PRODUTORES
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r prod-estados}
+pam_plotly(pam_grafico(prod$estados, "Produtividade da Uva (t/ha)", "Estados do Brasil", 1000))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (T/HA)**
+
+```{r prod-estados-tab}
+pam_tabela(prod$estados, "Estado", 1000)
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+:::
+
+## 3.3 PRODUTIVIDADE NAS PRINCIPAIS CIDADES PRODUTORAS
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r prod-cidades}
+pam_plotly(pam_grafico(prod$cidades, "Produtividade da Uva (t/ha)", "Cidades do Brasil", tipo = "cidade"), "cidade")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (T/HA)**
+
+```{r prod-cidades-tab}
+pam_tabela(prod$cidades, "Cidade")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## 3.4 PRODUTIVIDADE NO VALE DO S. FRANCISCO
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r prod-vale}
+pam_plotly(pam_grafico(prod$vale, "Produtividade da Uva (t/ha)", "Vale do São Francisco", tipo = "vale", serie = "Produtividade da uva (t/ha)"), "vale")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS EM TABELA (T/HA)**
+
+```{r prod-vale-tab}
+pam_tabela(prod$vale, "Mesorregião")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+:::
+
+# 4. ATUALIZAÇÃO DADOS SOBRE VALOR DA PRODUÇÃO DA CULTURA DA UVA.
+
+## 4.1 VALOR DA PRODUÇÃO NO BRASIL E REGIÕES
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r valor-regioes}
+pam_plotly(pam_grafico(valor$regioes, "Valor da Produção (R$ milhões)", "Brasil e Regiões", 1000))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS (R$ MILHÕES) EM TABELA**
+
+```{r valor-regioes-tab}
+pam_tabela(valor$regioes, "Região", 1000)
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## 4.2 VALOR DA PRODUÇÃO NOS PRINCIPAIS ESTADOS PRODUTORES
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r valor-estados}
+pam_plotly(pam_grafico(valor$estados, "Valor da Produção (R$ milhões)", "Estados do Brasil", 1000))
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS (R$ MILHÕES) EM TABELA**
+
+```{r valor-estados-tab}
+pam_tabela(valor$estados, "Estado", 1000)
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## 4.3 VALOR DA PRODUÇÃO NAS PRINCIPAIS CIDADES PRODUTORAS
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r valor-cidades}
+pam_plotly(pam_grafico(valor$cidades, "Valor da Produção (R$ milhões)", "Cidades do Brasil", 1000, "cidade"), "cidade")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS (R$ MILHÕES) EM TABELA**
+
+```{r valor-cidades-tab}
+pam_tabela(valor$cidades, "Cidade", 1000)
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+:::
+
+## 4.4 VALOR DA PRODUÇÃO NO VALE DO S. FRANCISCO
+
+::: panel-tabset
+
+### GRÁFICO
+
+```{r valor-vale}
+pam_plotly(pam_grafico(valor$vale, "Valor da Produção (R$ milhões)", "Vale do São Francisco", 1000, "vale", "Valor da Produção (R$ milhões)"), "vale")
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+### TABELA
+
+**VISUALIZAÇÃO DOS DADOS (R$ MILHÕES) EM TABELA**
+
+```{r valor-vale-tab}
+pam_tabela(valor$vale, "Mesorregião", 1000)
+```
+Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
+
+:::
+
+# INFORMAÇÕES E APOIO
+
+<br>
+
+<center>![](logo_uva.png){width="10cm"}</center>
+
+<br>
+
+<center>João Ricardo F. de Lima</center>
+
+<center>Email Coordenador: joao.ricardo\@embrapa.br</center>
+
+<br>
+
+<center><https://www.embrapa.br/observatorio-da-uva></center>
+
+<center>[Dashboard Mercado de Uva](https://bit.ly/3OgmyKp)</center>
+
+<br>
+
+<center>Telefones:</center>
+
+<center>87-3866-3667</center>
+
+<center>87-99961-5799</center>
+
+<br>
+
+<center>![](apoio4.png){width="9cm"}</center>
