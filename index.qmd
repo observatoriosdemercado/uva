@@ -36,9 +36,19 @@ semana_atual <- isoweek(data_ref)
 mes_atual    <- as.integer(format(data_ref, "%m"))
 
 # Dados IBGE (Brasil e Vale)
-dados <- read_excel(file.path(DADOS_DIR, "uva_ibge2024.xlsx"),
+dados <- read_excel(file.path(DADOS_DIR, "uva_ibge2025.xlsx"),
                     col_names = TRUE)
 dados$produtividade <- round(dados$produtividade, 0)
+
+# Último ano disponível no IBGE/PAM e ano de divulgação (sempre o seguinte) —
+# usados nos valueboxes e nas legendas, para não precisar editar a cada nova base.
+ano_max_ibge   <- max(dados$ano)
+ano_div_ibge   <- ano_max_ibge + 1
+fonte_ibge     <- paste0("Fonte: IBGE (", ano_div_ibge, ")")
+anos_ibge      <- seq(min(dados$ano), ano_max_ibge, 1)
+
+brasil_ult <- dados |> filter(abrangencia == "brasil", ano == ano_max_ibge)
+vale_ult   <- dados |> filter(abrangencia == "vale",   ano == ano_max_ibge)
 
 # Paleta (mesma do dashboard de manga, vivida e harmoniosa com Bootstrap)
 pal <- list(
@@ -70,27 +80,27 @@ tema_card <- function() {
 ## Row {height=150}
 
 ::: {.valuebox icon="bounding-box" color="warning"}
-36,5 Mil ha
+`{r} fmt_area_mil_ha(brasil_ult$area)`
 
-Área Plantada (2024)
+Área Plantada (`{r} ano_max_ibge`)
 :::
 
 ::: {.valuebox icon="graph-up" color="success"}
-31 t/ha
+`{r} fmt_produtividade(brasil_ult$produtividade)`
 
-Produtividade Média (2024)
+Produtividade Média (`{r} ano_max_ibge`)
 :::
 
 ::: {.valuebox icon="box-seam" color="primary"}
-1,13 Mi t
+`{r} fmt_volume_mi_t(brasil_ult$quantidade)`
 
-Volume Produzido (2024)
+Volume Produzido (`{r} ano_max_ibge`)
 :::
 
 ::: {.valuebox icon="cash-stack" color="danger"}
-R$ 6,74 Bi
+`{r} fmt_vbp_bi(brasil_ult$vbp)`
 
-Valor da Produção (2024)
+Valor da Produção (`{r} ano_max_ibge`)
 :::
 
 ## Row {height=420}
@@ -106,11 +116,11 @@ g <- ggplot(g_data, aes(x = ano, y = area)) +
   geom_text(aes(y = label_y,
                 label = formatC(area, format = "d", big.mark = ".", decimal.mark = ",")),
             size = 3, color = pal$ink) +
-  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_x_continuous(breaks = anos_ibge) +
   scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
                      expand = expansion(mult = c(0.02, 0.18))) +
   labs(x = NULL, y = "Hectares",
-       caption = "Fonte: IBGE (2025)") +
+       caption = fonte_ibge) +
   tema_card()
 
 ggplotly(g, tooltip = c("x", "y")) |>
@@ -130,10 +140,10 @@ g <- ggplot(g_data, aes(x = ano, y = produtividade)) +
   geom_col(fill = pal$prod, width = 0.7) +
   geom_text(aes(y = label_y, label = produtividade),
             size = 3, color = pal$ink) +
-  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_x_continuous(breaks = anos_ibge) +
   scale_y_continuous(expand = expansion(mult = c(0.02, 0.18))) +
   labs(x = NULL, y = "Toneladas / Hectare",
-       caption = "Fonte: IBGE (2025)") +
+       caption = fonte_ibge) +
   tema_card()
 
 ggplotly(g, tooltip = c("x", "y")) |>
@@ -155,11 +165,11 @@ g <- ggplot(g_data, aes(x = ano, y = volume)) +
   geom_text(aes(y = label_y,
                 label = formatC(round(volume), format = "d", big.mark = ".", decimal.mark = ",")),
             size = 3, color = pal$ink) +
-  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_x_continuous(breaks = anos_ibge) +
   scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
                      expand = expansion(mult = c(0.02, 0.18))) +
   labs(x = NULL, y = "Mil Toneladas",
-       caption = "Fonte: IBGE (2025)") +
+       caption = fonte_ibge) +
   tema_card()
 
 ggplotly(g, tooltip = c("x", "y")) |>
@@ -181,11 +191,11 @@ g <- ggplot(g_data, aes(x = ano, y = vbp_milhoes)) +
   geom_text(aes(y = label_y,
                 label = formatC(round(vbp_milhoes), format = "d", big.mark = ".", decimal.mark = ",")),
             size = 3, color = pal$ink) +
-  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_x_continuous(breaks = anos_ibge) +
   scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
                      expand = expansion(mult = c(0.02, 0.18))) +
   labs(x = NULL, y = "Milhões de R$",
-       caption = "Fonte: IBGE (2025)") +
+       caption = fonte_ibge) +
   tema_card()
 
 ggplotly(g, tooltip = c("x", "y")) |>
@@ -211,9 +221,9 @@ g <- ggplot(df, aes(x = ano, y = Indice, color = Indicador)) +
   geom_line(linewidth = 1.1) +
   geom_point(size = 2) +
   scale_color_manual(values = c(`Área` = pal$area, Volume = pal$vol)) +
-  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_x_continuous(breaks = anos_ibge) +
   labs(x = NULL, y = "Índice (2011 = 100)",
-       caption = "Fonte: IBGE (2025) — elaboração própria") +
+       caption = paste0(fonte_ibge, " — elaboração própria")) +
   tema_card() +
   theme(legend.position = "top", legend.title = element_blank())
 
@@ -241,27 +251,27 @@ dados |>
 ## Row {height=150}
 
 ::: {.valuebox icon="bounding-box" color="warning"}
-18.058 ha
+`{r} fmt_area_mil_ha(vale_ult$area)`
 
-Área Plantada (2024)
+Área Plantada (`{r} ano_max_ibge`)
 :::
 
 ::: {.valuebox icon="graph-up" color="success"}
-47 t/ha
+`{r} fmt_produtividade(vale_ult$produtividade)`
 
-Produtividade Média (2024)
+Produtividade Média (`{r} ano_max_ibge`)
 :::
 
 ::: {.valuebox icon="box-seam" color="primary"}
-851 Mil t
+`{r} fmt_volume_mi_t(vale_ult$quantidade)`
 
-Volume Produzido (2024)
+Volume Produzido (`{r} ano_max_ibge`)
 :::
 
 ::: {.valuebox icon="cash-stack" color="danger"}
-R$ 5,2 Bi
+`{r} fmt_vbp_bi(vale_ult$vbp)`
 
-Valor da Produção (2024)
+Valor da Produção (`{r} ano_max_ibge`)
 :::
 
 ## Row {height=420}
@@ -277,11 +287,11 @@ g <- ggplot(g_data, aes(x = ano, y = area)) +
   geom_text(aes(y = label_y,
                 label = formatC(area, format = "d", big.mark = ".", decimal.mark = ",")),
             size = 3, color = pal$ink) +
-  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_x_continuous(breaks = anos_ibge) +
   scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
                      expand = expansion(mult = c(0.02, 0.18))) +
   labs(x = NULL, y = "Hectares",
-       caption = "Fonte: IBGE (2025)") +
+       caption = fonte_ibge) +
   tema_card()
 
 ggplotly(g, tooltip = c("x", "y")) |>
@@ -301,10 +311,10 @@ g <- ggplot(g_data, aes(x = ano, y = produtividade)) +
   geom_col(fill = pal$prod, width = 0.7) +
   geom_text(aes(y = label_y, label = produtividade),
             size = 3, color = pal$ink) +
-  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_x_continuous(breaks = anos_ibge) +
   scale_y_continuous(expand = expansion(mult = c(0.02, 0.18))) +
   labs(x = NULL, y = "Toneladas / Hectare",
-       caption = "Fonte: IBGE (2025)") +
+       caption = fonte_ibge) +
   tema_card()
 
 ggplotly(g, tooltip = c("x", "y")) |>
@@ -326,11 +336,11 @@ g <- ggplot(g_data, aes(x = ano, y = volume)) +
   geom_text(aes(y = label_y,
                 label = formatC(round(volume), format = "d", big.mark = ".", decimal.mark = ",")),
             size = 3, color = pal$ink) +
-  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_x_continuous(breaks = anos_ibge) +
   scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
                      expand = expansion(mult = c(0.02, 0.18))) +
   labs(x = NULL, y = "Mil Toneladas",
-       caption = "Fonte: IBGE (2025)") +
+       caption = fonte_ibge) +
   tema_card()
 
 ggplotly(g, tooltip = c("x", "y")) |>
@@ -352,11 +362,11 @@ g <- ggplot(g_data, aes(x = ano, y = vbp_milhoes)) +
   geom_text(aes(y = label_y,
                 label = formatC(round(vbp_milhoes), format = "d", big.mark = ".", decimal.mark = ",")),
             size = 3, color = pal$ink) +
-  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_x_continuous(breaks = anos_ibge) +
   scale_y_continuous(labels = label_number(big.mark = ".", decimal.mark = ","),
                      expand = expansion(mult = c(0.02, 0.18))) +
   labs(x = NULL, y = "Milhões de R$",
-       caption = "Fonte: IBGE (2025)") +
+       caption = fonte_ibge) +
   tema_card()
 
 ggplotly(g, tooltip = c("x", "y")) |>
@@ -385,10 +395,10 @@ g <- ggplot(df, aes(x = ano, y = pct, color = Indicador)) +
   scale_color_manual(values = c(`Área (%)` = pal$area,
                                 `Volume (%)` = pal$vol,
                                 `VBP (%)` = pal$vbp)) +
-  scale_x_continuous(breaks = seq(2011, 2024, 1)) +
+  scale_x_continuous(breaks = anos_ibge) +
   scale_y_continuous(labels = label_number(suffix = "%", decimal.mark = ",")) +
   labs(x = NULL, y = "% do total nacional",
-       caption = "Fonte: IBGE (2025) — elaboração própria") +
+       caption = paste0(fonte_ibge, " — elaboração própria")) +
   tema_card() +
   theme(legend.position = "top", legend.title = element_blank())
 
@@ -649,8 +659,8 @@ ggplotly(g) |> limpar_legenda_plotly() |> config(displayModeBar = FALSE)
 ```{r trabalho-setup}
 # === AJUSTAR MENSALMENTE ===
 ref_caged <- list(
-  mes_nome = "junho",
-  mes_num  = 6,
+  mes_nome = "julho",
+  mes_num  = 7,
   ano      = 2026
 )
 caged_dir <- "C:/Users/Lenovo/Dropbox/tempecon/dados_caged"
