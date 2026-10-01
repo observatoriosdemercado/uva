@@ -417,7 +417,7 @@ Fonte: PAM/IBGE reprocessado pelo Observatório de Mercado de Uva da Embrapa
 
 <br>
 
-<center><https://www.embrapa.br/observatorio-da-uva></center>
+<center><https://www.embrapa.br/web/semiarido/observatorio-da-uva></center>
 
 <center>[Dashboard Mercado de Uva](https://bit.ly/3OgmyKp)</center>
 
