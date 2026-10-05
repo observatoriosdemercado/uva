@@ -1165,6 +1165,78 @@ testada e refutada nesta frente — o que, somado à §8.3, delimita bastante o
 espaço de explicações para o viés de alta da Vitória: não é a janela de
 entrada nem a janela de treino.
 
+### 8.5 Momentum no XGBoost — testado, com efeito oposto por variedade
+
+O acompanhamento contínuo (§11.2) expôs um defeito de **inflexão**: o modelo
+acerta a direção mas chega atrasado nas viradas. Na Arra isso apareceu duas
+vezes com o sinal trocado — primeiro sub-reagindo à velocidade de uma queda de
+dez semanas consecutivas (a mais longa da série), depois sub-reagindo à
+retomada, errando a direção nas semanas 38 e 39 de 2026 ao insistir na queda.
+*Momentum* — médias móveis e média exponencial do próprio preço — é a família
+de features que ataca exatamente esse comportamento.
+
+A ideia carrega uma evidência contrária: momentum foi **testado e descartado no
+projeto irmão da manga**, onde piorou o RMSE em 9,8% na Palmer. O argumento
+para retestar aqui não é teimosia, é **relação sinal-ruído**: o desvio-padrão
+das variações semanais é de 6,2% na Arra e 7,6% na Vitória, contra 14,3% e
+21,0% na Palmer e na Tommy. Numa série três vezes menos volátil, uma média
+móvel carrega tendência; numa série ruidosa, carrega ruído. É plausível que a
+mesma feature funcione numa e não na outra por esse motivo — plausível, não
+demonstrado, e o rolling-origin é quem decide.
+
+Acrescentaram-se ao XGBoost médias móveis de 4 e 8 semanas e uma média
+exponencial ($\alpha=0{,}3$), mantendo os lags [1, 2, 4, 52] e todos os
+hiperparâmetros. O NHITS ficou inalterado. Mesmas 20 janelas, mesmo $h=6$.
+A régua é a do projeto: **acurácia direcional**, com RMSE como informação
+secundária.
+
+| Acurácia direcional (todos os horizontes, $N=120$) | XGBoost isolado | Combinação com NHITS |
+|:---|---:|---:|
+| Arra 15 — base | 51,7% | 70,0% |
+| Arra 15 — com momentum | **61,7%** | 70,8% |
+| BRS Vitória — base | 63,3% | 72,5% |
+| BRS Vitória — com momentum | **56,7%** | 66,7% |
+
+**O efeito é oposto nas duas variedades** — e na direção que a economia prevê.
+A área plantada da Arra 15 é monitorada pelas empresas de genética que detêm a
+patente da variedade; oferta administrada produz tendências persistentes, que é
+o regime em que média móvel informa. A BRS Vitória é cultivar pública da
+Embrapa, propagada livremente: a área cresceu sem controle e os movimentos de
+preço carregam mais ruído de oferta, de modo que suavizar o passado apenas
+atrasa a reação. O contraste tem contrapartida no nível de preço: entre
+2017–2020 e 2021–2025 a Arra preservou o preço real (−2,0%) enquanto a Vitória
+perdeu 16,8%.
+
+O Diebold-Mariano (HLN) entre as duas combinações confirma o lado ruim e não o
+bom: na **Vitória**, $t=+4{,}69$ em $h=2$ e $t=+2{,}93$ em $h=3$ **a favor da
+base** — significativo. Na **Arra**, todos os sinais favorecem o momentum, mas
+nenhum passa de $|t|=1{,}09$.
+
+**Decisão: não adotar.** Pela regra do projeto, ganho pequeno sem significância
+no DM é ruído. O ganho de 0,8 ponto na combinação da Arra é *uma* direção a
+mais em 120 confrontos, enquanto a perda na Vitória é estatisticamente
+significativa.
+
+::: {.callout-note}
+## O achado colateral vale mais que o teste
+
+O ganho de dez pontos do momentum aparece no **XGBoost isolado e desaparece na
+combinação**. A leitura é que o NHITS já capturava o sinal de tendência que o
+momentum acrescenta — e isso explica por que a combinação funciona tão bem: os
+dois modelos não são redundantes, e o NHITS cobre justamente a dimensão em que
+o XGBoost é mais fraco. Trocar de aprendiz mantendo o mesmo conjunto de
+informação tende a não mudar nada; o que muda é acrescentar informação que o
+outro membro da combinação não tem.
+:::
+
+*Nota de precisão:* são 20 janelas, o que dá $N=20$ por horizonte e por
+variedade, com erro-padrão de cerca de 11 pontos na acurácia direcional. Os
+números horizonte a horizonte **não são legíveis individualmente**; apenas os
+agregados de 120 observações, e mesmo esses com erro-padrão de ~4,5 pontos. O
+$t=+4{,}69$ da Vitória é grande demais para 20 observações com previsões
+sobrepostas — trata-se aqui como indício consistente com os pontos, não como
+medida fina.
+
 ## 9. Modelos e validação rolling-origin (com exógenas — baseline)
 
 Esta é a **especificação vigente do projeto**, definida pelo caminho incremental
@@ -1578,6 +1650,33 @@ calibração ficou boa para os três modelos: ~59–60% de cobertura para a band
 nominal de 60% — ou seja, o intervalo publicado cumpre, na prática, o que
 promete.
 
+::: {.callout-warning}
+## Duas ressalvas sobre esta validação
+
+**Primeira: o conformal em log foi testado e é pior aqui.** A alternativa
+natural ao intervalo aditivo $[\hat{y}-q,\ \hat{y}+q]$ é o multiplicativo
+$[\hat{y}e^{-q},\ \hat{y}e^{+q}]$, com $q$ tomado sobre os erros absolutos em
+log. Ele é sempre positivo e assimétrico, o que resolveria o limite inferior
+negativo que aparece quando o preço fica baixo. Medido pelo mesmo procedimento
+*leave-one-window-out*, o log entrega cobertura ligeiramente menor (59,2% contra
+60,0%) e intervalo **mais largo** nas duas variedades. Entre duas bandas com a
+mesma cobertura vence a mais estreita, então a versão em nível ganha nos dois
+critérios — e o problema do limite negativo não existe na uva, cujos preços são
+altos demais para isso. **Mantém-se o conformal em nível.**
+
+**Segunda, mais séria: esta é uma cobertura média, e média esconde.** O
+procedimento agrupa as 20 janelas, que cobrem níveis de preço muito diferentes.
+Uma banda pode ter cobertura média exata de 60% e ainda assim ser larga demais
+quando o preço está baixo e estreita demais quando está alto, com os dois erros
+se cancelando. No projeto irmão da manga, quebrar esta mesma validação por
+terços de preço revelou cobertura de 66,7%, 77,8% e 35,7% — 42 pontos de
+amplitude por trás de uma média de 59,2%. A causa é mecânica: o conformal
+aditivo produz banda de largura praticamente idêntica **em reais**, qualquer que
+seja o nível de preço. A uva tem nível muito mais estável que a manga, então o
+problema deve ser menor aqui, mas **ainda não foi medido nesta série**. Fica
+registrado no §12.
+:::
+
 ```{python}
 def cobertura_loo(cv, modelo, nivel):
     err   = np.abs(cv[modelo] - cv["y"]).values
@@ -1886,10 +1985,26 @@ próximas etapas. A sequência planejada:
    desloca de ano para ano, coerente com a poda programada. Isso sugere testar
    Bai-Perron [@bai2003] para quebras na relação preço-sazonalidade e,
    se for o caso, janela de estimação encurtada ou pesos decrescentes.
-8. **Conformal e operação.** Quando o ensemble estiver definido, validar a
-   cobertura empírica do intervalo de 60% (mecanismo da §11 já pronto) e
-   montar a rotina semanal de publicação (repositório próprio da uva, nos
-   moldes do `observatoriosdemercado/manga`).
+8. ~~**Conformal e operação.**~~ **Resolvido** — cobertura empírica validada
+   na §11.1 e rotina semanal de publicação em operação
+   (`observatoriosdemercado/uva`, via `atualizar_forecast.ps1`).
+9. ~~**Momentum no XGBoost.**~~ **Testado — não adotado (§8.5).** Efeito oposto
+   por variedade: ganho de dez pontos de acurácia direcional no XGBoost isolado
+   da Arra, perda significativa na Vitória ($t=+4{,}69$ em $h=2$ a favor da
+   base). O contraste acompanha o regime de oferta de cada variedade — área
+   administrada por patente na Arra, propagação livre na Vitória.
+10. **Conformal localmente adaptativo — próximo teste da frente de
+    intervalos.** O conformal aditivo em uso produz banda de largura
+    praticamente constante **em reais**, independentemente do nível de preço.
+    Medido na manga, isso gera cobertura de 66,7% no terço de preço baixo
+    contra 35,7% no terço alto, com média de 59,2% escondendo 42 pontos de
+    amplitude (§11.1). A correção não é o log — testado e descartado nas duas
+    culturas, e que na manga conserta a Palmer mas não a Tommy —, e sim
+    **dividir o erro por uma estimativa de escala antes de tomar o quantil**,
+    remultiplicando depois. O log é o caso particular em que a escala é
+    $\hat{y}$; o candidato a testar é a escala vinda de uma **volatilidade
+    móvel recente** da própria série. Primeiro passo: repetir na uva a quebra
+    de cobertura por terços de preço, que ainda não foi medida aqui.
 
 ::: {.callout-note}
 **Ambiente.** Este documento usa o kernel `manga-nixtla` (Python 3.12 isolado em
