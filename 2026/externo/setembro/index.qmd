@@ -348,6 +348,15 @@ pct_fortaleza <- dadosurf$percentual[dadosurf$URF == "ALF-Fortaleza"][1]
 imp_ult   <- tail(dados7, 1)        # ultimo mes; colunas Chile/Argentina/Peru/Egito
 imp_chile <- as.numeric(imp_ult$Chile)
 imp_arg   <- as.numeric(imp_ult$Argentina)
+imp_vals  <- c(Chile = as.numeric(imp_ult$Chile), Argentina = as.numeric(imp_ult$Argentina),
+               Peru = as.numeric(imp_ult$Peru), Egito = as.numeric(imp_ult$Egito))
+imp_vals[is.na(imp_vals)] <- 0
+imp_ativos <- names(imp_vals[imp_vals > 0])   # so paises com importacao > 0
+imp_partes <- paste0(vir(imp_vals[imp_ativos], 1), " t do ", imp_ativos)
+frase_imp  <- if (length(imp_partes) == 0) "" else paste0(" Em ", strftime(atual, format = "%B de %Y"),
+  " foram importadas ",
+  if (length(imp_partes) == 1) imp_partes else paste0(paste(imp_partes[-length(imp_partes)], collapse = ", "), " e ", imp_partes[length(imp_partes)]),
+  ".")
 
 cambio_esp <- as.numeric(head(dados6$cambio, 1))   # FOCUS vem do mais recente -> head = atual
 ```
@@ -358,7 +367,7 @@ Em relação aos volumes, em `r strftime(atual, format = "%B de %Y")` foram de `
 
 Em termos dos valores das exportações, em `r strftime(atual, format = "%B de %Y")` foram cerca de US\$ `r vir(val_ref,1)` milhões de dólares, `r ifelse(val_ref>=val_media,"acima","abaixo")` da média histórica de US\$ `r vir(val_media,1)` milhões. Em `r strftime(atual, format = "%B")` de `r anoref-2` foram gerados US\$ `r vir(val_2024,1)` milhões em receitas e, em `r strftime(atual, format = "%B")` de `r anoref-1`, um total de US\$ `r vir(val_2025,2)` milhões.
 
-Os principais destinos foram `r d3$Paises[1]` (`r vir(d3$Participacao[1],2)`%), `r d3$Paises[2]` (`r vir(d3$Participacao[2],2)`%) e `r d3$Paises[3]` (`r vir(d3$Participacao[3],2)`%). A principal via de envio foi a marítima (`r vir(pct_maritima,2)`%), com `r vir(pct_fortaleza,2)`% do total despachado pela alfândega de Fortaleza. Os principais estados de origem da uva foram Pernambuco (`r vir(ufpct("Pernambuco"),2)`%) e Bahia (`r vir(ufpct("Bahia"),2)`%). Em `r strftime(atual, format = "%B de %Y")` foram importadas `r vir(imp_chile,1)` t de uvas do Chile.
+Os principais destinos foram `r d3$Paises[1]` (`r vir(d3$Participacao[1],2)`%), `r d3$Paises[2]` (`r vir(d3$Participacao[2],2)`%) e `r d3$Paises[3]` (`r vir(d3$Participacao[3],2)`%). A principal via de envio foi a marítima (`r vir(pct_maritima,2)`%), com `r vir(pct_fortaleza,2)`% do total despachado pela alfândega de Fortaleza. Os principais estados de origem da uva foram Pernambuco (`r vir(ufpct("Pernambuco"),2)`%) e Bahia (`r vir(ufpct("Bahia"),2)`%).`r frase_imp`
 
 A taxa de câmbio continua com a apreciação do Real em relação ao Dólar e a taxa esperada pelo mercado para o final do ano de `r anoref` é de R\$`r vir(cambio_esp,2)` para 1 dólar.
 
