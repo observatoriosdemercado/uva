@@ -1,5 +1,5 @@
 ---
-title: "Mercado de Uva"
+title: "MERCADO DE UVA"
 format:
   dashboard:
     embed-resources: true
