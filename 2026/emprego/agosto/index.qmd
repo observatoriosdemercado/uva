@@ -261,10 +261,12 @@ Com relação aos salários pagos, o valor mais frequente foi de `r fmt_brl(sal1
 ## GRÁFICO
 
 ```{r emp0}
+ymax_emp0 <- ceiling(max(estoquem$uva_total, na.rm = TRUE) / 1000) * 1000
+
 g0 <- ggplot(estoquem, aes(x = mes, y = uva_total, fill = ano)) +
   geom_col(width = 0.9, position = "dodge") +
   scale_fill_manual(values = cor_ano) +
-  scale_y_continuous(limits = c(0, 35000), n.breaks = 10,
+  scale_y_continuous(limits = c(0, ymax_emp0), n.breaks = 10,
                      expand = expansion(add = c(0, 0.5))) +
   labs(y = "Estoque de Emprego", x = "Meses do Ano") +
   tema_emp(ang_x = 35, base = 14, face_title = "italic")
@@ -292,10 +294,12 @@ Fonte: CAGED reprocessado pelo Observatório de Mercado de Uva da Embrapa
 ## GRÁFICO
 
 ```{r emp1}
+ymax_emp1 <- ceiling(max(abs(saldom$Saldo_uva), na.rm = TRUE) / 100) * 100
+
 g1 <- ggplot(saldom, aes(x = mes, y = Saldo_uva, fill = ano)) +
   geom_col(width = 0.9, position = "dodge") +
   scale_fill_manual(values = cor_ano) +
-  scale_y_continuous(limits = c(-2100, 1700), n.breaks = 10,
+  scale_y_continuous(limits = c(-ymax_emp1, ymax_emp1), n.breaks = 10,
                      expand = expansion(add = c(0, 0.5))) +
   labs(y = "Saldo de Emprego", x = "Meses do Ano") +
   tema_emp(ang_x = 35, base = 14, face_title = "italic")
