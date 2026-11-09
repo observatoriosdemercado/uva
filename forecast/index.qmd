@@ -441,6 +441,18 @@ H, N_WIN, STEP, NIVEL = 6, 20, 4, 60
 INPUT_SIZE = 104          # janela de entrada das redes (2 anos)
 
 igpdi = pd.read_csv("dados/igpdi_uva.csv", sep=";", decimal=".")
+# O IGP-DI é mensal e a rotina de atualização o estende até o fim do mês
+# corrente, então ele pode terminar algumas semanas À FRENTE do último preço
+# publicado (em 2026-11-09, 513 linhas de deflator contra 512 de preço). Recorta
+# para o tamanho da série de preços, de modo que a base de deflação seja sempre
+# a última semana COM preço observado — que é o que a convenção do documento
+# exige. O caso perigoso é o inverso, preço sem deflator correspondente, e esse
+# continua barrado pelo assert dentro de carregar().
+_n_precos = len(pd.read_csv("dados/dados_uva_arra_semana.csv", sep=";", decimal="."))
+if len(igpdi) > _n_precos:
+    print(f"IGP-DI recortado de {len(igpdi)} para {_n_precos} linhas "
+          f"(deflator publicado além da última semana com preço).")
+    igpdi = igpdi.iloc[:_n_precos].reset_index(drop=True)
 exo   = pd.read_csv("dados/df_exogenas.csv", parse_dates=["date"]).set_index("date")
 clima = pd.read_csv("dados/df_climate_weekly.csv", parse_dates=["date"]).set_index("date")
 exo["d_eur"] = exo["eur"].diff()   # variação semanal do câmbio
@@ -1798,6 +1810,63 @@ av = av.merge(orig, on=["variedade", "origem_fecha"], how="left")
 av["origem"] = av["origem"] * (av["igpdi_base"] / ult_igp)
 av = av.dropna(subset=["observado", "origem"])
 
+# --- 2b. CONGELAMENTO do observado e da origem -------------------------------
+# O IGP-DI é mensal e entra nesta série semanal repetido: as semanas do mês
+# corrente carregam provisoriamente o índice do mês anterior até o número
+# oficial sair. Quando sai, aquelas semanas mudam de patamar e o preço REAL
+# delas é recalculado. A previsão, ao contrário, é gravada e nunca muda.
+# Essa assimetria já inverteu veredictos: na semana 44 de 2026 a origem caiu de
+# 10,75 para 10,63 quando o índice de outubro foi publicado, enquanto a previsão
+# seguiu em 10,64 — um centavo trocou "queda" por "alta". Por isso o observado e
+# a origem são CONGELADOS na primeira vez que a semana-alvo é medida, e os
+# veredictos passam a ser calculados contra esses valores, para sempre.
+# Os valores correntes continuam disponíveis em *_corrente para auditoria.
+CONG = ["observado_congelado", "origem_congelada"]
+CHAVE = ["origem_fecha", "alvo_fecha", "variedade"]
+for c in CONG:
+    if c not in hist.columns:
+        hist[c] = np.nan
+# av herda as colunas congeladas de hist no merge do passo 2; descarta antes de
+# trazê-las de volta, senão o pandas cria _x/_y e o código abaixo quebra — o que
+# só aconteceria a partir da SEGUNDA rodada com o campo já existindo no CSV.
+av = av.drop(columns=[c for c in CONG if c in av.columns]) \
+       .merge(hist[CHAVE + CONG], on=CHAVE, how="left")
+primeira_vez = av["observado_congelado"].isna()
+av.loc[primeira_vez, "observado_congelado"] = av.loc[primeira_vez, "observado"]
+av.loc[primeira_vez, "origem_congelada"]    = av.loc[primeira_vez, "origem"]
+# RESSALVA SOBRE O PREENCHIMENTO INICIAL: as linhas já observadas antes de o
+# congelamento existir (09/11/2026) foram fixadas com o deflator vigente NAQUELE
+# dia, e não com o que valia quando cada uma foi medida pela primeira vez — os
+# valores originais não estavam gravados em lugar nenhum. Para essas linhas o
+# congelamento garante estabilidade daqui em diante, não reconstrói o passado.
+# Da semana 45 de 2026 em diante o congelamento é genuinamente na primeira
+# medição.
+
+# devolve ao histórico em disco; combine_first nunca sobrescreve o que já está
+# congelado — uma vez fixado, o valor não volta a se mexer.
+_novos = av.set_index(CHAVE)[CONG]
+_novos = _novos[~_novos.index.duplicated(keep="first")]
+hist = hist.set_index(CHAVE)
+for c in CONG:
+    hist[c] = hist[c].combine_first(_novos[c])
+hist = hist.reset_index().sort_values(["alvo_fecha", "variedade", "h"])
+hist.to_csv(HIST, index=False)
+
+# a partir daqui, avaliar SEMPRE pelos congelados
+av["observado_corrente"] = av["observado"]
+av["origem_corrente"]    = av["origem"]
+av["observado"] = av["observado_congelado"]
+av["origem"]    = av["origem_congelada"]
+
+_d = (np.where(av["previsto"] > av["origem"], 1, 0) !=
+      np.where(av["previsto"] > av["origem_corrente"], 1, 0)).sum()
+_b = (((av["observado"] >= av["lo60"]) & (av["observado"] <= av["hi60"])) !=
+      ((av["observado_corrente"] >= av["lo60"]) &
+       (av["observado_corrente"] <= av["hi60"]))).sum()
+print(f"Congelamento: {int(primeira_vez.sum())} linha(s) fixada(s) nesta rodada; "
+      f"{len(av)} avaliadas. Divergência entre o veredicto congelado e o que o "
+      f"deflator corrente produziria hoje: {_d} em direção, {_b} em banda.")
+
 if len(av) == 0:
     print("Ainda não há semana-alvo com preço observado. O registro começa na "
           "próxima atualização.")
@@ -1889,17 +1958,87 @@ apenas na semana 31). Duas explicações candidatas foram testadas e **ambas
 refutadas**: janela de entrada longa demais (§8.3) e mistura de regimes no
 treino (§8.4). A causa do viés permanece em aberto.
 
-**Revisão do deflator e por que o histórico resistiu.** Em 2026-08-08 o IGP-DI
-das semanas 27 a 31 foi revisado de 1202,299 para 1192,015 — aquelas semanas
-vinham repetindo o último valor conhecido e receberam o número oficial. Como a
-convenção deste documento é deflacionar para reais da **última** observação,
-uma mudança no último valor reescala **toda** a série real (aqui, −0,85%). Se
-o histórico guardasse apenas o valor previsto, a comparação passaria a
-confrontar previsão e observação em bases diferentes. É por isso que cada
-linha grava também o `igpdi_base` usado, e o observado é reexpresso nessa
-base na hora da comparação. Efeito concreto: o registro da semana 31 passou de
-14,26/8,07 para 14,38/8,14 entre um render e outro — não porque o preço mudou,
-mas porque a unidade de conta foi corrigida.
+**Revisão do deflator: o que o histórico protege e o que não protege.** O
+IGP-DI é mensal e entra nesta série semanal repetido; quando o índice do mês é
+publicado, ele substitui o valor provisório daquelas semanas. Em 2026-08-08 as
+semanas 27 a 31 foram revisadas de 1202,299 para 1192,015. Como a convenção
+deste documento é deflacionar para reais da **última** observação, uma mudança
+no último valor reescala **toda** a série real (ali, −0,85%). Se o histórico
+guardasse apenas o valor previsto, a comparação passaria a confrontar previsão
+e observação em bases diferentes. É por isso que cada linha grava também o
+`igpdi_base` usado, e previsão e observado são confrontados nessa base.
+
+**Esse mecanismo é parcial, e a ressalva importa para quem acompanha a tabela
+acima entre edições.** O `igpdi_base` protege contra mudança da **base** de
+deflação, não contra **revisão do índice em datas passadas**. O observado é
+recalculado a cada render como o nominal da semana multiplicado pela razão
+entre o IGP-DI da última observação e o IGP-DI **daquela** semana; se este
+último for revisado, o preço real da semana muda, e com ele o veredicto. Foi o
+que ocorreu em outubro de
+2026, quando as semanas 36 a 41 passaram de 1192,769 para 1210,686 (+1,5%).
+**Quatro resultados já publicados trocaram sem que nenhuma previsão fosse
+alterada:** a banda da Arra na semana 39 passou de fora para dentro; a direção
+da Vitória na semana 36, de acerto para erro; e as bandas da Vitória nas
+semanas 37 e 38, de fora para dentro. O placar das vinte primeiras previsões de
+h=1 foi de 15/20 em direção e 13/20 em banda para 14/20 e 16/20.
+
+Nada disso é erro de cálculo — o preço real daquelas semanas efetivamente
+mudou. Mas significa que **a tabela de acompanhamento não é reproduzível ao
+longo do tempo**: quem comparar duas edições deste boletim encontrará números
+diferentes para semanas antigas sempre que a FGV revisar o deflator. A correção
+natural é congelar, no histórico, o observado e a origem na primeira vez em que
+a semana-alvo é medida, tornando o veredicto imutável; ela está identificada e
+ainda não foi implementada.
+
+::: {.callout-note}
+## A semana 44 de 2026: um choque de oferta no Peru
+
+A Arra 15 subiu **18,1%** em termos reais na semana 44, contra uma previsão de
+queda de 1,0%. O movimento é o **quinto maior salto semanal em 493 semanas**
+(percentil 99,0) e o **dobro do maior já registrado nessa semana do ano**: entre
+2018 e 2025, a variação da semana 43 para a 44 teve mediana de +0,6% e máximo de
++9,6%. O intervalo de 60% não cobriu o observado, o que é esperado — uma banda
+de 60% calibrada sobre um desvio-padrão de 6,2% tem meia-largura de cerca de
+±5,2% e não deve cobrir um movimento de percentil 99.
+
+**A origem do choque é externa e está no Peru**, maior exportador mundial de uva
+de mesa. O índice Niño 1+2, que mede a anomalia de temperatura da faixa costeira
+peruana, atingiu **+5,2 °C** em outubro de 2026 — percentil 99,7 da série
+iniciada em 2012, contra média histórica de +0,25 °C. O efeito no clima das
+regiões produtoras aparece nos dados do NASA POWER, comparando as semanas 33 a
+42 de 2026 com as **mesmas semanas** de 2012 a 2025:
+
+| Região | Variável | 2026 | Média 2012–2025 | Percentil |
+|---|---|---|---|---|
+| Piura | chuva semanal | 2,96 mm | 0,53 mm | 100 |
+| Piura | dias acima de 35 °C | 3,40 | 0,22 | 100 |
+| Lambayeque | chuva semanal | 3,62 mm | 0,71 mm | 100 |
+| Lambayeque | dias acima de 35 °C | 2,00 | 0,24 | 100 |
+
+A chuva acumulada nas duas regiões somou **65,9 mm**, contra 22,2 mm do segundo
+ano mais chuvoso (2013) — o triplo do recorde anterior em quinze anos. Chuva e
+calor na colheita degradam a uva de mesa por rachadura, podridão e perda de
+qualidade na maturação. Com a oferta peruana comprometida na janela de pico das
+exportações brasileiras, que se concentra em outubro e novembro e é puxada
+sobretudo pela Arra, a demanda externa se deslocou para o Vale do São Francisco.
+
+**O comportamento oposto das duas variedades na mesma semana reforça essa
+leitura.** Enquanto a Arra subiu 18,1%, a BRS Vitória caiu 3,1% — sua quarta
+queda consecutiva —, pressionada por aumento de oferta no mercado interno. A
+Arra é orientada a exportação; a Vitória, ao consumo doméstico. Os dois choques
+são independentes e de sinais contrários, e é por isso que o prêmio da Arra
+sobre a Vitória, que havia zerado na semana 40, voltou a abrir.
+
+**Ressalva metodológica, para não induzir a conclusão errada.** O clima de Piura
+e Lambayeque foi testado como variável exógena da Arra no rolling-origin
+(defasagens de 1, 2 e 4 semanas, isoladamente e em conjunto) e **não melhorou a
+previsão** — nem no agregado, nem quando a avaliação foi restrita às semanas de
+anomalia climática. A razão é amostral e não se resolve com outro modelo: há
+**uma única realização** desse regime extremo em quinze anos de dados, e não se
+estima um efeito a partir de uma observação. A cadeia descrita acima é a
+interpretação econômica do episódio, não um preditor operacional. A
+especificação publicada permanece univariada.
+:::
 
 ## 12. Próximos passos
 
